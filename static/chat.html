@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>石境 · AI 对话</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1612;
+  --stone: #8a7d6b;
+  --sand: #e8e0d0;
+  --rice: #f5f1ea;
+  --moss: #5c6b4a;
+  --clay: #b5956a;
+  --ash: #c8bfb0;
+  --deep: #2d261e;
+  --ivory: #faf7f2;
+  --border: rgba(138,125,107,0.22);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  min-height: 100vh;
+  background: var(--rice);
+  color: var(--ink);
+  font-family: "Noto Serif SC", serif;
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+header {
+  height: 78px;
+  padding: 1.6rem 3rem;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(245,241,234,0.95);
+  backdrop-filter: blur(8px);
+}
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  color: var(--deep);
+}
+.logo-sep {
+  width: 1px;
+  height: 1.1rem;
+  background: var(--stone);
+  opacity: 0.35;
+}
+.logo-sub {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--stone);
+  letter-spacing: 0.12em;
+}
+.auth-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.auth-user {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  color: var(--stone);
+}
+.auth-btn {
+  border: 1px solid var(--border);
+  background: var(--ivory);
+  color: var(--deep);
+  padding: 0.46rem 0.75rem;
+  font-family: "Noto Serif SC", serif;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.auth-btn:hover {
+  border-color: var(--clay);
+  background: #ede6d8;
+}
+.chat-shell {
+  height: calc(100vh - 78px);
+  display: grid;
+  grid-template-rows: 1fr auto;
+  width: 100%;
+  padding: 2rem 0 1.4rem;
+}
+.messages {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.5rem max(1.5rem, calc((100vw - 920px) / 2 + 1.5rem)) 1.5rem;
+  scroll-behavior: smooth;
+}
+.messages::-webkit-scrollbar { width: 4px; }
+.messages::-webkit-scrollbar-thumb { background: var(--ash); }
+.empty-state {
+  height: 100%;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--stone);
+}
+.empty-title {
+  font-size: 1.55rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--deep);
+  margin-bottom: 0.55rem;
+}
+.empty-sub {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--stone);
+  letter-spacing: 0.03em;
+}
+.message-row {
+  display: flex;
+  margin: 1rem 0;
+}
+.message-row.user { justify-content: flex-end; }
+.message-row.assistant { justify-content: flex-start; }
+.message {
+  max-width: min(720px, 86%);
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--border);
+  line-height: 1.9;
+  font-size: 0.86rem;
+  word-break: break-word;
+}
+.message.user {
+  background: var(--deep);
+  color: var(--rice);
+  border-color: var(--deep);
+  white-space: pre-wrap;
+}
+.message.user img {
+  display: block;
+  width: min(260px, 100%);
+  max-height: 220px;
+  object-fit: cover;
+  margin-top: 0.65rem;
+  border: 1px solid rgba(245,241,234,0.22);
+  cursor: zoom-in;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.message.user img:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+.message.assistant {
+  background: var(--ivory);
+  color: var(--ink);
+}
+.message.assistant h1,
+.message.assistant h2,
+.message.assistant h3 {
+  color: var(--deep);
+  font-weight: 600;
+  line-height: 1.55;
+  margin: 0.95rem 0 0.45rem;
+}
+.message.assistant h1 { font-size: 1.15rem; letter-spacing: 0.08em; }
+.message.assistant h2 { font-size: 1.04rem; letter-spacing: 0.06em; }
+.message.assistant h3 { font-size: 0.95rem; }
+.message.assistant h1:first-child,
+.message.assistant h2:first-child,
+.message.assistant h3:first-child,
+.message.assistant p:first-child,
+.message.assistant ul:first-child,
+.message.assistant ol:first-child,
+.message.assistant pre:first-child,
+.message.assistant blockquote:first-child,
+.message.assistant table:first-child {
+  margin-top: 0;
+}
+.message.assistant p {
+  margin: 0.45rem 0;
+}
+.message.assistant ul,
+.message.assistant ol {
+  margin: 0.55rem 0 0.55rem 1.25rem;
+  padding-left: 0.4rem;
+}
+.message.assistant li {
+  margin: 0.25rem 0;
+  padding-left: 0.1rem;
+}
+.message.assistant strong {
+  color: var(--deep);
+  font-weight: 700;
+}
+.message.assistant em {
+  color: var(--stone);
+}
+.message.assistant a {
+  color: var(--moss);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(92,107,74,0.28);
+}
+.message.assistant code {
+  padding: 0.12rem 0.34rem;
+  background: rgba(138,125,107,0.12);
+  color: var(--deep);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.82em;
+}
+.message.assistant pre {
+  margin: 0.75rem 0;
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  background: #2d261e;
+  color: var(--rice);
+  border: 1px solid rgba(45,38,30,0.18);
+  line-height: 1.65;
+}
+.message.assistant pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.82rem;
+}
+.message.assistant blockquote {
+  margin: 0.65rem 0;
+  padding: 0.45rem 0 0.45rem 0.9rem;
+  border-left: 2px solid var(--clay);
+  color: var(--stone);
+  background: rgba(181,149,106,0.06);
+}
+.thinking-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--stone);
+}
+.thinking-dots {
+  display: inline-flex;
+  gap: 0.22rem;
+  align-items: center;
+}
+.thinking-dots span {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: var(--clay);
+  opacity: 0.38;
+  animation: thinkingPulse 1.15s ease-in-out infinite;
+}
+.thinking-dots span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.thinking-dots span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+.thinking-text {
+  font-size: 0.82rem;
+}
+.message.assistant table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.82rem;
+}
+.message.assistant .generated-image {
+  display: block;
+  width: min(100%, 720px);
+  max-height: 680px;
+  object-fit: contain;
+  margin: 0.75rem 0 0.2rem;
+  border: 1px solid var(--border);
+  background: var(--sand);
+  cursor: zoom-in;
+}
+.message.assistant th,
+.message.assistant td {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.message.assistant th {
+  color: var(--deep);
+  background: rgba(232,224,208,0.55);
+  font-weight: 600;
+}
+.message.error {
+  color: #9b3636;
+  border-color: rgba(155,54,54,0.25);
+  background: #fdf3ef;
+}
+.style-picker {
+  width: min(920px, calc(100% - 3rem));
+  margin: 0 auto 0.7rem;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.style-picker-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0 0.1rem 0.55rem;
+  background: transparent;
+}
+.style-picker-title {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: var(--deep);
+}
+.style-picker-actions {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+.style-selection {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  color: var(--stone);
+}
+.style-toggle-btn {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.72);
+  color: var(--deep);
+  padding: 0.32rem 0.62rem;
+  font-family: "Noto Serif SC", serif;
+  font-size: 0.66rem;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s;
+}
+.style-toggle-btn:hover {
+  border-color: var(--stone);
+  background: var(--ivory);
+}
+.style-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.45rem;
+  padding: 0;
+  background: transparent;
+}
+.style-grid[hidden] {
+  display: none;
+}
+.style-card {
+  min-width: 0;
+  min-height: 60px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.58);
+  color: var(--ink);
+  padding: 0.58rem 0.62rem;
+  text-align: left;
+  font-family: "Noto Serif SC", serif;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+}
+.style-card:hover {
+  border-color: var(--stone);
+  background: var(--ivory);
+}
+.style-card.selected {
+  border-color: var(--deep);
+  background: var(--deep);
+  color: var(--rice);
+}
+.style-card-name {
+  display: block;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.style-card-category {
+  display: block;
+  max-width: 100%;
+  margin-top: 0.16rem;
+  overflow: hidden;
+  color: var(--stone);
+  font-size: 0.58rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+}
+.style-card.selected .style-card-category { color: rgba(245,241,234,0.68); }
+.composer {
+  width: min(920px, calc(100% - 3rem));
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  background: var(--ivory);
+  padding: 0.85rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+  box-shadow: 0 10px 26px rgba(26,22,18,0.07);
+}
+.input-stack {
+  min-width: 0;
+}
+.composer textarea {
+  width: 100%;
+  min-height: 48px;
+  max-height: 180px;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--deep);
+  font-family: "Noto Serif SC", serif;
+  font-size: 0.86rem;
+  line-height: 1.8;
+}
+.composer textarea::placeholder {
+  color: var(--ash);
+  font-style: italic;
+}
+.attachment-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.55rem;
+}
+.attach-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--stone);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.attach-btn:hover {
+  border-color: var(--clay);
+  color: var(--deep);
+  background: #ede6d8;
+}
+.image-preview {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.28rem 0.45rem;
+  border: 1px solid var(--border);
+  background: white;
+}
+.image-preview.show {
+  display: flex;
+}
+.image-preview img {
+  width: 42px;
+  height: 34px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.image-name {
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.66rem;
+  color: var(--stone);
+}
+.remove-image {
+  border: none;
+  background: transparent;
+  color: var(--ash);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+.remove-image:hover {
+  color: var(--deep);
+}
+.actions {
+  display: flex;
+  gap: 0.55rem;
+}
+.icon-btn {
+  min-width: 46px;
+  height: 46px;
+  border: none;
+  background: var(--deep);
+  color: var(--rice);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, opacity 0.2s;
+}
+.icon-btn:hover { background: var(--moss); }
+.icon-btn:disabled {
+  background: var(--ash);
+  cursor: not-allowed;
+}
+.generate-btn {
+  min-height: 46px;
+  border: 1px solid var(--deep);
+  background: var(--deep);
+  color: var(--ivory);
+  padding: 0 0.96rem;
+  font-family: "Noto Serif SC", serif;
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.generate-btn:hover { background: var(--moss); border-color: var(--moss); }
+.generate-btn:disabled {
+  background: var(--ash);
+  border-color: var(--ash);
+  cursor: not-allowed;
+}
+.stop-btn {
+  background: white;
+  color: var(--stone);
+  border: 1px solid var(--border);
+}
+.stop-btn:hover {
+  background: #ede6d8;
+  color: var(--deep);
+}
+.spinner {
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid rgba(255,255,255,0.32);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes thinkingPulse {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.32;
+  }
+  40% {
+    transform: translateY(-0.22rem);
+    opacity: 1;
+  }
+}
+.hint {
+  width: min(920px, calc(100% - 3rem));
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 0.65rem;
+  text-align: center;
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 0.68rem;
+  color: var(--ash);
+}
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: rgba(26,22,18,0.78);
+  backdrop-filter: blur(6px);
+}
+.image-lightbox.show {
+  display: flex;
+}
+.image-lightbox img {
+  max-width: min(1080px, 92vw);
+  max-height: 86vh;
+  object-fit: contain;
+  border: 1px solid rgba(245,241,234,0.22);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+}
+.lightbox-close {
+  position: fixed;
+  top: 1.2rem;
+  right: 1.2rem;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(245,241,234,0.32);
+  background: rgba(45,38,30,0.72);
+  color: var(--rice);
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.lightbox-close:hover {
+  background: var(--deep);
+}
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(26,22,18,0.46);
+  backdrop-filter: blur(6px);
+}
+.auth-modal.show {
+  display: flex;
+}
+.auth-card {
+  position: relative;
+  width: min(420px, 100%);
+  border: 1px solid var(--border);
+  background: var(--ivory);
+  box-shadow: 0 28px 70px rgba(26,22,18,0.22);
+  padding: 1.4rem;
+}
+.auth-close {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--stone);
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.auth-close:hover {
+  color: var(--deep);
+  border-color: var(--clay);
+  background: #ede6d8;
+}
+.auth-card h2 {
+  font-size: 1.12rem;
+  color: var(--deep);
+  letter-spacing: 0.12em;
+  margin-bottom: 0.35rem;
+}
+.auth-card p {
+  font-size: 0.76rem;
+  color: var(--stone);
+  line-height: 1.8;
+  margin-bottom: 1rem;
+}
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.95rem;
+}
+.auth-tab {
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--stone);
+  padding: 0.55rem;
+  cursor: pointer;
+  font-family: "Noto Serif SC", serif;
+}
+.auth-tab.active {
+  background: var(--deep);
+  color: var(--rice);
+  border-color: var(--deep);
+}
+.auth-field {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.8rem;
+}
+.auth-field label {
+  font-size: 0.7rem;
+  color: var(--stone);
+}
+.auth-field input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: white;
+  padding: 0.68rem 0.75rem;
+  color: var(--deep);
+  font-family: "Noto Serif SC", serif;
+  outline: none;
+}
+.auth-field input:focus {
+  border-color: var(--clay);
+}
+.auth-submit {
+  width: 100%;
+  border: none;
+  background: var(--deep);
+  color: var(--rice);
+  padding: 0.72rem;
+  font-family: "Noto Serif SC", serif;
+  cursor: pointer;
+}
+.auth-submit:disabled {
+  background: var(--ash);
+  cursor: not-allowed;
+}
+.auth-error {
+  min-height: 1.3rem;
+  margin-top: 0.7rem;
+  font-size: 0.72rem;
+  color: #9b3636;
+}
+@media (max-width: 768px) {
+  header {
+    height: 64px;
+    padding: 0.9rem 1.2rem;
+    gap: 0.55rem;
+  }
+  .logo { font-size: 1.2rem; }
+  .logo-sep { display: none; }
+  .logo-sub { font-size: 0.6rem; }
+  .auth-user { display: none; }
+  .auth-btn { padding: 0.38rem 0.52rem; font-size: 0.66rem; }
+  .chat-shell {
+    height: calc(100vh - 64px);
+    padding: 1rem 0 0.9rem;
+  }
+  .messages {
+    padding: 0.25rem 0.85rem 1rem;
+  }
+  .empty-title { font-size: 1.22rem; }
+  .message {
+    max-width: 92%;
+    font-size: 0.82rem;
+  }
+  .composer {
+    width: calc(100% - 1.7rem);
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+  .style-picker {
+    width: calc(100% - 1.7rem);
+    margin-bottom: 0.6rem;
+  }
+  .style-picker-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 0 0.1rem 0.45rem;
+  }
+  .style-picker-actions {
+    flex-basis: 100%;
+    justify-content: space-between;
+  }
+  .style-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.42rem;
+  }
+  .style-card {
+    min-height: 60px;
+  }
+  .hint {
+    width: calc(100% - 1.7rem);
+  }
+  .actions { justify-content: flex-end; }
+  .image-lightbox {
+    padding: 1rem;
+  }
+  .lightbox-close {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">石境</div>
+  <div class="logo-sep"></div>
+  <div class="logo-sub">Shijing Garden Materials · AI Conversation</div>
+  <div class="auth-actions">
+    <span class="auth-user" id="authUser">未登录</span>
+    <button class="auth-btn" type="button" id="authOpenButton">登录</button>
+    <button class="auth-btn" type="button" id="logoutButton" hidden>退出</button>
+  </div>
+</header>
+
+<main class="chat-shell">
+  <section class="messages" id="messages" aria-live="polite">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-title">有什么可以帮您？</div>
+      <div class="empty-sub">Ask about garden design, materials, routes, places, or anything else.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="style-picker" id="stylePicker">
+      <div class="style-picker-header">
+        <div class="style-picker-title">选择庭院风格</div>
+        <div class="style-picker-actions">
+          <div class="style-selection" id="styleSelection">选择一种风格后可直接生成效果图</div>
+          <button class="style-toggle-btn" type="button" id="styleToggleButton" hidden>更换风格</button>
+        </div>
+      </div>
+      <div class="style-grid" id="styleGrid" aria-live="polite"></div>
+    </div>
+    <form class="composer" id="composer">
+      <div class="input-stack">
+        <textarea id="messageInput" rows="1" placeholder="输入消息；选风格后可填写补充需求"></textarea>
+        <div class="attachment-row">
+          <button class="attach-btn" type="button" id="uploadButton" title="上传图片">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+              <circle cx="8.5" cy="10.5" r="1.5"></circle>
+              <path d="m21 15-5-5L5 19"></path>
+            </svg>
+          </button>
+          <input id="imageInput" type="file" accept="image/*" hidden>
+          <div class="image-preview" id="imagePreview">
+            <img id="imagePreviewImg" alt="已选择的图片">
+            <span class="image-name" id="imageName"></span>
+            <button class="remove-image" type="button" id="removeImageButton" title="移除图片">×</button>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="generate-btn" type="button" id="generateButton">生成效果图</button>
+        <button class="icon-btn stop-btn" type="button" id="stopButton" title="停止生成" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <rect x="6" y="6" width="12" height="12" rx="1.5"></rect>
+          </svg>
+        </button>
+        <button class="icon-btn" type="submit" id="sendButton" title="发送">
+          <svg id="sendIcon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 2 11 13"></path>
+            <path d="m22 2-7 20-4-9-9-4Z"></path>
+          </svg>
+        </button>
+      </div>
+    </form>
+    <div class="hint">Responses stream from the local FastAPI /chat endpoint.</div>
+  </section>
+</main>
+
+<div class="image-lightbox" id="imageLightbox" aria-modal="true" role="dialog" hidden>
+  <button class="lightbox-close" type="button" id="lightboxClose" title="关闭">×</button>
+  <img id="lightboxImage" alt="放大的用户上传图片">
+</div>
+
+<div class="auth-modal" id="authModal" aria-modal="true" role="dialog" hidden>
+  <form class="auth-card" id="authForm">
+    <button class="auth-close" type="button" id="authCloseButton" title="关闭">×</button>
+    <h2>账号登录</h2>
+    <p>不登录也可以正常对话；登录后可用于后续保存更完整的对话历史和个人功能。</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" type="button" id="loginTab">登录</button>
+      <button class="auth-tab" type="button" id="registerTab">注册</button>
+    </div>
+    <div class="auth-field">
+      <label for="authUsername">用户名</label>
+      <input id="authUsername" name="username" autocomplete="username" minlength="3" maxlength="50" required>
+    </div>
+    <div class="auth-field">
+      <label for="authPassword">密码</label>
+      <input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="6" maxlength="128" required>
+    </div>
+    <button class="auth-submit" type="submit" id="authSubmit">登录</button>
+    <div class="auth-error" id="authError"></div>
+  </form>
+</div>
+
+<script>
+const messagesEl = document.getElementById("messages");
+const emptyState = document.getElementById("emptyState");
+const form = document.getElementById("composer");
+const input = document.getElementById("messageInput");
+const sendButton = document.getElementById("sendButton");
+const generateButton = document.getElementById("generateButton");
+const stopButton = document.getElementById("stopButton");
+const sendIcon = document.getElementById("sendIcon");
+const uploadButton = document.getElementById("uploadButton");
+const imageInput = document.getElementById("imageInput");
+const imagePreview = document.getElementById("imagePreview");
+const imagePreviewImg = document.getElementById("imagePreviewImg");
+const imageName = document.getElementById("imageName");
+const removeImageButton = document.getElementById("removeImageButton");
+const imageLightbox = document.getElementById("imageLightbox");
+const lightboxImage = document.getElementById("lightboxImage");
+const lightboxClose = document.getElementById("lightboxClose");
+const authUser = document.getElementById("authUser");
+const authOpenButton = document.getElementById("authOpenButton");
+const logoutButton = document.getElementById("logoutButton");
+const authModal = document.getElementById("authModal");
+const authForm = document.getElementById("authForm");
+const authCloseButton = document.getElementById("authCloseButton");
+const authUsername = document.getElementById("authUsername");
+const authPassword = document.getElementById("authPassword");
+const loginTab = document.getElementById("loginTab");
+const registerTab = document.getElementById("registerTab");
+const authSubmit = document.getElementById("authSubmit");
+const authError = document.getElementById("authError");
+const stylePicker = document.getElementById("stylePicker");
+const styleGrid = document.getElementById("styleGrid");
+const styleSelection = document.getElementById("styleSelection");
+const styleToggleButton = document.getElementById("styleToggleButton");
+
+let abortController = null;
+let selectedImage = null;
+let selectedStyle = null;
+let styleGridExpanded = true;
+let loadingButton = sendButton;
+let authMode = "login";
+const SESSION_ID_KEY = "shijing_chat_session_id";
+const AUTH_TOKEN_KEY = "shijing_auth_token";
+const AUTH_USER_KEY = "shijing_auth_user";
+const sessionId = getOrCreateSessionId();
+
+function getAuthToken() {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_USER_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function setAuthSession(token, user) {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  updateAuthUi(user);
+}
+
+function clearAuthSession() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_USER_KEY);
+  updateAuthUi(null);
+}
+
+function updateAuthUi(user = getStoredUser()) {
+  const loggedIn = Boolean(getAuthToken() && user);
+  authUser.textContent = loggedIn ? `已登录：${user.username}` : "未登录";
+  authOpenButton.hidden = loggedIn;
+  logoutButton.hidden = !loggedIn;
+}
+
+function openAuthModal(mode = "login") {
+  setAuthMode(mode);
+  authModal.hidden = false;
+  authModal.classList.add("show");
+  authError.textContent = "";
+  setTimeout(() => authUsername.focus(), 0);
+}
+
+function closeAuthModal() {
+  authModal.classList.remove("show");
+  authModal.hidden = true;
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isLogin = mode === "login";
+  loginTab.classList.toggle("active", isLogin);
+  registerTab.classList.toggle("active", !isLogin);
+  authSubmit.textContent = isLogin ? "登录" : "注册";
+  authPassword.autocomplete = isLogin ? "current-password" : "new-password";
+  authError.textContent = "";
+}
+
+async function submitAuth() {
+  const username = authUsername.value.trim().toLowerCase();
+  const password = authPassword.value;
+  if (!username || !password) return;
+
+  authSubmit.disabled = true;
+  authError.textContent = "";
+  try {
+    const response = await fetch(`/api/auth/${authMode === "login" ? "login" : "register"}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.detail || `HTTP ${response.status}`);
+    }
+    setAuthSession(payload.access_token, payload.user);
+    authForm.reset();
+    closeAuthModal();
+    input.focus();
+  } catch (error) {
+    authError.textContent = error.message || String(error);
+  } finally {
+    authSubmit.disabled = false;
+  }
+}
+
+async function refreshCurrentUser() {
+  const token = getAuthToken();
+  if (!token) {
+    updateAuthUi(null);
+    return;
+  }
+  try {
+    const response = await fetch("/api/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("token invalid");
+    const user = await response.json();
+    setAuthSession(token, user);
+  } catch {
+    clearAuthSession();
+  }
+}
+
+function getOrCreateSessionId() {
+  const existing = localStorage.getItem(SESSION_ID_KEY);
+  if (existing) return existing;
+
+  const value = crypto.randomUUID
+    ? crypto.randomUUID()
+    : `session_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  localStorage.setItem(SESSION_ID_KEY, value);
+  return value;
+}
+
+function scrollToBottom() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function renderStyleCards(styles) {
+  styleGrid.replaceChildren();
+  for (const style of styles) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "style-card";
+    card.dataset.styleId = style.id;
+    card.setAttribute("aria-pressed", "false");
+
+    const name = document.createElement("span");
+    name.className = "style-card-name";
+    name.textContent = style.name;
+    const category = document.createElement("span");
+    category.className = "style-card-category";
+    category.textContent = style.category;
+    card.append(name, category);
+    card.addEventListener("click", () => selectStyle(style));
+    styleGrid.appendChild(card);
+  }
+  updateStylePickerVisibility();
+}
+
+function selectStyle(style) {
+  selectedStyle = style;
+  styleGridExpanded = false;
+  styleSelection.textContent = `已选择：${style.name} · ${style.category}`;
+  styleGrid.querySelectorAll(".style-card").forEach((card) => {
+    const selected = card.dataset.styleId === style.id;
+    card.classList.toggle("selected", selected);
+    card.setAttribute("aria-pressed", String(selected));
+  });
+  updateStylePickerVisibility();
+  input.focus();
+}
+
+function updateStylePickerVisibility() {
+  const hasSelectedStyle = Boolean(selectedStyle);
+  styleGrid.hidden = hasSelectedStyle && !styleGridExpanded;
+  styleToggleButton.hidden = !hasSelectedStyle;
+  styleToggleButton.textContent = styleGridExpanded ? "收起风格" : "更换风格";
+  styleToggleButton.setAttribute("aria-expanded", String(styleGridExpanded));
+}
+
+function showStyleOptions() {
+  styleGridExpanded = true;
+  updateStylePickerVisibility();
+  stylePicker.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+async function loadGardenStyles() {
+  try {
+    const response = await fetch("/api/styles");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const styles = await response.json();
+    renderStyleCards(styles);
+  } catch {
+    styleSelection.textContent = "风格列表加载失败，仍可正常聊天";
+    styleToggleButton.hidden = true;
+  }
+}
+
+function resizeInput() {
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 180) + "px";
+}
+
+function addMessage(role, text = "", extraClass = "") {
+  emptyState.hidden = true;
+  const row = document.createElement("div");
+  row.className = `message-row ${role}`;
+  const bubble = document.createElement("div");
+  bubble.className = `message ${role}${extraClass ? ` ${extraClass}` : ""}`;
+  bubble.textContent = text;
+  row.appendChild(bubble);
+  messagesEl.appendChild(row);
+  scrollToBottom();
+  return bubble;
+}
+
+function addUserMessage(text, image) {
+  const bubble = addMessage("user", text || "请分析这张图片");
+  if (image) {
+    const img = document.createElement("img");
+    img.src = image.dataUrl;
+    img.alt = image.name || "用户上传的图片";
+    img.title = "点击放大";
+    img.addEventListener("click", () => openImageLightbox(image.dataUrl, image.name));
+    bubble.appendChild(img);
+  }
+}
+
+function openImageLightbox(src, alt = "放大的用户上传图片") {
+  lightboxImage.src = src;
+  lightboxImage.alt = alt || "放大的用户上传图片";
+  imageLightbox.hidden = false;
+  imageLightbox.classList.add("show");
+}
+
+function closeImageLightbox() {
+  imageLightbox.classList.remove("show");
+  imageLightbox.hidden = true;
+  lightboxImage.removeAttribute("src");
+}
+
+function clearSelectedImage() {
+  selectedImage = null;
+  imageInput.value = "";
+  imagePreview.classList.remove("show");
+  imagePreviewImg.removeAttribute("src");
+  imageName.textContent = "";
+}
+
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("图片读取失败"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("图片加载失败"));
+      img.onload = () => {
+        const maxSize = 1280;
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+        if (width > maxSize || height > maxSize) {
+          if (width >= height) {
+            height = Math.round(height * maxSize / width);
+            width = maxSize;
+          } else {
+            width = Math.round(width * maxSize / height);
+            height = maxSize;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.86));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function safeUrl(url) {
+  const trimmed = url.trim();
+  return /^(https?:\/\/|mailto:|tel:|\/)/i.test(trimmed) ? trimmed : "#";
+}
+
+function renderInlineMarkdown(text) {
+  let html = escapeHtml(text);
+  html = html.replace(/!\[([^\]]*)]\(([^)\s]+)\)/g, (_, alt, url) => {
+    return `<img class="generated-image" src="${escapeHtml(safeUrl(url))}" alt="${alt || 'AI 生成效果图'}">`;
+  });
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+  html = html.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+  html = html.replace(/(^|[^_])_([^_\n]+)_/g, "$1<em>$2</em>");
+  html = html.replace(/\[([^\]]+)]\(([^)\s]+)\)/g, (_, label, url) => {
+    return `<a href="${escapeHtml(safeUrl(url))}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+  });
+  return html.replace(/\n/g, "<br>");
+}
+
+function isTableSeparator(line) {
+  return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+}
+
+function renderTable(lines) {
+  const rows = lines.map(line => line.trim().replace(/^\||\|$/g, "").split("|").map(cell => cell.trim()));
+  const header = rows[0] || [];
+  const body = rows.slice(2);
+  return `<table><thead><tr>${header.map(cell => `<th>${renderInlineMarkdown(cell)}</th>`).join("")}</tr></thead><tbody>${body.map(row => `<tr>${row.map(cell => `<td>${renderInlineMarkdown(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+function renderMarkdown(markdown) {
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const blocks = [];
+  let paragraph = [];
+  let inCode = false;
+  let codeLines = [];
+
+  function flushParagraph() {
+    if (!paragraph.length) return;
+    blocks.push(`<p>${renderInlineMarkdown(paragraph.join("\n"))}</p>`);
+    paragraph = [];
+  }
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+
+    if (line.trim().startsWith("```")) {
+      if (inCode) {
+        blocks.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+        codeLines = [];
+        inCode = false;
+      } else {
+        flushParagraph();
+        inCode = true;
+      }
+      continue;
+    }
+
+    if (inCode) {
+      codeLines.push(line);
+      continue;
+    }
+
+    if (!line.trim()) {
+      flushParagraph();
+      continue;
+    }
+
+    const tableCandidate = line.includes("|") && lines[i + 1] && isTableSeparator(lines[i + 1]);
+    if (tableCandidate) {
+      flushParagraph();
+      const tableLines = [line, lines[i + 1]];
+      i += 2;
+      while (i < lines.length && lines[i].includes("|") && lines[i].trim()) {
+        tableLines.push(lines[i]);
+        i += 1;
+      }
+      i -= 1;
+      blocks.push(renderTable(tableLines));
+      continue;
+    }
+
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      const level = heading[1].length;
+      blocks.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`);
+      continue;
+    }
+
+    if (/^>\s?/.test(line)) {
+      flushParagraph();
+      const quoteLines = [];
+      while (i < lines.length && /^>\s?/.test(lines[i])) {
+        quoteLines.push(lines[i].replace(/^>\s?/, ""));
+        i += 1;
+      }
+      i -= 1;
+      blocks.push(`<blockquote>${renderMarkdown(quoteLines.join("\n"))}</blockquote>`);
+      continue;
+    }
+
+    if (/^\s*[-*]\s+/.test(line)) {
+      flushParagraph();
+      const items = [];
+      while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*[-*]\s+/, ""));
+        i += 1;
+      }
+      i -= 1;
+      blocks.push(`<ul>${items.map(item => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`);
+      continue;
+    }
+
+    if (/^\s*\d+\.\s+/.test(line)) {
+      flushParagraph();
+      const items = [];
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*\d+\.\s+/, ""));
+        i += 1;
+      }
+      i -= 1;
+      blocks.push(`<ol>${items.map(item => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ol>`);
+      continue;
+    }
+
+    paragraph.push(line);
+  }
+
+  flushParagraph();
+  if (inCode) {
+    blocks.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+  }
+  return blocks.join("");
+}
+
+function renderThinkingIndicator() {
+  return `
+    <span class="thinking-indicator" aria-live="polite">
+      <span class="thinking-dots" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </span>
+      <span class="thinking-text">正在思考</span>
+    </span>
+  `;
+}
+
+function setLoading(isLoading, actionButton = sendButton) {
+  input.disabled = isLoading;
+  sendButton.disabled = isLoading;
+  generateButton.disabled = isLoading;
+  stopButton.hidden = !isLoading;
+  if (isLoading) loadingButton = actionButton;
+  sendIcon.hidden = isLoading && loadingButton === sendButton;
+  if (isLoading) {
+    const spinner = document.createElement("div");
+    spinner.className = "spinner";
+    spinner.id = "sendSpinner";
+    loadingButton.appendChild(spinner);
+  } else {
+    document.getElementById("sendSpinner")?.remove();
+    sendIcon.hidden = false;
+    loadingButton = sendButton;
+    abortController = null;
+  }
+}
+
+async function sendMessage({ generateEffectImage = false } = {}) {
+  const text = input.value.trim();
+  if (generateEffectImage && !selectedStyle) {
+    styleSelection.textContent = "请先选择一种庭院风格";
+    showStyleOptions();
+    return;
+  }
+  if ((!text && !selectedImage && !generateEffectImage) || abortController) return;
+
+  const token = getAuthToken();
+
+  const imageForRequest = selectedImage;
+  const displayText = generateEffectImage
+    ? `生成「${selectedStyle.name}」效果图${text ? `：${text}` : ""}`
+    : text;
+  addUserMessage(displayText, imageForRequest);
+  input.value = "";
+  clearSelectedImage();
+  resizeInput();
+
+  const assistantBubble = addMessage("assistant", "");
+  assistantBubble.innerHTML = renderThinkingIndicator();
+  let assistantMarkdown = "";
+  abortController = new AbortController();
+  setLoading(true, generateEffectImage ? generateButton : sendButton);
+
+  try {
+    const headers = { "Content-Type": "application/json" };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch("/chat", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        message: text,
+        image: imageForRequest?.dataUrl || null,
+        session_id: sessionId,
+        style_id: generateEffectImage ? selectedStyle.id : null,
+        generate_effect_image: generateEffectImage,
+      }),
+      signal: abortController.signal,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearAuthSession();
+      }
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      assistantMarkdown += decoder.decode(value, { stream: true });
+      assistantBubble.innerHTML = renderMarkdown(assistantMarkdown);
+      scrollToBottom();
+    }
+  } catch (error) {
+    if (error.name === "AbortError") {
+      assistantMarkdown = assistantMarkdown || "";
+      assistantMarkdown += "\n\n[已停止生成]";
+      assistantBubble.innerHTML = renderMarkdown(assistantMarkdown);
+    } else {
+      assistantBubble.classList.add("error");
+      assistantBubble.textContent = `请求失败：${error.message || String(error)}`;
+    }
+  } finally {
+    setLoading(false);
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+input.addEventListener("input", resizeInput);
+authOpenButton.addEventListener("click", () => openAuthModal("login"));
+authCloseButton.addEventListener("click", closeAuthModal);
+logoutButton.addEventListener("click", () => {
+  clearAuthSession();
+  input.focus();
+});
+loginTab.addEventListener("click", () => setAuthMode("login"));
+registerTab.addEventListener("click", () => setAuthMode("register"));
+authForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  submitAuth();
+});
+authModal.addEventListener("click", (event) => {
+  if (event.target === authModal) {
+    closeAuthModal();
+  }
+});
+uploadButton.addEventListener("click", () => imageInput.click());
+imageInput.addEventListener("change", async () => {
+  const file = imageInput.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    clearSelectedImage();
+    return;
+  }
+
+  selectedImage = {
+    name: file.name,
+    dataUrl: await compressImage(file),
+  };
+  imagePreviewImg.src = selectedImage.dataUrl;
+  imageName.textContent = file.name;
+  imagePreview.classList.add("show");
+});
+removeImageButton.addEventListener("click", clearSelectedImage);
+lightboxClose.addEventListener("click", closeImageLightbox);
+messagesEl.addEventListener("click", (event) => {
+  const image = event.target.closest(".generated-image");
+  if (image) openImageLightbox(image.src, image.alt);
+});
+imageLightbox.addEventListener("click", (event) => {
+  if (event.target === imageLightbox) {
+    closeImageLightbox();
+  }
+});
+
+input.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    form.requestSubmit();
+  }
+});
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  sendMessage();
+});
+generateButton.addEventListener("click", () => sendMessage({ generateEffectImage: true }));
+styleToggleButton.addEventListener("click", () => {
+  styleGridExpanded = !styleGridExpanded;
+  updateStylePickerVisibility();
+  if (styleGridExpanded) {
+    stylePicker.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+});
+loadGardenStyles();
+
+stopButton.addEventListener("click", () => {
+  abortController?.abort();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !imageLightbox.hidden) {
+    closeImageLightbox();
+  }
+  if (event.key === "Escape" && !authModal.hidden) {
+    closeAuthModal();
+  }
+});
+
+updateAuthUi();
+refreshCurrentUser();
+input.focus();
+</script>
+</body>
+</html>

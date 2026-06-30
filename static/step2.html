@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>石境 · 石材纹理预览 — Step 2</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/common.css">
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="/static/common.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="logo">石境</div>
+    <div class="logo-sep"></div>
+    <div class="logo-sub">Shijing Garden Materials · 造园设计系统</div>
+  </header>
+
+  <div class="progress-bar">
+    <div class="step-item done">
+      <div class="step-num">一</div>
+      <div class="step-label"><a href="/static/index.html" style="color:inherit;text-decoration:none;">AI 风格分析</a></div>
+    </div>
+    <div class="step-connector done"></div>
+    <div class="step-item active">
+      <div class="step-num">二</div>
+      <div class="step-label">石材纹理预览</div>
+    </div>
+    <div class="step-connector" :class="{ done: imgReady }"></div>
+    <div class="step-item" :class="{ disabled: !imgReady }">
+      <div class="step-num">三</div>
+      <div class="step-label"><a v-if="imgReady" href="/static/step3.html" style="color:inherit;text-decoration:none;">造园方案生成</a><span v-else>造园方案生成</span></div>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="s2-layout">
+      <div>
+        <div class="s-title" style="font-size:1rem;margin-bottom:0.2rem;">石材纹理预览</div>
+        <div class="s-sub">Brush to paint material texture onto your photo</div>
+
+        <div class="canvas-wrap" ref="canvasWrap">
+          <canvas id="base-canvas" ref="baseCanvas"></canvas>
+          <canvas id="mask-canvas" ref="maskCanvas"></canvas>
+          <canvas id="preview-canvas" ref="previewCanvas"
+                  @mousedown="startDraw" @mousemove="onDraw" @mouseup="stopDraw" @mouseleave="stopDraw"
+                  @touchstart.prevent="startDrawTouch" @touchmove.prevent="onDrawTouch" @touchend="stopDraw"
+                  style="cursor:crosshair;"></canvas>
+        </div>
+
+        <div class="toolbar">
+          <div class="t-group">
+            <span class="t-label">工具</span>
+            <button class="t-btn" :class="{ active: tool === 'brush' }" @click="tool = 'brush'">笔刷</button>
+            <button class="t-btn" :class="{ active: tool === 'erase' }" @click="tool = 'erase'">橡皮</button>
+          </div>
+          <div class="t-group">
+            <span class="t-label">大小</span>
+            <input type="range" class="slim" v-model.number="brushSize" min="10" max="120">
+            <span class="t-val">{{ brushSize }}</span>
+          </div>
+          <div class="t-group">
+            <span class="t-label">透明度</span>
+            <input type="range" class="slim" v-model.number="opacityPct" min="10" max="95" @input="onOpacityChange">
+            <span class="t-val">{{ opacityPct }}%</span>
+          </div>
+          <div class="t-group">
+            <span class="t-label">模式</span>
+            <button class="t-btn" :class="{ active: blendMode === 'multiply' }" @click="setBlend('multiply')">叠底</button>
+            <button class="t-btn" :class="{ active: blendMode === 'overlay' }" @click="setBlend('overlay')">叠加</button>
+            <button class="t-btn" :class="{ active: blendMode === 'normal' }" @click="setBlend('normal')">正常</button>
+          </div>
+          <div class="t-group">
+            <button class="t-btn red" @click="clearMask">清除</button>
+          </div>
+        </div>
+        <div style="margin-top:0.5rem;font-size:0.58rem;color:var(--ash);font-family:'Cormorant Garamond',serif;font-style:italic;">
+          ✦ 用笔刷涂抹地面或墙面，选择右侧材料查看效果
+        </div>
+      </div>
+
+      <div>
+        <div class="mat-sidebar-title">材料选择</div>
+        <div class="mat-sidebar-sub">Select & brush to preview</div>
+        <div class="mat-scroll">
+          <template v-for="cat in matCategories" :key="cat">
+            <div class="mat-cat-label">{{ cat }}</div>
+            <div v-for="m in materials.filter(x => x.cat === cat)" :key="m.id"
+                 class="mat-item" :class="{ active: selectedMatId === m.id }" @click="selectMat(m.id)">
+              <canvas class="mat-thumb-sm" :ref="el => setThumb(m.id, el)"></canvas>
+              <div>
+                <div class="mat-item-name">{{ m.name }}</div>
+                <div class="mat-item-en" v-if="m.nameEn || m.color">{{ m.nameEn || m.color }}</div>
+              </div>
+              <span class="mat-check">✓</span>
+            </div>
+          </template>
+        </div>
+        <div class="sel-mat-display" v-if="selectedMat">
+          <div class="sel-mat-name">{{ selectedMat.name }}</div>
+          <div class="sel-mat-desc">{{ selectedMat.desc }}</div>
+        </div>
+
+        <div class="area-form">
+          <div class="area-form-title">AREA MEASUREMENT · 填写面积</div>
+          <div class="area-hint">填写后AI将生成更精准的用量与报价</div>
+          <div class="area-row">
+            <label class="area-label">主铺装地面</label>
+            <div class="area-input-wrap">
+              <input class="area-input" v-model.number="areaMain" type="number" min="0" placeholder="0">
+              <span class="area-unit">㎡</span>
+            </div>
+          </div>
+          <div class="area-row">
+            <label class="area-label">步道 / 踏石</label>
+            <div class="area-input-wrap">
+              <input class="area-input" v-model.number="areaPath" type="number" min="0" placeholder="0">
+              <span class="area-unit">㎡</span>
+            </div>
+          </div>
+          <div class="area-row">
+            <label class="area-label">景墙 / 立面</label>
+            <div class="area-input-wrap">
+              <input class="area-input" v-model.number="areaWall" type="number" min="0" placeholder="0">
+              <span class="area-unit">㎡</span>
+            </div>
+          </div>
+          <div class="area-row">
+            <label class="area-label">水景 / 其他</label>
+            <div class="area-input-wrap">
+              <input class="area-input" v-model.number="areaWater" type="number" min="0" placeholder="0">
+              <span class="area-unit">㎡</span>
+            </div>
+          </div>
+          <div class="area-total">{{ totalArea > 0 ? `总面积：${totalArea.toFixed(1)} ㎡` : '总面积：— ㎡' }}</div>
+        </div>
+
+        <a class="s2-next-btn" href="/static/step3.html" @click="saveAndGo"
+           style="display:block;text-align:center;line-height:3;text-decoration:none;color:var(--rice);">
+          下一步：生成造园方案 →
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <footer>石境园林建材 · 中式与日式户外材料专营 · 品质源于自然</footer>
+  <div class="notify" :class="{ show: !!notifyMsg }">{{ notifyMsg }}</div>
+</div>
+
+<script>
+const { createApp, nextTick } = Vue;
+createApp({
+  data() {
+    return {
+      materials: [...DEFAULT_MATERIALS],
+      selectedMatId: null,
+      tool: 'brush',
+      brushSize: 40,
+      opacityPct: 65,
+      opacity: 0.65,
+      blendMode: 'multiply',
+      isDrawing: false,
+      canvasW: 0,
+      canvasH: 0,
+      uploadedImg: null,
+      areaMain: null,
+      areaPath: null,
+      areaWall: null,
+      areaWater: null,
+      thumbCanvases: {},
+      notifyMsg: '',
+      notifyTimer: null,
+    };
+  },
+  computed: {
+    imgReady() { return !!this.uploadedImg; },
+    matCategories() {
+      const cats = new Set();
+      this.materials.forEach(m => cats.add(m.cat));
+      return [...cats];
+    },
+    selectedMat() {
+      const id = this.selectedMatId;
+      return this.materials.find(m => m.id === id) || null;
+    },
+    totalArea() {
+      return (this.areaMain || 0) + (this.areaPath || 0) + (this.areaWall || 0) + (this.areaWater || 0);
+    },
+  },
+  watch: {
+    blendMode() { if (this.selectedMatId && this.canvasW) this.renderOverlay(); },
+  },
+  methods: {
+    showNotify(msg) {
+      this.notifyMsg = msg;
+      clearTimeout(this.notifyTimer);
+      this.notifyTimer = setTimeout(() => { this.notifyMsg = ''; }, 3000);
+    },
+
+    setThumb(id, el) {
+      if (!el || this.thumbCanvases[id]) return;
+      this.thumbCanvases[id] = el;
+      nextTick(() => {
+        el.width = el.clientWidth || 40;
+        el.height = 30;
+        drawTexture(el.getContext('2d'), id, el.width, el.height);
+      });
+    },
+
+    selectMat(id) {
+      this.selectedMatId = id;
+      STORE.set('mat_id', id);
+      if (this.canvasW > 0) this.renderOverlay();
+    },
+
+    onOpacityChange() {
+      this.opacity = this.opacityPct / 100;
+      if (this.selectedMatId && this.canvasW) this.renderOverlay();
+    },
+
+    setBlend(mode) {
+      this.blendMode = mode;
+      if (this.selectedMatId && this.canvasW) this.renderOverlay();
+    },
+
+    // ─── CANVAS DRAWING ───
+    getPos(e) {
+      const c = this.$refs.previewCanvas;
+      const rect = c.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (c.width / rect.width),
+        y: (e.clientY - rect.top) * (c.height / rect.height)
+      };
+    },
+    startDraw(e) { if (!this.canvasW) return; this.isDrawing = true; this.paint(this.getPos(e)); },
+    startDrawTouch(e) { if (!this.canvasW) return; this.isDrawing = true; this.paint(this.getPos(e.touches[0])); },
+    onDraw(e) { if (!this.isDrawing || !this.canvasW) return; this.paint(this.getPos(e)); },
+    onDrawTouch(e) { if (!this.isDrawing || !this.canvasW) return; this.paint(this.getPos(e.touches[0])); },
+    stopDraw() { this.isDrawing = false; },
+
+    paint(pos) {
+      const maskCtx = this.$refs.maskCanvas.getContext('2d');
+      maskCtx.globalCompositeOperation = this.tool === 'erase' ? 'destination-out' : 'source-over';
+      maskCtx.fillStyle = 'rgba(255,255,255,1)';
+      maskCtx.beginPath();
+      maskCtx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
+      maskCtx.fill();
+      maskCtx.globalCompositeOperation = 'source-over';
+      this.renderOverlay();
+    },
+
+    clearMask() {
+      this.$refs.maskCanvas.getContext('2d').clearRect(0, 0, this.canvasW, this.canvasH);
+      this.$refs.previewCanvas.getContext('2d').clearRect(0, 0, this.canvasW, this.canvasH);
+    },
+
+    renderOverlay() {
+      if (!this.selectedMatId) return;
+      const texCanvas = document.createElement('canvas');
+      texCanvas.width = 200; texCanvas.height = 200;
+      drawTexture(texCanvas.getContext('2d'), this.selectedMatId, 200, 200);
+
+      const previewCtx = this.$refs.previewCanvas.getContext('2d');
+      const pattern = previewCtx.createPattern(texCanvas, 'repeat');
+
+      const tempC = document.createElement('canvas');
+      tempC.width = this.canvasW; tempC.height = this.canvasH;
+      const tempCtx = tempC.getContext('2d');
+      tempCtx.fillStyle = pattern;
+      tempCtx.fillRect(0, 0, this.canvasW, this.canvasH);
+
+      previewCtx.clearRect(0, 0, this.canvasW, this.canvasH);
+      previewCtx.drawImage(tempC, 0, 0);
+      previewCtx.globalCompositeOperation = 'destination-in';
+      previewCtx.drawImage(this.$refs.maskCanvas, 0, 0);
+      previewCtx.globalCompositeOperation = 'source-over';
+
+      this.$refs.previewCanvas.style.mixBlendMode = this.blendMode;
+      this.$refs.previewCanvas.style.opacity = this.opacity;
+    },
+
+    initCanvas() {
+      if (!this.uploadedImg) return;
+      const wrap = this.$refs.canvasWrap;
+      const cw = wrap.clientWidth, ch = wrap.clientHeight;
+      [this.$refs.baseCanvas, this.$refs.maskCanvas, this.$refs.previewCanvas].forEach(c => {
+        c.width = cw; c.height = ch;
+      });
+      this.canvasW = cw; this.canvasH = ch;
+      const img = this.uploadedImg;
+      const scale = Math.min(cw / img.width, ch / img.height);
+      const dw = img.width * scale, dh = img.height * scale;
+      const dx = (cw - dw) / 2, dy = (ch - dh) / 2;
+      this.$refs.baseCanvas.getContext('2d').drawImage(img, dx, dy, dw, dh);
+      this.$refs.maskCanvas.getContext('2d').clearRect(0, 0, cw, ch);
+      this.$refs.previewCanvas.getContext('2d').clearRect(0, 0, cw, ch);
+    },
+
+    saveAndGo() {
+      STORE.set('mat_id', this.selectedMatId || '');
+      STORE.set('area_main', this.areaMain || 0);
+      STORE.set('area_path', this.areaPath || 0);
+      STORE.set('area_wall', this.areaWall || 0);
+      STORE.set('area_water', this.areaWater || 0);
+    },
+  },
+
+  async mounted() {
+    // Restore state from sessionStorage
+    const base64 = STORE.get('img');
+    if (!base64) {
+      this.showNotify('请先在步骤一上传照片');
+      return;
+    }
+
+    // Recreate Image from base64
+    const img = new Image();
+    img.onload = () => {
+      this.uploadedImg = img;
+      nextTick(() => this.initCanvas());
+    };
+    img.src = base64;
+
+    const matId = STORE.get('mat_id');
+    if (matId) this.selectedMatId = matId;
+
+    this.areaMain = STORE.get('area_main') || null;
+    this.areaPath = STORE.get('area_path') || null;
+    this.areaWall = STORE.get('area_wall') || null;
+    this.areaWater = STORE.get('area_water') || null;
+
+    const customMaterials = await loadCustomMaterials();
+    customMaterials.forEach(m => {
+      if (!this.materials.find(x => x.id === m.id)) this.materials.push(m);
+    });
+
+    // Auto-select AI recommended material
+    if (!this.selectedMatId) {
+      const analysis = STORE.get('analysis');
+      if (analysis?.recommendedMaterials?.length) {
+        this.selectedMatId = analysis.recommendedMaterials[0];
+      }
+    }
+  },
+}).mount('#app');
+</script>
+</body>
+</html>

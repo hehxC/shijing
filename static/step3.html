@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>石境 · 造园方案 — Step 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/common.css">
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="/static/common.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="logo">石境</div>
+    <div class="logo-sep"></div>
+    <div class="logo-sub">Shijing Garden Materials · 造园设计系统</div>
+  </header>
+
+  <div class="progress-bar">
+    <div class="step-item done">
+      <div class="step-num">一</div>
+      <div class="step-label"><a href="/static/index.html" style="color:inherit;text-decoration:none;">AI 风格分析</a></div>
+    </div>
+    <div class="step-connector done"></div>
+    <div class="step-item done">
+      <div class="step-num">二</div>
+      <div class="step-label"><a href="/static/step2.html" style="color:inherit;text-decoration:none;">石材纹理预览</a></div>
+    </div>
+    <div class="step-connector done"></div>
+    <div class="step-item active">
+      <div class="step-num">三</div>
+      <div class="step-label">造园方案生成</div>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="s3-layout">
+      <div class="s3-header">
+        <div>
+          <div class="s-title">造园方案</div>
+          <div class="s-sub">AI-generated garden design plan based on your space & material selection</div>
+        </div>
+        <button class="gen-plan-btn" :disabled="genPlanLoading" @click="generatePlan">
+          <div class="spinner" :style="{ display: genPlanLoading ? 'block' : 'none' }"></div>
+          <span>{{ genPlanLoading ? '生成中…' : (planResult ? '重新生成' : '生成方案') }}</span>
+        </button>
+      </div>
+
+      <div class="s3-summary-card">
+        <div class="s3-summary-title">PLAN BASIS · 方案依据</div>
+        <div class="s3-summary-grid">
+          <div class="s3-chip" v-for="chip in summaryChips" :key="chip.label">
+            <span class="s3-chip-icon">{{ chip.icon }}</span>
+            <span>{{ chip.label }}：</span>
+            <span class="s3-chip-val">{{ chip.val }}</span>
+          </div>
+        </div>
+        <div class="s3-notes-row" v-if="userNotes">
+          <span class="s3-notes-label">您的需求</span>
+          <span class="s3-notes-val">{{ userNotes }}</span>
+        </div>
+      </div>
+
+      <div class="plan-loading" v-if="genPlanLoading && !planStreaming">
+        <div class="plan-loading-dots"><span></span><span></span><span></span></div>
+        <div class="plan-loading-text">AI 正在生成造园方案…</div>
+      </div>
+
+      <div class="plan-stream-preview" v-if="planStreaming">
+        <div class="stream-label">AI GENERATING · 实时生成中</div>
+        <div class="stream-text">{{ planStreamText }}</div>
+        <span class="stream-cursor"></span>
+      </div>
+
+      <div class="plan-container" v-if="planResult">
+        <div class="plan-section">
+          <div class="plan-sec-title">STYLE DIRECTION · 风格定位</div>
+          <div class="plan-sec-body" v-html="planResult.styleDirection"></div>
+        </div>
+        <div class="plan-section">
+          <div class="plan-sec-title">DESIGN CONCEPT · 设计理念</div>
+          <div class="plan-sec-body" v-html="planResult.concept"></div>
+        </div>
+        <div class="plan-section">
+          <div class="plan-sec-title">MATERIAL LIST · 材料清单</div>
+          <table class="mat-table">
+            <thead><tr><th>材料</th><th>用途</th><th>建议用量</th><th>参考价格区间</th></tr></thead>
+            <tbody>
+              <tr v-for="(m, i) in planResult.materials" :key="i">
+                <td><strong>{{ m.name }}</strong></td>
+                <td>{{ m.use }}</td>
+                <td>{{ m.quantity }}</td>
+                <td class="price">{{ m.price }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="plan-section">
+          <div class="plan-sec-title">CONSTRUCTION NOTES · 施工要点</div>
+          <div class="plan-sec-body" v-html="formatNotes(planResult.constructionNotes)"></div>
+        </div>
+        <div class="plan-section">
+          <div class="plan-sec-title">PLANTING PAIRING · 植物搭配建议</div>
+          <div class="plan-sec-body" v-html="formatPlanting(planResult.plantingPairing)"></div>
+        </div>
+
+        <div class="contact-card">
+          <div class="contact-top">
+            <div class="contact-headline">让我们把这份方案<br>变成真实的庭院</div>
+            <div class="contact-sub">石境园林建材 · 专注中日式户外材料十余年<br>从选材到施工，全程陪伴您的造园之旅</div>
+          </div>
+          <div class="contact-actions">
+            <a class="contact-btn contact-btn-primary" href="tel:18780433777">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14v2.92z"/></svg>
+              立即致电咨询
+            </a>
+            <a class="contact-btn contact-btn-wechat" href="weixin://contacts/profile/18780433777" @click="copyWechat">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178A1.17 1.17 0 014.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178 1.17 1.17 0 01-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 01.598.082l1.584.926a.272.272 0 00.14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 01-.023-.156.49.49 0 01.201-.398C22.865 18.6 24 17.04 24 15.28c0-3.312-3.158-6.07-7.063-6.422zm-3.829 2.235a.976.976 0 01.975.975.976.976 0 01-.975.975.976.976 0 01-.975-.975.976.976 0 01.975-.975zm3.972 0a.976.976 0 01.975.975.976.976 0 01-.975.975.976.976 0 01-.975-.975.976.976 0 01.975-.975z"/></svg>
+              添加微信
+            </a>
+          </div>
+          <div class="contact-number" @click="copyPhone">
+            <span class="contact-num-label">电话 / 微信同号</span>
+            <span class="contact-num-val">187 8043 3777</span>
+            <span class="contact-copy-hint">点击复制</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>石境园林建材 · 中式与日式户外材料专营 · 品质源于自然</footer>
+  <div class="notify" :class="{ show: !!notifyMsg }">{{ notifyMsg }}</div>
+</div>
+
+<script>
+const { createApp } = Vue;
+createApp({
+  data() {
+    return {
+      materials: [...DEFAULT_MATERIALS],
+      selectedRefId: null,
+      selectedMatId: null,
+      aiAnalysis: null,
+      userNotes: '',
+      areaMain: 0,
+      areaPath: 0,
+      areaWall: 0,
+      areaWater: 0,
+      genPlanLoading: false,
+      planStreaming: false,
+      planStreamText: '',
+      planResult: null,
+      notifyMsg: '',
+      notifyTimer: null,
+    };
+  },
+  computed: {
+    totalArea() {
+      return (this.areaMain || 0) + (this.areaPath || 0) + (this.areaWall || 0) + (this.areaWater || 0);
+    },
+    summaryChips() {
+      const refStyle = this.selectedRefId ? REF_STYLES.find(r => r.id === this.selectedRefId) : null;
+      const chosenStyle = refStyle?.name || this.aiAnalysis?.styleName || '—';
+      const mat = this.materials.find(m => m.id === this.selectedMatId);
+      return [
+        { icon: '🎨', label: '风格', val: chosenStyle },
+        { icon: '🪨', label: '主材', val: mat?.name || '莱姆石' },
+        { icon: '📐', label: '总面积', val: this.totalArea > 0 ? `${this.totalArea} ㎡` : '未填写' },
+      ];
+    },
+  },
+  methods: {
+    showNotify(msg) {
+      this.notifyMsg = msg;
+      clearTimeout(this.notifyTimer);
+      this.notifyTimer = setTimeout(() => { this.notifyMsg = ''; }, 3000);
+    },
+
+    async generatePlan() {
+      this.genPlanLoading = true;
+      this.planResult = null;
+      this.planStreaming = false;
+      this.planStreamText = '';
+
+      const mat = this.materials.find(m => m.id === this.selectedMatId);
+      const userNotes = this.userNotes || '';
+      const refStyle = this.selectedRefId ? REF_STYLES.find(r => r.id === this.selectedRefId) : null;
+      const chosenStyle = refStyle?.name || this.aiAnalysis?.styleName || '现代简约庭院';
+      const chosenStyleEn = refStyle?.nameEn || '';
+      const aiDesc = this.aiAnalysis?.description || '';
+
+      const areaLines = [
+        this.areaMain > 0 ? `• 主铺装地面：${this.areaMain}㎡` : '',
+        this.areaPath > 0 ? `• 步道/踏石：${this.areaPath}㎡` : '',
+        this.areaWall > 0 ? `• 景墙/立面：${this.areaWall}㎡` : '',
+        this.areaWater > 0 ? `• 水景/其他：${this.areaWater}㎡` : '',
+      ].filter(Boolean).join('\n');
+      const areaText = this.totalArea > 0 ? areaLines : '用户未填写，材料用量给出合理参考范围';
+
+      const systemPrompt = '你是专业庭院设计师，专注中日式及各类风格户外空间。严格按用户选定风格生成造园方案。';
+      const userPrompt = `【用户选定风格】${chosenStyle}${chosenStyleEn ? `（${chosenStyleEn}）` : ''}
+【用户主选石材】${mat?.name || '莱姆石'}${mat?.color ? `（${mat.color}）` : ''}
+【用户填写面积】
+${areaText}
+【AI分析院子现状】${aiDesc || '暂无'}
+【用户的想法与需求】${userNotes || '暂无额外备注'}
+
+要求：
+- styleDirection 和 concept 必须明确体现"${chosenStyle}"的风格特征
+- materials 第一项必须是用户主选的"${mat?.name || '莱姆石'}"，后续材料符合 ${chosenStyle} 风格
+- 有面积数据时给出精确用量，无面积时给合理范围
+- 如用户有特殊需求，在设计中体现
+- styleDirection：2-3 句风格定位
+- concept：3-4 句设计理念
+- materials：3-5 种材料，每项含 name/use/quantity/price
+- constructionNotes：施工要点 3-4 条，用 • 分隔
+- plantingPairing：植物搭配 2-3 段`;
+
+      let accumulated = '';
+      let streamErr = null;
+
+      try {
+        const resp = await fetch('/api/plan-stream', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ]})
+        });
+
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+        this.planStreaming = true;
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const payload = line.slice(6).trim();
+            if (payload === '[DONE]') continue;
+            try {
+              const chunk = JSON.parse(payload);
+              const delta = chunk.choices?.[0]?.delta?.content ?? '';
+              if (delta) {
+                accumulated += delta;
+                this.planStreamText = this.extractReadableText(accumulated);
+              }
+            } catch { /* skip partial */ }
+          }
+        }
+      } catch (e) {
+        streamErr = e;
+        console.error('Streaming error:', e);
+      }
+
+      this.planStreaming = false;
+
+      if (!streamErr && accumulated) {
+        try {
+          this.planResult = JSON.parse(accumulated.replace(/```json|```/g, '').trim());
+        } catch {
+          this.planResult = this.buildFallbackPlan(mat, chosenStyle, userNotes);
+        }
+      } else {
+        this.planResult = this.buildFallbackPlan(mat, chosenStyle, userNotes);
+      }
+
+      this.genPlanLoading = false;
+    },
+
+    extractReadableText(raw) {
+      let out = '', inStr = false, isKey = true, escaped = false;
+      for (let i = 0; i < raw.length; i++) {
+        const c = raw[i];
+        if (escaped) { escaped = false; if (inStr && !isKey) out += c === 'n' ? '\n' : c; continue; }
+        if (c === '\\') { escaped = true; continue; }
+        if (c === '"') { inStr = !inStr; if (!inStr) isKey = true; continue; }
+        if (!inStr) { if (c === ':') isKey = false; if (c === ',') isKey = true; continue; }
+        if (inStr && !isKey) out += c;
+      }
+      return out.trim();
+    },
+
+    buildFallbackPlan(mat, chosenStyle, userNotes) {
+      return {
+        styleDirection: `以${chosenStyle}为核心风格，结合${mat?.name || '莱姆石'}的材质特性，打造与用户生活方式契合的庭院空间。`,
+        concept: `方案以用户需求为出发点，以${mat?.name || '莱姆石'}作为铺装主材，通过材料的质感与色调统一空间气质。${userNotes ? `特别考虑到用户提到的"${userNotes.slice(0, 30)}"，` : ''}设计注重实用与美观的结合。`,
+        materials: [
+          { name: mat?.name || '莱姆石', use: '主铺装地面', quantity: this.areaMain > 0 ? `${this.areaMain}㎡` : '约15-25㎡', price: '¥100-180/㎡' },
+          { name: '青板岩', use: '步道踏石', quantity: this.areaPath > 0 ? `${this.areaPath}㎡` : '约6-10㎡', price: '¥80-130/㎡' },
+          { name: '鹅卵石', use: '装饰填充', quantity: '适量', price: '¥30-50/㎡' },
+          { name: '黄砂岩', use: '景墙贴面', quantity: this.areaWall > 0 ? `${this.areaWall}㎡` : '约5-8㎡', price: '¥90-140/㎡' },
+        ],
+        constructionNotes: `• 铺装前处理好基层排水，坡度1%-2%避免积水\n• ${mat?.name || '莱姆石'}缝隙3-5mm，用同色勾缝剂收边\n• 踏石间距60-65cm，按正常步幅布置\n• 景墙高度建议1.2-1.5m，兼顾私密性与通透感`,
+        plantingPairing: `根据${chosenStyle}的风格特点，植物配置以简洁为主，避免过于繁杂。\n\n主景植物可选形态感强的品种，与${mat?.name || '莱姆石'}的质感相互衬托。\n\n地被与边界植物以低矮、易打理的品种为主。`,
+      };
+    },
+
+    formatNotes(text) {
+      if (!text) return '';
+      return text.replace(/\n/g, '<br>').replace(/•/g, '<strong>•</strong>');
+    },
+
+    formatPlanting(text) {
+      if (!text) return '';
+      return text.replace(/\n\n/g, '</p><p style="margin-top:0.8rem">').replace(/^/, '<p>') + '</p>';
+    },
+
+    copyPhone() {
+      navigator.clipboard.writeText('18780433777').then(
+        () => this.showNotify('✓ 电话号码已复制：18780433777'),
+        () => this.showNotify('电话：18780433777')
+      );
+    },
+
+    copyWechat(e) {
+      const isMobile = /iPhone|Android/i.test(navigator.userAgent);
+      if (!isMobile) {
+        if (e) e.preventDefault();
+        navigator.clipboard.writeText('18780433777').then(
+          () => this.showNotify('✓ 微信号已复制：18780433777，请打开微信添加'),
+          () => this.showNotify('微信号：18780433777')
+        );
+      }
+    },
+  },
+
+  async mounted() {
+    // Restore state from sessionStorage
+    this.selectedRefId = STORE.get('ref_id') || null;
+    this.selectedMatId = STORE.get('mat_id') || null;
+    this.aiAnalysis = STORE.get('analysis') || null;
+    this.userNotes = STORE.get('notes') || '';
+    this.areaMain = STORE.get('area_main') || 0;
+    this.areaPath = STORE.get('area_path') || 0;
+    this.areaWall = STORE.get('area_wall') || 0;
+    this.areaWater = STORE.get('area_water') || 0;
+
+    const customMaterials = await loadCustomMaterials();
+    customMaterials.forEach(m => {
+      if (!this.materials.find(x => x.id === m.id)) this.materials.push(m);
+    });
+  },
+}).mount('#app');
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+%% Copyright (c) 2018-2024 Weitian LI
+%% CC BY 4.0 License
+%%
+%% Python AI 应用开发方向简历
+\documentclass[zh]{resume}
+
+\fileinfo{%
+  \faCopyright{} 2026, 何昊轩 \hspace{0.5em}
+  \faEdit{} \today
+}
+
+\name{昊轩}{何}
+
+\keywords{Python, Java, AI应用开发, LangChain, LangGraph, FastAPI, MySQL}
+
+\tagline{\texorpdfstring{\icon{\faBinoculars} }{}Python AI 应用开发工程师 / Java 后端开发工程师}
+
+\profile{
+  \mobile{+86-17828088459}
+  \email{hhx\_0424@163.com} \\
+  \university{青岛理工大学}
+  \degree{软件工程 \textbullet 本科}
+}
+
+\begin{document}
+\makeheader
+
+%======================================================================
+% Summary
+%======================================================================
+\begin{abstract}
+软件工程本科，具备两年以上政企信息化系统后端开发、联调、交付配合与生产问题排查经验。
+以 Java/Spring Boot 为主要工程基础，现转向 Python AI 应用开发；已使用 FastAPI、SQLAlchemy、MySQL、LangChain、LangGraph Checkpointer 完成多模型石材装修智能顾问项目。
+熟悉大模型 API 集成、工具调用、SQL Agent、多模态图片分析/生成、流式输出、应用层会话记忆与模型历史隔离。具备 ToB 客户需求沟通和跨团队协同经验，能够独立推进从需求梳理、后端实现、联调验证到部署支持的完整流程。
+\end{abstract}
+
+%======================================================================
+\sectionTitle{技能和语言}{\faWrench}
+%======================================================================
+\begin{competences}
+  \comptence{编程与后端}{%
+    Java、Python、SQL；Spring Boot、SSM；FastAPI、Pydantic、RESTful API、流式接口开发
+  }
+  \comptence{AI 应用开发}{%
+    LangChain Agent、Tool Calling、SQLDatabaseToolkit、Prompt 设计、多模型路由、Gemini/DeepSeek 大模型 API 集成、多模态图片理解与生成
+  }
+  \comptence{LangGraph}{%
+    已使用 LangGraph Checkpointer 管理 Agent 短期历史；理解按模型能力隔离会话历史、将跨模型记忆下沉至应用层的实现方式；正在系统学习 State、节点编排与持久化
+  }
+  \comptence{数据与工程}{%
+    MySQL、SQLAlchemy、数据库表设计、SQL 编写与排查；Git、Postman、Linux 基础、日志定位、部署上线支持
+  }
+  \comptence{工程能力}{%
+    需求分析、功能设计、独立开发、接口联调、缺陷修复、版本迭代、技术文档编写
+  }
+  \comptence{\icon{\faLanguage} 语言}{%
+    英语 --- CET4 / CET6，能够阅读英文技术文档
+  }
+\end{competences}
+
+%======================================================================
+\sectionTitle{项目经历}{\faCode}
+%======================================================================
+\begin{experiences}
+
+  \experience%
+    [2026.05]%
+    {至今}%
+    {石材装修智能顾问 @ 个人项目}%
+    [\begin{itemize}
+      \item 基于 Python / FastAPI / MySQL 开发石材装修智能咨询系统，覆盖材料后台管理、用户注册登录、匿名对话、用户消息留存及流式聊天能力。
+      \item 使用 LangChain \texttt{create\_agent} 与 \texttt{SQLDatabaseToolkit} 将材料库查询封装为 Agent 工具，使模型可根据用户问题检索材料名称、规格、颜色和价格，并以自然语言返回结果。
+      \item 接入文本、视觉和文生图模型，支持用户上传装修参考图询价、分析效果图中的石材，以及按文字或参考图生成不同装修风格的效果图。
+      \item 设计 LLM 意图路由与正则降级策略，区分效果图生成、图片分析、材料查询、面积估价和普通对话；避免图片内容追问被误判为重新生成图片。
+      \item 使用 LangGraph \texttt{InMemorySaver} 按视觉模型与文本模型隔离 checkpoint，避免含 \texttt{image\_url} 的视觉历史传入纯文本模型；将生成需求、参考图、材料分析写入 MySQL 应用层会话上下文，实现跨模型连续追问与估价。
+      \item 实现前端流式渲染、等待动画和图片预览；后端对图像生成、历史图片恢复、数据库异常等场景提供明确的错误处理。
+      \item 技术栈：Python、FastAPI、LangChain、LangGraph、SQLAlchemy、MySQL、Gemini、DeepSeek、HTML/CSS/JavaScript。
+    \end{itemize}]
+
+  \separator{0.5ex}
+
+  \experience%
+    [2026.03]%
+    {2026.05}%
+    {AI 旅游助手 @ 个人项目}%
+    [\begin{itemize}
+      \item 基于 Spring AI Alibaba 构建旅游规划 Agent，完成目的地推荐、行程规划与资讯查询等能力设计。
+      \item 学习并实践 RAG、MCP、Function Calling 与多 Agent 协作的基本模式，围绕知识检索、工具调用和任务分发设计应用流程。
+      \item 技术栈：Java 17、Spring Boot、Spring AI Alibaba、Milvus、MCP、Redis、MySQL、Docker。
+    \end{itemize}]
+
+\end{experiences}
+
+%======================================================================
+\sectionTitle{工作经历}{\faBriefcase}
+%======================================================================
+\begin{experiences}
+
+  \experience%
+    [2024.12]%
+    {2025.08}%
+    {客户经理（金融软件 / ToB 解决方案） @ 上海万得信息技术股份有限公司}%
+    [\begin{itemize}
+      \item 面向银行、资管等客户梳理业务场景，开展产品介绍、需求澄清、方案演示与商务推进，参与从试点验证到签约落地的完整流程。
+      \item 将客户非结构化诉求整理为功能点、配置建议和落地关注项，协调产品、研发、支持团队评估实现路径与交付边界。
+      \item 输出解决方案文档、可行性说明、竞品分析和场景化演示材料，持续跟进客户反馈与方案迭代。
+    \end{itemize}]
+
+  \separator{0.5ex}
+
+  \experience%
+    [2022.07]%
+    {2024.08}%
+    {软件工程师 @ 四川久远银海软件股份有限公司}%
+    [\begin{itemize}
+      \item 参与成都市信用平台、青白江智慧城市、绵阳大数据中心数据底座等政企信息化项目建设，负责后台业务模块、接口联调和数据库相关工作。
+      \item 使用 Java / Spring Boot 完成功能设计、接口开发、联调测试与缺陷修复；参与业务管理、数据同步、权限配置等模块建设。
+      \item 参与数据表设计与维护，编写 SQL 并处理字段映射、数据同步、接口返回和权限配置等问题，支持业务流程稳定运行。
+      \item 配合测试和实施人员完成环境搭建、数据库初始化、配置变更、日志排查与上线切换，协同完成版本发布和客户侧问题闭环。
+    \end{itemize}]
+
+  \separator{0.5ex}
+
+  \experience%
+    [2019.06]%
+    {2020.06}%
+    {软件开发实习生 @ 青软创新科技集团}%
+    [\begin{itemize}
+      \item 参与 Web、App 与小程序端用户注册、购票、咨询等功能开发；基于 Spring 参与电影院管理系统的系统管理、用户管理和数据管理模块建设。
+      \item 参与接口联调、系统测试和缺陷修复，使用 Python 维护部分测试脚本和缺陷跟踪流程，支持产品持续迭代。
+    \end{itemize}]
+
+\end{experiences}
+
+%======================================================================
+\sectionTitle{教育背景}{\faGraduationCap}
+%======================================================================
+\begin{educations}
+  \education%
+    {2018.09}%
+    [2022.07]%
+    {青岛理工大学}%
+    {软件工程}%
+    {专业排名 16/103；主修：Java、数据结构、计算机网络、数据库系统、软件工程、SSM}%
+    {本科}
+\end{educations}
+
+%======================================================================
+\sectionTitle{校园经历与荣誉}{\faTrophy}
+%======================================================================
+\begin{experiences}
+  \experience%
+    [2019.09]%
+    {2020.09}%
+    {实践部部长 @ 青岛理工大学信息与控制工程学院学生会}%
+    [\begin{itemize}
+      \item 带领 18 名干事完成活动组织与对外沟通，为学院学生会相关活动筹集赞助资金共计 3w+，获评“优秀学生干部”。
+    \end{itemize}]
+\end{experiences}
+
+\begin{itemize}
+  \item 全国高校企业竞争模拟大赛：省一等奖；全国大学生数学建模比赛：山东省一等奖；数学建模亚太赛：三等奖。
+\end{itemize}
+
+\end{document}

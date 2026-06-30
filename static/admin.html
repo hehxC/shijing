@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>石境 · 材料管理后台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+:root {
+  --ink: #1a1612;
+  --stone: #8a7d6b;
+  --sand: #e8e0d0;
+  --rice: #f5f1ea;
+  --moss: #5c6b4a;
+  --clay: #b5956a;
+  --ash: #c8bfb0;
+  --deep: #2d261e;
+  --ivory: #faf7f2;
+  --border: rgba(138,125,107,0.22);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--rice);
+  color:var(--ink);
+  font-family:'Noto Serif SC',serif;
+  min-height:100vh;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;
+}
+[v-cloak]{display:none;}
+header{
+  padding:1.6rem 3rem;
+  display:flex;align-items:center;gap:1.2rem;
+  border-bottom:1px solid var(--border);
+  background:rgba(245,241,234,0.95);
+  backdrop-filter:blur(8px);
+  position:sticky;top:0;z-index:100;
+}
+.logo{font-size:1.5rem;font-weight:700;letter-spacing:0.35em;color:var(--deep);}
+.logo-sep{width:1px;height:1.1rem;background:var(--stone);opacity:0.35;}
+.logo-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.78rem;color:var(--stone);letter-spacing:0.12em;}
+.back-link{
+  margin-left:auto;
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:0.72rem;color:var(--stone);
+  text-decoration:none;letter-spacing:0.08em;
+  padding:0.35rem 0.8rem;border:1px solid var(--border);
+  transition:all 0.2s;
+}
+.back-link:hover{border-color:var(--clay);color:var(--clay);}
+.admin-layout{max-width:900px;margin:0 auto;padding:2.5rem 3rem;}
+.admin-title-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2rem;gap:1rem;}
+.admin-title{font-size:1.2rem;font-weight:600;letter-spacing:0.2em;color:var(--deep);}
+.admin-sub{font-size:0.62rem;color:var(--stone);font-family:'Cormorant Garamond',serif;font-style:italic;margin-top:0.2rem;}
+.mat-stats{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+.stat-chip{
+  padding:0.4rem 0.9rem;border:1px solid var(--border);background:white;
+  font-size:0.62rem;color:var(--stone);letter-spacing:0.08em;
+}
+.stat-chip strong{color:var(--deep);font-size:0.8rem;margin-right:0.3rem;}
+.add-form{background:white;border:1px solid var(--border);padding:2rem;margin-bottom:2.5rem;}
+.form-title{font-size:0.62rem;letter-spacing:0.28em;color:var(--stone);margin-bottom:1.5rem;padding-bottom:0.7rem;border-bottom:1px solid var(--border);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+.form-field{display:flex;flex-direction:column;gap:0.4rem;}
+.form-label{font-size:0.58rem;letter-spacing:0.2em;color:var(--stone);}
+.form-input{
+  font-family:'Noto Serif SC',serif;font-size:0.73rem;padding:0.5rem 0.75rem;
+  border:1px solid var(--border);background:var(--rice);color:var(--ink);outline:none;transition:border-color 0.2s;
+}
+.form-input:focus{border-color:var(--clay);}
+.form-textarea{
+  font-family:'Noto Serif SC',serif;font-size:0.7rem;padding:0.5rem 0.75rem;
+  border:1px solid var(--border);background:var(--rice);color:var(--ink);
+  outline:none;resize:vertical;min-height:65px;width:100%;transition:border-color 0.2s;
+}
+.form-textarea:focus{border-color:var(--clay);}
+.form-row-full{grid-column:1/-1;}
+.img-upload-area{
+  border:1px dashed rgba(138,125,107,0.35);padding:1.2rem;text-align:center;cursor:pointer;
+  transition:all 0.2s;background:var(--rice);min-height:90px;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0.4rem;
+}
+.img-upload-area:hover{border-color:var(--clay);background:#ede6d8;}
+.img-upload-hint{font-size:0.62rem;color:var(--stone);letter-spacing:0.1em;}
+.img-upload-hint-en{font-size:0.55rem;color:var(--ash);font-family:'Cormorant Garamond',serif;font-style:italic;}
+.img-preview-thumb{max-width:100%;max-height:80px;object-fit:contain;}
+.cat-select{
+  cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7d6b'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 0.75rem center;
+}
+.btn-add-mat{
+  font-family:'Noto Serif SC',serif;font-size:0.7rem;letter-spacing:0.2em;
+  padding:0.65rem 1.8rem;background:var(--deep);color:var(--rice);
+  border:none;cursor:pointer;transition:background 0.2s;margin-top:0.3rem;
+}
+.btn-add-mat:hover{background:var(--moss);}
+.btn-add-mat:disabled{background:var(--ash);cursor:not-allowed;}
+.admin-list-label{font-size:0.6rem;letter-spacing:0.3em;color:var(--stone);margin-bottom:0.9rem;font-family:'Cormorant Garamond',serif;}
+.admin-mat-list{display:flex;flex-direction:column;gap:0.6rem;}
+.admin-mat-item{display:flex;align-items:center;gap:1rem;background:white;border:1px solid var(--border);padding:0.75rem 1rem;transition:box-shadow 0.2s;}
+.admin-mat-item:hover{box-shadow:0 2px 8px rgba(26,22,18,0.06);}
+.admin-thumb{width:56px;height:42px;object-fit:cover;flex-shrink:0;background:var(--sand);}
+.admin-mat-info{flex:1;min-width:0;}
+.admin-mat-name{font-size:0.78rem;letter-spacing:0.08em;color:var(--deep);}
+.admin-mat-color{font-size:0.6rem;color:var(--ash);font-family:'Cormorant Garamond',serif;font-style:italic;}
+.admin-mat-cat{font-size:0.55rem;color:var(--ash);font-family:'Cormorant Garamond',serif;margin-top:0.1rem;}
+.admin-mat-desc-p{font-size:0.58rem;color:var(--stone);margin-top:0.15rem;font-family:'Cormorant Garamond',serif;font-style:italic;}
+.btn-delete{
+  font-family:'Noto Serif SC',serif;font-size:0.58rem;letter-spacing:0.1em;
+  padding:0.28rem 0.65rem;border:1px solid rgba(160,64,64,0.25);
+  background:none;color:#a04040;cursor:pointer;transition:all 0.18s;flex-shrink:0;
+}
+.btn-delete:hover{background:#a04040;color:white;border-color:#a04040;}
+.admin-empty{
+  padding:2.5rem;text-align:center;font-size:0.72rem;color:var(--ash);
+  border:1px dashed rgba(138,125,107,0.2);font-family:'Cormorant Garamond',serif;font-style:italic;
+}
+.notify{
+  position:fixed;bottom:2rem;left:50%;
+  transform:translateX(-50%) translateY(16px);
+  background:var(--deep);color:var(--rice);
+  padding:0.65rem 1.5rem;font-size:0.68rem;letter-spacing:0.15em;
+  opacity:0;transition:all 0.35s;pointer-events:none;z-index:9000;
+}
+.notify.show{opacity:1;transform:translateX(-50%) translateY(0);}
+footer{
+  text-align:center;padding:2rem;
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:0.65rem;color:var(--ash);
+  border-top:1px solid var(--border);margin-top:3rem;
+}
+@media(max-width:768px){
+  header{padding:0.9rem 1rem;flex-wrap:wrap;gap:0.5rem;}
+  .logo{font-size:1.2rem;}
+  .logo-sep{display:none;}
+  .logo-sub{font-size:0.6rem;}
+  .back-link{margin-left:0;width:100%;text-align:center;}
+  .admin-layout{padding:1.2rem 1rem;}
+  .admin-title-row{display:block;}
+  .add-form{padding:1.2rem;}
+  .form-grid{grid-template-columns:1fr;}
+  .form-row-full{grid-column:1;}
+  .btn-add-mat{width:100%;padding:0.9rem;text-align:center;}
+  .admin-mat-item{gap:0.6rem;align-items:flex-start;}
+  .admin-thumb{width:48px;height:36px;}
+  .notify{bottom:1rem;left:1rem;right:1rem;transform:translateY(16px);width:auto;text-align:center;font-size:0.65rem;}
+  .notify.show{transform:translateY(0);}
+}
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+  <header>
+    <div class="logo">石境</div>
+    <div class="logo-sep"></div>
+    <div class="logo-sub">材料管理后台 · Admin Panel</div>
+    <a class="back-link" href="index.html">← 返回主页</a>
+  </header>
+
+  <main class="admin-layout">
+    <div class="admin-title-row">
+      <div>
+        <div class="admin-title">材料管理</div>
+        <div class="admin-sub">Material Library · 数据由本地 MySQL 持久化保存</div>
+      </div>
+    </div>
+
+    <div class="mat-stats">
+      <div class="stat-chip"><strong>{{ materials.length }}</strong>自定义材料</div>
+      <div class="stat-chip"><strong>{{ builtinCount }}</strong>内置材料</div>
+      <div class="stat-chip"><strong>{{ materials.length + builtinCount }}</strong>合计</div>
+    </div>
+
+    <section class="add-form">
+      <div class="form-title">ADD NEW MATERIAL · 添加新材料</div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="form-label" for="f-material">材料名称 · Material</label>
+          <input id="f-material" v-model.trim="form.material" class="form-input" placeholder="例：莱姆石" maxlength="40">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-color">颜色 · Color</label>
+          <input id="f-color" v-model.trim="form.color" class="form-input" placeholder="例：米白色" maxlength="30">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-spec">规格 · Spec</label>
+          <input id="f-spec" v-model.trim="form.spec" class="form-input" placeholder="例：600×300×20mm" maxlength="50">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-price">单价 · Price</label>
+          <input id="f-price" v-model="form.price" class="form-input" placeholder="例：120" type="number" min="0" step="0.01">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-unit">单位 · Unit</label>
+          <input id="f-unit" v-model.trim="form.unit" class="form-input" placeholder="例：元/㎡" maxlength="20">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="f-cat">分类 · Category</label>
+          <select id="f-cat" v-model="form.cat" class="form-input cat-select">
+            <option v-for="cat in categories" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">材料图片 · Texture Image</label>
+          <div class="img-upload-area" @click="$refs.fileInput.click()">
+            <img v-if="form.img" class="img-preview-thumb" :src="form.img" :alt="form.material || '材料预览'">
+            <template v-else>
+              <div class="img-upload-hint">点击上传材料图片</div>
+              <div class="img-upload-hint-en">Upload texture · JPG, PNG</div>
+            </template>
+          </div>
+          <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="handleImageChange">
+        </div>
+        <div class="form-field form-row-full">
+          <label class="form-label" for="f-desc">材料描述 · Description</label>
+          <textarea id="f-desc" v-model.trim="form.desc" class="form-textarea" placeholder="简短描述材料特性、适用场景及风格搭配…"></textarea>
+        </div>
+      </div>
+      <button class="btn-add-mat" type="button" :disabled="saving" @click="addMaterial">
+        {{ saving ? '保存中…' : '＋ 添加材料' }}
+      </button>
+    </section>
+
+    <div class="admin-list-label">CURRENT CUSTOM MATERIALS · 已添加的自定义材料</div>
+    <section class="admin-mat-list">
+      <article v-for="item in materials" :key="item.id" class="admin-mat-item">
+        <img class="admin-thumb" :src="item.img" :alt="item.material">
+        <div class="admin-mat-info">
+          <div class="admin-mat-name">
+            {{ item.material }}
+            <span v-if="item.color" class="admin-mat-color"> · {{ item.color }}</span>
+          </div>
+          <div class="admin-mat-cat">{{ materialMeta(item) }}</div>
+          <div v-if="item.desc" class="admin-mat-desc-p">{{ shortDesc(item.desc) }}</div>
+        </div>
+        <button class="btn-delete" type="button" @click="deleteMaterial(item.id)">删除</button>
+      </article>
+      <div v-if="!materials.length" class="admin-empty">暂无自定义材料 · 在上方表单添加您的第一个材料</div>
+    </section>
+  </main>
+
+  <footer>石境园林建材 · 材料管理后台 · 仅限内部使用</footer>
+  <div class="notify" :class="{ show: notice.visible }">{{ notice.message }}</div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      builtinCount: 6,
+      saving: false,
+      noticeTimer: null,
+      categories: [
+        { value: '石材', label: '石材 · Stone' },
+        { value: '地铺', label: '地铺 · Paving' },
+        { value: '砖瓦', label: '砖瓦 · Brick & Tile' },
+        { value: '木材', label: '木材 · Wood' },
+        { value: '其他', label: '其他 · Other' }
+      ],
+      form: {
+        material: '',
+        color: '',
+        spec: '',
+        price: '',
+        unit: '',
+        cat: '石材',
+        desc: '',
+        img: ''
+      },
+      materials: [],
+      notice: {
+        visible: false,
+        message: ''
+      }
+    };
+  },
+  methods: {
+    handleImageChange(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.form.img = reader.result;
+      };
+      reader.readAsDataURL(file);
+    },
+    async addMaterial() {
+      if (!this.form.material) {
+        this.showNotify('请填写材料名称');
+        return;
+      }
+      if (!this.form.img) {
+        this.showNotify('请上传材料图片');
+        return;
+      }
+
+      this.saving = true;
+      const materialName = this.form.material;
+      try {
+        const response = await fetch('/api/materials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+          material: this.form.material,
+          color: this.form.color,
+          spec: this.form.spec,
+          price: this.form.price === '' ? null : Number(this.form.price),
+          unit: this.form.unit,
+          cat: this.form.cat,
+          desc: this.form.desc,
+          img: this.form.img
+          })
+        });
+        if (!response.ok) throw new Error(await this.apiError(response));
+        const saved = await response.json();
+        this.materials.unshift(saved);
+        this.resetForm();
+        this.showNotify(`已添加并保存：${materialName}`);
+      } catch (error) {
+        this.showNotify(error.message || '保存失败，请稍后重试');
+      } finally {
+        this.saving = false;
+      }
+    },
+    async deleteMaterial(id) {
+      const target = this.materials.find(item => item.id === id);
+      if (!target) return;
+
+      try {
+        const response = await fetch(`/api/materials/${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(await this.apiError(response));
+        this.materials = this.materials.filter(item => item.id !== id);
+        this.showNotify(`已删除：${target.material}`);
+      } catch (error) {
+        this.showNotify(error.message || '删除失败，请稍后重试');
+      }
+    },
+    async loadMaterials() {
+      try {
+        const response = await fetch('/api/materials');
+        if (!response.ok) throw new Error(await this.apiError(response));
+        this.materials = await response.json();
+      } catch (error) {
+        this.showNotify(error.message || '材料加载失败，请检查数据库连接');
+      }
+    },
+    async apiError(response) {
+      try {
+        const body = await response.json();
+        if (typeof body.detail === 'string') return body.detail;
+        if (Array.isArray(body.detail)) {
+          return body.detail.map(error => {
+            const field = error.loc?.filter(part => part !== 'body').join('.') || '请求数据';
+            return `${field}：${error.msg}`;
+          }).join('；');
+        }
+      } catch (_) {}
+      return `请求失败（${response.status}）`;
+    },
+    resetForm() {
+      this.form = {
+        material: '',
+        color: '',
+        spec: '',
+        price: '',
+        unit: '',
+        cat: '石材',
+        desc: '',
+        img: ''
+      };
+      if (this.$refs.fileInput) this.$refs.fileInput.value = '';
+    },
+    materialMeta(item) {
+      const parts = [item.cat, item.spec];
+      if (item.price !== null && item.price !== '') {
+        parts.push(`${item.price}${item.unit || ''}`);
+      }
+      return parts.filter(Boolean).join(' · ');
+    },
+    shortDesc(text) {
+      return text.length > 60 ? `${text.slice(0, 60)}…` : text;
+    },
+    showNotify(message) {
+      this.notice.message = message;
+      this.notice.visible = true;
+      window.clearTimeout(this.noticeTimer);
+      this.noticeTimer = window.setTimeout(() => {
+        this.notice.visible = false;
+      }, 3000);
+    }
+  },
+  async mounted() {
+    await this.loadMaterials();
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

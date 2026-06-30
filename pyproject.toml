@@ -1,0 +1,23 @@
+[project]
+name = "langchain-project-one"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.136.3",
+    "langchain>=1.3.4",
+    "langchain-agent>=0.1.1",
+    "langchain-deepseek>=1.1.0",
+    "langchain-mcp-adapters>=0.2.2",
+    "langchain-openai>=1.2.2",
+    "python-dotenv>=1.2.2",
+    "pymysql>=1.1.2",
+    "sqlalchemy>=2.0.46",
+    "uvicorn>=0.49.0",
+    "xhs>=0.2.13",
+    "langchain-community>=0.4.2",
+    "langchain-google-genai>=4.2.5",
+]
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true

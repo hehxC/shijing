@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>石境 · 造园设计系统</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+:root {
+  --ink: #1a1612; --stone: #8a7d6b; --sand: #e8e0d0; --rice: #f5f1ea;
+  --moss: #5c6b4a; --clay: #b5956a; --ash: #c8bfb0; --deep: #2d261e;
+  --ivory: #faf7f2; --border: rgba(138,125,107,0.22);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--rice); color:var(--ink);
+  font-family:'Noto Serif SC',serif; min-height:100vh;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;
+}
+
+header{
+  padding:1.6rem 3rem; display:flex;align-items:center;gap:1.2rem;
+  border-bottom:1px solid var(--border);
+  background:rgba(245,241,234,0.95); backdrop-filter:blur(8px);
+  position:sticky;top:0;z-index:100;
+}
+.logo{font-size:1.5rem;font-weight:700;letter-spacing:0.35em;color:var(--deep);}
+.logo-sep{width:1px;height:1.1rem;background:var(--stone);opacity:0.35;}
+.logo-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.78rem;color:var(--stone);letter-spacing:0.12em;}
+
+.progress-bar{
+  display:flex;align-items:center;justify-content:center;
+  padding:1.4rem 3rem; border-bottom:1px solid var(--border); background:var(--ivory);
+}
+.step-item{
+  display:flex;align-items:center;gap:0.7rem;
+  padding:0.5rem 1.4rem; cursor:pointer;
+}
+.step-num{
+  width:26px;height:26px;border-radius:50%; border:1px solid var(--ash);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.6rem;color:var(--ash); font-family:'Cormorant Garamond',serif;
+  transition:all 0.3s;flex-shrink:0;
+}
+.step-label{font-size:0.65rem;letter-spacing:0.15em;color:var(--ash);transition:color 0.3s;white-space:nowrap;}
+.step-item.active .step-num{background:var(--deep);border-color:var(--deep);color:var(--rice);}
+.step-item.active .step-label{color:var(--deep);}
+.step-item.done .step-num{background:var(--moss);border-color:var(--moss);color:var(--rice);}
+.step-item.done .step-label{color:var(--moss);}
+.step-connector{width:40px;height:1px;background:var(--ash);flex-shrink:0;}
+.step-connector.done{background:var(--moss);}
+
+.page{animation:fadeUp 0.3s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* STEP 1 */
+.s1-layout{max-width:1100px;margin:0 auto;padding:3rem;display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"left right" "results results";gap:3rem;align-items:start;}
+.s1-left{grid-area:left;}.s1-right{grid-area:right;}.s1-results{grid-area:results;}
+.s-title{font-size:1.3rem;font-weight:600;letter-spacing:0.2em;color:var(--deep);margin-bottom:0.3rem;}
+.s-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.78rem;color:var(--stone);margin-bottom:1.8rem;}
+
+.upload-box{border:1px dashed rgba(138,125,107,0.4);background:var(--sand);aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.9rem;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden;}
+.upload-box:hover{border-color:var(--clay);background:#ede6d8;}
+.upload-box img.preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.upload-hint-cn{font-size:0.85rem;letter-spacing:0.15em;color:var(--stone);}
+.upload-hint-en{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.65rem;color:var(--ash);}
+.upload-icon{opacity:0.25;}
+
+.analyze-btn,.next-btn,.ref-gen-btn,.s2-next-btn{width:100%;padding:0.85rem;font-family:'Noto Serif SC',serif;font-size:0.72rem;letter-spacing:0.25em;border:none;cursor:pointer;transition:background 0.25s;display:flex;align-items:center;justify-content:center;gap:0.6rem;}
+.analyze-btn{background:var(--deep);color:var(--rice);margin-top:1rem;}
+.analyze-btn:hover{background:var(--moss);}
+.analyze-btn:disabled,.next-btn:disabled,.ref-gen-btn:disabled,.s2-next-btn:disabled,.gen-plan-btn:disabled{background:var(--ash);cursor:not-allowed;}
+.spinner{width:14px;height:14px;border:1.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.ai-result{margin-top:1.5rem;}.result-label{font-size:0.58rem;letter-spacing:0.3em;color:var(--ash);font-family:'Cormorant Garamond',serif;margin-bottom:0.6rem;}.analysis-card{background:var(--ivory);border:1px solid var(--border);padding:1.2rem 1.4rem;}.analysis-style{font-size:1.1rem;font-weight:600;letter-spacing:0.2em;color:var(--deep);margin-bottom:0.5rem;}.analysis-body{font-size:0.7rem;color:var(--stone);line-height:1.9;font-family:'Cormorant Garamond',serif;font-style:italic;}.analysis-tags{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.9rem;}.tag{font-size:0.58rem;letter-spacing:0.15em;padding:0.25rem 0.65rem;border:1px solid var(--border);color:var(--stone);font-family:'Cormorant Garamond',serif;}
+
+.ref-title{font-size:0.6rem;letter-spacing:0.3em;color:var(--ash);font-family:'Cormorant Garamond',serif;margin-bottom:1rem;}
+.ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;max-height:520px;overflow-y:auto;padding-right:0.2rem;}
+.ref-grid::-webkit-scrollbar{width:3px;}.ref-grid::-webkit-scrollbar-thumb{background:var(--ash);}
+.ref-card{cursor:pointer;border:2px solid transparent;background:white;position:relative;transition:all 0.25s;padding:0.8rem 0.9rem;}
+.ref-card:hover{border-color:var(--clay);transform:translateY(-2px);box-shadow:0 6px 16px rgba(26,22,18,0.1);}
+.ref-card.selected{border-color:var(--moss);background:var(--ivory);}
+.ref-card.selected::after{content:'✓ 已选';position:absolute;top:8px;right:8px;background:var(--moss);color:white;font-size:0.55rem;letter-spacing:0.1em;padding:2px 7px;}
+.ref-info{background:transparent;}.ref-name{font-size:0.75rem;letter-spacing:0.12em;color:var(--deep);margin-bottom:0.2rem;}.ref-style-tag{font-size:0.58rem;color:var(--stone);font-family:'Cormorant Garamond',serif;font-style:italic;margin-bottom:0.4rem;}.ref-desc-short{font-size:0.6rem;color:var(--stone);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+.recommended-mats{margin-top:1.5rem;}.rec-mat-grid{display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.7rem;}.rec-mat-chip{display:flex;align-items:center;gap:0.4rem;padding:0.35rem 0.7rem;border:1px solid var(--border);background:white;cursor:pointer;transition:all 0.2s;font-size:0.62rem;color:var(--deep);}.rec-mat-chip:hover{border-color:var(--clay);}.rec-chip-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0;}
+
+.next-btn{margin-top:1.5rem;background:var(--moss);color:var(--rice);}
+.next-btn:hover{background:var(--deep);}
+
+/* STEP 2 */
+.s2-layout{max-width:1200px;margin:0 auto;padding:2.5rem 3rem;display:grid;grid-template-columns:1fr 280px;gap:2.5rem;align-items:start;}
+.canvas-wrap{position:relative;aspect-ratio:4/3;background:var(--sand);border:1px solid var(--border);overflow:hidden;}
+#base-canvas,#mask-canvas,#preview-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+#mask-canvas{opacity:0;pointer-events:none;}
+
+.toolbar{display:flex;gap:0;align-items:stretch;margin-top:0.9rem;border:1px solid var(--border);background:white;}
+.t-group{display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.9rem;border-right:1px solid var(--border);}
+.t-group:last-child{border:none;}.t-label{font-size:0.55rem;letter-spacing:0.15em;color:var(--ash);}
+.t-btn{font-family:'Noto Serif SC',serif;font-size:0.6rem;letter-spacing:0.1em;padding:0.3rem 0.6rem;border:1px solid var(--border);background:none;color:var(--stone);cursor:pointer;transition:all 0.15s;}
+.t-btn:hover{border-color:var(--clay);color:var(--clay);}
+.t-btn.active{background:var(--deep);color:var(--rice);border-color:var(--deep);}
+.t-btn.red{color:#a04040;border-color:rgba(160,64,64,0.25);}.t-btn.red:hover{background:#a04040;color:white;border-color:#a04040;}
+input[type=range].slim{appearance:none;-webkit-appearance:none;width:70px;height:1px;background:var(--ash);outline:none;}
+input[type=range].slim::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:var(--clay);cursor:pointer;}
+.t-val{font-size:0.58rem;color:var(--stone);min-width:26px;}
+
+.mat-sidebar-title{font-size:0.95rem;font-weight:600;letter-spacing:0.15em;color:var(--deep);margin-bottom:0.25rem;}
+.mat-sidebar-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.65rem;color:var(--stone);margin-bottom:1.2rem;}
+.mat-scroll{max-height:380px;overflow-y:auto;padding-right:0.3rem;}
+.mat-scroll::-webkit-scrollbar{width:3px;}.mat-scroll::-webkit-scrollbar-thumb{background:var(--ash);}
+.mat-cat-label{font-size:0.55rem;letter-spacing:0.3em;color:var(--ash);font-family:'Cormorant Garamond',serif;padding-bottom:0.35rem;border-bottom:1px solid rgba(138,125,107,0.12);margin:0.9rem 0 0.6rem;}
+.mat-cat-label:first-child{margin-top:0;}
+.mat-item{display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.6rem;border:1px solid transparent;cursor:pointer;transition:all 0.18s;margin-bottom:0.35rem;background:white;}
+.mat-item:hover{border-color:var(--clay);}.mat-item.active{border-color:var(--moss);background:rgba(92,107,74,0.04);}
+.mat-thumb-sm{width:40px;height:30px;object-fit:cover;flex-shrink:0;background:var(--sand);}
+.mat-item-name{font-size:0.68rem;letter-spacing:0.08em;color:var(--deep);}
+.mat-item-en{font-size:0.55rem;color:var(--ash);font-family:'Cormorant Garamond',serif;font-style:italic;}
+.mat-check{margin-left:auto;font-size:0.6rem;color:var(--moss);display:none;}.mat-item.active .mat-check{display:block;}
+
+.sel-mat-display{margin-top:1rem;padding:0.9rem;border-left:2px solid var(--clay);background:rgba(181,149,106,0.05);}
+.sel-mat-name{font-size:0.88rem;letter-spacing:0.15em;color:var(--deep);font-weight:600;}
+.sel-mat-desc{font-size:0.6rem;color:var(--stone);font-family:'Cormorant Garamond',serif;font-style:italic;margin-top:0.3rem;line-height:1.7;}
+
+.s2-next-btn{margin-top:1rem;background:var(--moss);color:var(--rice);}
+.s2-next-btn:hover{background:var(--deep);}
+
+/* STEP 3 */
+.s3-layout{max-width:900px;margin:0 auto;padding:2.5rem 3rem;}
+.s3-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2rem;}
+.gen-plan-btn{padding:0.7rem 2rem;background:var(--deep);color:var(--rice);font-family:'Noto Serif SC',serif;font-size:0.7rem;letter-spacing:0.2em;border:none;cursor:pointer;transition:background 0.25s;display:flex;align-items:center;gap:0.6rem;}
+.gen-plan-btn:hover{background:var(--moss);}
+
+.plan-section{margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid var(--border);}.plan-section:last-child{border:none;}
+.plan-sec-title{font-size:0.62rem;letter-spacing:0.35em;color:var(--stone);font-family:'Cormorant Garamond',serif;margin-bottom:0.9rem;}
+.plan-sec-body{font-size:0.78rem;color:var(--ink);line-height:2.1;font-family:'Noto Serif SC',serif;font-weight:300;}
+.plan-sec-body strong{font-weight:600;color:var(--deep);}
+
+.mat-table{width:100%;border-collapse:collapse;margin-top:0.5rem;}
+.mat-table th{font-size:0.58rem;letter-spacing:0.2em;color:var(--ash);font-family:'Cormorant Garamond',serif;font-weight:400;padding:0.5rem 0.7rem;border-bottom:1px solid var(--border);text-align:left;}
+.mat-table td{font-size:0.72rem;padding:0.65rem 0.7rem;border-bottom:1px solid rgba(138,125,107,0.08);color:var(--ink);}
+.mat-table tr:last-child td{border:none;}.mat-table .price{color:var(--clay);font-weight:600;}
+
+.plan-loading{display:flex;flex-direction:column;align-items:center;padding:3rem;text-align:center;gap:1rem;}
+.plan-loading-dots{display:flex;gap:0.4rem;justify-content:center;}
+.plan-loading-dots span{width:6px;height:6px;background:var(--stone);border-radius:50%;animation:dot-pulse 1.2s ease-in-out infinite;}
+.plan-loading-dots span:nth-child(2){animation-delay:0.2s;}.plan-loading-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes dot-pulse{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+.plan-loading-text{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.75rem;color:var(--stone);}
+
+.plan-stream-preview{padding:1.4rem 1.6rem;background:var(--ivory);border:1px solid var(--border);margin-bottom:1.5rem;overflow:hidden;}
+.stream-label{font-size:0.52rem;letter-spacing:0.28em;color:var(--ash);font-family:'Cormorant Garamond',serif;margin-bottom:0.8rem;}
+.stream-text{font-size:0.7rem;color:var(--stone);font-family:'Cormorant Garamond',serif;font-style:italic;line-height:1.9;white-space:pre-wrap;word-break:break-word;max-height:180px;overflow:hidden;mask-image:linear-gradient(to bottom,black 55%,transparent 100%);-webkit-mask-image:linear-gradient(to bottom,black 55%,transparent 100%);}
+.stream-cursor{display:inline-block;width:2px;height:0.85em;background:var(--clay);margin-left:2px;animation:blink 0.75s step-end infinite;vertical-align:text-bottom;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+.dalle-section{margin-top:1.5rem;}.dalle-label{font-size:0.58rem;letter-spacing:0.3em;color:var(--ash);font-family:'Cormorant Garamond',serif;margin-bottom:0.7rem;}.dalle-wrap{position:relative;background:var(--sand);border:1px solid var(--border);overflow:hidden;}.dalle-img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;}.dalle-badge{position:absolute;top:10px;left:10px;background:rgba(45,38,30,0.8);color:var(--rice);font-size:0.55rem;letter-spacing:0.15em;padding:3px 8px;font-family:'Cormorant Garamond',serif;font-style:italic;}.dalle-prompt-preview{padding:0.6rem 0.8rem;background:white;font-size:0.58rem;color:var(--stone);font-family:'Cormorant Garamond',serif;font-style:italic;line-height:1.6;border-top:1px solid var(--border);}.dalle-loading{aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.8rem;background:var(--sand);}.dalle-loading-text{font-size:0.65rem;color:var(--stone);font-family:'Cormorant Garamond',serif;font-style:italic;}
+
+.ref-gen-btn{margin-top:1rem;background:var(--moss);color:var(--rice);}
+.ref-gen-btn:hover{background:var(--deep);}
+.ref-sel-hint{font-size:0.58rem;color:var(--ash);font-family:'Cormorant Garamond',serif;font-style:italic;margin-top:0.5rem;text-align:center;}
+
+.area-form{margin-top:1.2rem;border:1px solid var(--border);background:var(--ivory);padding:1rem 1rem 0.8rem;}
+.area-form-title{font-size:0.55rem;letter-spacing:0.28em;color:var(--ash);font-family:'Cormorant Garamond',serif;margin-bottom:0.2rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);}
+.area-hint{font-size:0.58rem;color:var(--stone);font-family:'Cormorant Garamond',serif;font-style:italic;margin-bottom:0.8rem;margin-top:0.3rem;}
+.area-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.55rem;}
+.area-label{font-size:0.65rem;color:var(--ink);letter-spacing:0.06em;flex:1;}.area-input-wrap{display:flex;align-items:center;gap:0.3rem;}
+.area-input{width:64px;font-family:'Noto Serif SC',serif;font-size:0.75rem;padding:0.3rem 0.5rem;border:1px solid var(--border);background:white;color:var(--ink);outline:none;text-align:right;transition:border-color 0.2s;}
+.area-input:focus{border-color:var(--clay);}.area-unit{font-size:0.6rem;color:var(--stone);}
+.area-total{margin-top:0.6rem;padding-top:0.5rem;border-top:1px solid var(--border);font-size:0.65rem;color:var(--deep);letter-spacing:0.1em;text-align:right;font-weight:600;}
+
+.user-notes-block{margin-top:1rem;}.user-notes-label{font-size:0.55rem;letter-spacing:0.25em;color:var(--ash);font-family:'Cormorant Garamond',serif;margin-bottom:0.4rem;}
+.user-notes-input{width:100%;min-height:80px;resize:vertical;border:1px solid var(--border);background:white;padding:0.7rem 0.8rem;font-family:'Noto Serif SC',serif;font-size:0.72rem;color:var(--deep);line-height:1.7;outline:none;transition:border-color 0.2s;}
+.user-notes-input:focus{border-color:var(--clay);}.user-notes-input::placeholder{color:var(--ash);font-style:italic;}
+
+.s3-summary-card{border:1px solid var(--border);background:var(--ivory);padding:1.2rem 1.5rem;margin-bottom:1.5rem;}
+.s3-summary-title{font-size:0.52rem;letter-spacing:0.28em;color:var(--ash);font-family:'Cormorant Garamond',serif;margin-bottom:0.8rem;}.s3-summary-grid{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.3rem;}
+.s3-chip{display:flex;align-items:center;gap:0.35rem;padding:0.3rem 0.7rem;border:1px solid var(--border);background:white;font-size:0.62rem;color:var(--stone);letter-spacing:0.05em;}.s3-chip-icon{font-size:0.75rem;}.s3-chip-val{font-weight:600;color:var(--deep);}
+.s3-notes-row{margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid var(--border);display:flex;align-items:flex-start;gap:0.6rem;}
+.s3-notes-label{font-size:0.52rem;letter-spacing:0.15em;color:var(--ash);font-family:'Cormorant Garamond',serif;white-space:nowrap;padding-top:0.1rem;}
+.s3-notes-val{font-size:0.68rem;color:var(--deep);line-height:1.6;flex:1;}
+
+.contact-card{margin-top:2rem;border:1px solid var(--border);overflow:hidden;}
+.contact-top{background:var(--deep);padding:2rem;text-align:center;}
+.contact-headline{font-size:1.4rem;font-weight:600;letter-spacing:0.1em;color:var(--rice);line-height:1.5;margin-bottom:0.6rem;}
+.contact-sub{font-size:0.68rem;color:rgba(232,224,208,0.65);font-family:'Cormorant Garamond',serif;font-style:italic;line-height:1.8;}
+.contact-actions{display:grid;grid-template-columns:1fr 1fr;}
+.contact-btn{display:flex;align-items:center;justify-content:center;gap:0.5rem;padding:1.2rem;font-family:'Noto Serif SC',serif;font-size:0.75rem;letter-spacing:0.12em;text-decoration:none;cursor:pointer;transition:opacity 0.2s;border:none;}
+.contact-btn:hover{opacity:0.85;}.contact-btn-primary{background:var(--clay);color:white;}.contact-btn-wechat{background:#07C160;color:white;}
+.contact-number{display:flex;align-items:center;gap:0.8rem;padding:1.1rem 1.5rem;background:var(--ivory);border-top:1px solid var(--border);cursor:pointer;transition:background 0.2s;}
+.contact-number:hover{background:#ede6d8;}.contact-num-label{font-size:0.58rem;letter-spacing:0.15em;color:var(--ash);font-family:'Cormorant Garamond',serif;white-space:nowrap;}.contact-num-val{font-size:1.05rem;font-weight:600;letter-spacing:0.12em;color:var(--deep);flex:1;}.contact-copy-hint{font-size:0.58rem;color:var(--ash);font-family:'Cormorant Garamond',serif;font-style:italic;white-space:nowrap;}
+
+.notify{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(16px);background:var(--deep);color:var(--rice);padding:0.65rem 1.5rem;font-size:0.68rem;letter-spacing:0.15em;opacity:0;transition:all 0.35s;pointer-events:none;z-index:9000;}
+.notify.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+footer{text-align:center;padding:2rem;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.65rem;color:var(--ash);border-top:1px solid var(--border);margin-top:3rem;}
+
+@media(max-width:768px){
+  header{padding:0.9rem 1.2rem;gap:0.5rem;}.logo{font-size:1.2rem;}.logo-sep{display:none;}.logo-sub{font-size:0.6rem;}
+  .progress-bar{padding:0.9rem 0.5rem;gap:0;}.step-num{width:28px;height:28px;font-size:0.7rem;}.step-label{font-size:0.55rem;letter-spacing:0.04em;}.step-connector{width:18px;}
+  .s1-layout{grid-template-columns:1fr;grid-template-areas:"left" "right" "results";padding:1rem;gap:1.2rem;}.s-title{font-size:1.1rem;}.s-sub{font-size:0.72rem;margin-bottom:1rem;}
+  .upload-box{min-height:180px;}
+  .ref-grid{display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;max-height:none;gap:0.6rem;padding-bottom:0.4rem;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+  .ref-card{flex-shrink:0;width:60vw;scroll-snap-align:start;}
+  .ref-gen-btn,.next-btn,.analyze-btn,.s2-next-btn{padding:1rem;font-size:0.82rem;min-height:52px;}.ref-sel-hint{font-size:0.65rem;}.analysis-style{font-size:1rem;}.analysis-body{font-size:0.72rem;}
+  .s2-layout{display:flex!important;flex-direction:column!important;padding:15px!important;gap:20px!important;}
+  .toolbar{flex-wrap:wrap;}.t-group{padding:0.4rem 0.5rem;gap:0.3rem;}input[type=range].slim{width:60px;}.t-label{display:none;}
+  .mat-scroll{display:flex;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:0.5rem;padding-bottom:0.4rem;-webkit-overflow-scrolling:touch;max-height:none;}
+  .mat-cat-label{display:none;}.mat-item{flex-direction:column;align-items:center;text-align:center;min-width:72px;width:72px;padding:0.5rem 0.3rem;flex-shrink:0;}
+  .mat-thumb-sm{width:52px;height:40px;}.mat-item-en{display:none;}.mat-check{margin-left:0;margin-top:0.15rem;}.mat-sidebar-title,.mat-sidebar-sub{display:none;}.sel-mat-display{margin-top:0.6rem;}
+  .s3-layout{padding:1rem;}.s3-header{flex-direction:column;gap:0.8rem;align-items:stretch;}.gen-plan-btn{justify-content:center;padding:1rem;min-height:52px;}
+  .contact-headline{font-size:1.15rem;}.contact-top{padding:1.5rem 1.2rem;}.contact-number{padding:1rem 1.2rem;}.contact-num-val{font-size:1rem;}.contact-btn{padding:1.1rem;font-size:0.8rem;min-height:52px;}
+  .notify{bottom:1rem;left:1rem;right:1rem;transform:translateY(16px);width:auto;text-align:center;font-size:0.7rem;}.notify.show{transform:translateY(0);}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <div class="logo">石境</div>
+    <div class="logo-sep"></div>
+    <div class="logo-sub">Shijing Garden Materials · 造园设计系统</div>
+  </header>
+
+  <div class="progress-bar">
+    <div class="step-item" :class="stepClass(1)" @click="goStep(1)"><div class="step-num">一</div><div class="step-label">AI 风格分析</div></div>
+    <div class="step-connector" :class="{ done: currentStep > 1 }"></div>
+    <div class="step-item" :class="stepClass(2)" @click="goStep(2)"><div class="step-num">二</div><div class="step-label">石材纹理预览</div></div>
+    <div class="step-connector" :class="{ done: currentStep > 2 }"></div>
+    <div class="step-item" :class="stepClass(3)" @click="goStep(3)"><div class="step-num">三</div><div class="step-label">造园方案生成</div></div>
+  </div>
+
+  <!-- ════════ STEP 1 ════════ -->
+  <div class="page" v-if="currentStep === 1" key="step1">
+    <div class="s1-layout">
+      <div class="s1-left">
+        <div class="s-title">设计您的理想庭院</div>
+        <div class="s-sub">Tell us your vision, then upload your garden photo for AI analysis</div>
+        <div class="user-notes-block">
+          <div class="user-notes-label">YOUR NOTES · 您的想法与需求（选填）</div>
+          <textarea class="user-notes-input" v-model="userNotes" placeholder="例：希望有喝茶的角落、风格简洁、不要太多植物、预算中等…"></textarea>
+        </div>
+        <div class="upload-box" @click="$refs.fileInput.click()">
+          <svg v-if="!uploadedImgBase64" class="upload-icon" width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="3" y="6" width="34" height="28" rx="2" stroke="#8a7d6b" stroke-width="1.2"/><circle cx="13" cy="17" r="3" stroke="#8a7d6b" stroke-width="1.2"/><path d="M3 28L12 20L19 27L26 19L37 28" stroke="#8a7d6b" stroke-width="1.2" stroke-linejoin="round"/><path d="M28 3V12M24 7.5L28 3L32 7.5" stroke="#8a7d6b" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="upload-hint-cn" v-if="!uploadedImgBase64">点击上传院子照片</div>
+          <div class="upload-hint-en" v-if="!uploadedImgBase64">Upload your garden photo · JPG, PNG</div>
+          <img v-if="uploadedImgBase64" class="preview" :src="uploadedImgBase64" alt="">
+        </div>
+        <input type="file" ref="fileInput" accept="image/*" @change="onFileChange" style="display:none">
+        <button class="analyze-btn" :disabled="!uploadedImgBase64 || analyzing" @click="analyzePhoto">
+          <div class="spinner" v-if="analyzing"></div>
+          <span>{{ analyzing ? 'AI 分析中…' : (aiAnalysis ? '重新分析' : '上传照片后开始分析') }}</span>
+        </button>
+        <div class="ai-result" v-if="aiAnalysis">
+          <div class="result-label">AI ANALYSIS · 分析结果</div>
+          <div class="analysis-card">
+            <div class="analysis-style">{{ aiAnalysis.styleName }}</div>
+            <div class="analysis-body">{{ aiAnalysis.description }}</div>
+            <div class="analysis-tags"><span class="tag" v-for="t in aiAnalysis.tags" :key="t">{{ t }}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="s1-right">
+        <div class="ref-title">REFERENCE STYLES · 选择参考风格</div>
+        <div class="ref-grid">
+          <div v-for="s in REF_STYLES" :key="s.id" class="ref-card" :class="{ selected: selectedRefId === s.id }" @click="selectRef(s.id)">
+            <div class="ref-info">
+              <div class="ref-name">{{ s.name }}</div><div class="ref-style-tag">{{ s.style }} · {{ s.nameEn }}</div><div class="ref-desc-short">{{ s.desc }}</div>
+            </div>
+          </div>
+        </div>
+        <button class="ref-gen-btn" :disabled="!uploadedImgBase64 || !selectedRefId || generating" @click="generateFromRef">
+          <div class="spinner" v-if="generating"></div>
+          <span>{{ generating ? '生成中…' : genBtnText }}</span>
+        </button>
+        <div class="ref-sel-hint">{{ refHint }}</div>
+      </div>
+      <div class="s1-results">
+        <div class="dalle-section" v-if="dalleVisible">
+          <div class="dalle-label">AI EFFECT PREVIEW · 效果图预览</div>
+          <div class="dalle-wrap">
+            <div class="dalle-loading" v-if="dalleLoading"><div class="plan-loading-dots"><span></span><span></span><span></span></div><div class="dalle-loading-text">Nano Banana 正在生成效果图…</div></div>
+            <img v-if="dalleImgSrc" class="dalle-img" :src="dalleImgSrc" alt="AI效果图">
+            <div class="dalle-badge">Nano Banana 2 · 改造预览</div>
+            <div class="dalle-prompt-preview" v-if="dallePromptText">{{ dallePromptText }}</div>
+          </div>
+        </div>
+        <div class="recommended-mats" v-if="aiAnalysis?.recommendedMaterials?.length">
+          <div class="result-label">RECOMMENDED MATERIALS · 推荐材料</div>
+          <div class="rec-mat-grid">
+            <div v-for="id in aiAnalysis.recommendedMaterials" :key="id" class="rec-mat-chip" @click="quickSelectMat(id)">
+              <div class="rec-chip-dot" :style="{ background: MAT_COLORS[id] || '#ccc' }"></div>{{ getMatName(id) }}
+            </div>
+          </div>
+        </div>
+        <button class="next-btn" @click="goStep(2)">下一步：石材纹理预览 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ STEP 2 ════════ -->
+  <div class="page" v-if="currentStep === 2" key="step2">
+    <div class="s2-layout">
+      <div>
+        <div class="s-title" style="font-size:1rem;margin-bottom:0.2rem;">石材纹理预览</div>
+        <div class="s-sub">Brush to paint material texture onto your photo</div>
+        <div class="canvas-wrap" ref="canvasWrap">
+          <canvas id="base-canvas" ref="baseCanvas"></canvas>
+          <canvas id="mask-canvas" ref="maskCanvas"></canvas>
+          <canvas id="preview-canvas" ref="previewCanvas"
+            @mousedown="startDraw" @mousemove="onDraw" @mouseup="stopDraw" @mouseleave="stopDraw"
+            @touchstart.prevent="startDrawTouch" @touchmove.prevent="onDrawTouch" @touchend="stopDraw"
+            style="cursor:crosshair;"></canvas>
+        </div>
+        <div class="toolbar">
+          <div class="t-group"><span class="t-label">工具</span>
+            <button class="t-btn" :class="{ active: tool === 'brush' }" @click="tool='brush'">笔刷</button>
+            <button class="t-btn" :class="{ active: tool === 'erase' }" @click="tool='erase'">橡皮</button>
+          </div>
+          <div class="t-group"><span class="t-label">大小</span>
+            <input type="range" class="slim" v-model.number="brushSize" min="10" max="120"><span class="t-val">{{ brushSize }}</span>
+          </div>
+          <div class="t-group"><span class="t-label">透明度</span>
+            <input type="range" class="slim" v-model.number="opacityPct" min="10" max="95" @input="onOpacityChange"><span class="t-val">{{ opacityPct }}%</span>
+          </div>
+          <div class="t-group"><span class="t-label">模式</span>
+            <button class="t-btn" :class="{ active: blendMode==='multiply' }" @click="setBlend('multiply')">叠底</button>
+            <button class="t-btn" :class="{ active: blendMode==='overlay' }" @click="setBlend('overlay')">叠加</button>
+            <button class="t-btn" :class="{ active: blendMode==='normal' }" @click="setBlend('normal')">正常</button>
+          </div>
+          <div class="t-group"><button class="t-btn red" @click="clearMask">清除</button></div>
+        </div>
+        <div style="margin-top:0.5rem;font-size:0.58rem;color:var(--ash);font-family:'Cormorant Garamond',serif;font-style:italic;">✦ 用笔刷涂抹地面或墙面，选择右侧材料查看效果</div>
+      </div>
+      <div>
+        <div class="mat-sidebar-title">材料选择</div>
+        <div class="mat-sidebar-sub">Select & brush to preview</div>
+        <div class="mat-scroll">
+          <template v-for="cat in matCategories" :key="cat">
+            <div class="mat-cat-label">{{ cat }}</div>
+            <div v-for="m in materials.filter(x=>x.cat===cat)" :key="m.id" class="mat-item" :class="{ active: selectedMatId===m.id }" @click="selectMat(m.id)">
+              <canvas class="mat-thumb-sm" :ref="el=>setThumb(m.id,el)"></canvas>
+              <div><div class="mat-item-name">{{ m.name }}</div><div class="mat-item-en" v-if="m.nameEn||m.color">{{ m.nameEn||m.color }}</div></div>
+              <span class="mat-check">✓</span>
+            </div>
+          </template>
+        </div>
+        <div class="sel-mat-display" v-if="selectedMat"><div class="sel-mat-name">{{ selectedMat.name }}</div><div class="sel-mat-desc">{{ selectedMat.desc }}</div></div>
+        <div class="area-form">
+          <div class="area-form-title">AREA MEASUREMENT · 填写面积</div>
+          <div class="area-hint">填写后AI将生成更精准的用量与报价</div>
+          <div class="area-row"><label class="area-label">主铺装地面</label><div class="area-input-wrap"><input class="area-input" v-model.number="areaMain" type="number" min="0" placeholder="0"><span class="area-unit">㎡</span></div></div>
+          <div class="area-row"><label class="area-label">步道 / 踏石</label><div class="area-input-wrap"><input class="area-input" v-model.number="areaPath" type="number" min="0" placeholder="0"><span class="area-unit">㎡</span></div></div>
+          <div class="area-row"><label class="area-label">景墙 / 立面</label><div class="area-input-wrap"><input class="area-input" v-model.number="areaWall" type="number" min="0" placeholder="0"><span class="area-unit">㎡</span></div></div>
+          <div class="area-row"><label class="area-label">水景 / 其他</label><div class="area-input-wrap"><input class="area-input" v-model.number="areaWater" type="number" min="0" placeholder="0"><span class="area-unit">㎡</span></div></div>
+          <div class="area-total">{{ totalArea > 0 ? `总面积：${totalArea.toFixed(1)} ㎡` : '总面积：— ㎡' }}</div>
+        </div>
+        <button class="s2-next-btn" @click="goStep(3)">下一步：生成造园方案 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ STEP 3 ════════ -->
+  <div class="page" v-if="currentStep === 3" key="step3">
+    <div class="s3-layout">
+      <div class="s3-header">
+        <div><div class="s-title">造园方案</div><div class="s-sub">AI-generated garden design plan based on your space & material selection</div></div>
+        <button class="gen-plan-btn" :disabled="genPlanLoading" @click="generatePlan">
+          <div class="spinner" v-if="genPlanLoading"></div>
+          <span>{{ genPlanLoading ? '生成中…' : (planResult ? '重新生成' : '生成方案') }}</span>
+        </button>
+      </div>
+      <div class="s3-summary-card">
+        <div class="s3-summary-title">PLAN BASIS · 方案依据</div>
+        <div class="s3-summary-grid">
+          <div class="s3-chip" v-for="chip in summaryChips" :key="chip.label"><span class="s3-chip-icon">{{ chip.icon }}</span><span>{{ chip.label }}：</span><span class="s3-chip-val">{{ chip.val }}</span></div>
+        </div>
+        <div class="s3-notes-row" v-if="userNotes"><span class="s3-notes-label">您的需求</span><span class="s3-notes-val">{{ userNotes }}</span></div>
+      </div>
+      <div class="plan-loading" v-if="genPlanLoading && !planStreaming"><div class="plan-loading-dots"><span></span><span></span><span></span></div><div class="plan-loading-text">AI 正在生成造园方案…</div></div>
+      <div class="plan-stream-preview" v-if="planStreaming"><div class="stream-label">AI GENERATING · 实时生成中</div><div class="stream-text">{{ planStreamText }}</div><span class="stream-cursor"></span></div>
+      <div v-if="planResult">
+        <div class="plan-section"><div class="plan-sec-title">STYLE DIRECTION · 风格定位</div><div class="plan-sec-body" v-html="planResult.styleDirection"></div></div>
+        <div class="plan-section"><div class="plan-sec-title">DESIGN CONCEPT · 设计理念</div><div class="plan-sec-body" v-html="planResult.concept"></div></div>
+        <div class="plan-section"><div class="plan-sec-title">MATERIAL LIST · 材料清单</div>
+          <table class="mat-table"><thead><tr><th>材料</th><th>用途</th><th>建议用量</th><th>参考价格区间</th></tr></thead>
+            <tbody><tr v-for="(m,i) in planResult.materials" :key="i"><td><strong>{{ m.name }}</strong></td><td>{{ m.use }}</td><td>{{ m.quantity }}</td><td class="price">{{ m.price }}</td></tr></tbody>
+          </table>
+        </div>
+        <div class="plan-section"><div class="plan-sec-title">CONSTRUCTION NOTES · 施工要点</div><div class="plan-sec-body" v-html="formatNotes(planResult.constructionNotes)"></div></div>
+        <div class="plan-section"><div class="plan-sec-title">PLANTING PAIRING · 植物搭配建议</div><div class="plan-sec-body" v-html="formatPlanting(planResult.plantingPairing)"></div></div>
+        <div class="contact-card">
+          <div class="contact-top"><div class="contact-headline">让我们把这份方案<br>变成真实的庭院</div><div class="contact-sub">石境园林建材 · 专注中日式户外材料十余年<br>从选材到施工，全程陪伴您的造园之旅</div></div>
+          <div class="contact-actions">
+            <a class="contact-btn contact-btn-primary" href="tel:18780433777"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14v2.92z"/></svg>立即致电咨询</a>
+            <a class="contact-btn contact-btn-wechat" href="weixin://contacts/profile/18780433777" @click="copyWechat"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178A1.17 1.17 0 014.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178 1.17 1.17 0 01-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 01.598.082l1.584.926a.272.272 0 00.14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 01-.023-.156.49.49 0 01.201-.398C22.865 18.6 24 17.04 24 15.28c0-3.312-3.158-6.07-7.063-6.422zm-3.829 2.235a.976.976 0 01.975.975.976.976 0 01-.975.975.976.976 0 01-.975-.975.976.976 0 01.975-.975zm3.972 0a.976.976 0 01.975.975.976.976 0 01-.975.975.976.976 0 01-.975-.975.976.976 0 01.975-.975z"/></svg>添加微信</a>
+          </div>
+          <div class="contact-number" @click="copyPhone"><span class="contact-num-label">电话 / 微信同号</span><span class="contact-num-val">187 8043 3777</span><span class="contact-copy-hint">点击复制</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>石境园林建材 · 中式与日式户外材料专营 · 品质源于自然</footer>
+  <div class="notify" :class="{ show: !!notifyMsg }">{{ notifyMsg }}</div>
+</div>
+
+<script>
+const { createApp, nextTick } = Vue;
+
+const REF_STYLES = [
+  { id:'new-chinese', name:'新中式', nameEn:'New Chinese Style', style:'中式·当代', tags:['莱姆石','青砖','竹格栅','铜构件','借景'], mats:['limestone','bluestone'], desc:'当下最受欢迎的中式演绎：保留青砖、竹格栅、漏窗等中国文化符号，以现代材料和简洁线条重组，有中国味但不复古沉重。' },
+  { id:'song-dynasty', name:'宋式文人园', nameEn:'Song Dynasty Scholar Garden', style:'中式·宋', tags:['太湖石','青砖','白墙','修竹','梅'], mats:['limestone','bluestone'], desc:'取法宋人山水画意，以太湖石叠山，白墙黛瓦为底，修竹梅花为骨，追求清雅脱俗的文人气韵。' },
+  { id:'chinese-courtyard', name:'明清合院', nameEn:'Ming-Qing Courtyard', style:'中式·明清', tags:['莱姆石','青砖','黄砂岩','影壁','天井'], mats:['limestone','sandstone'], desc:'方正严谨的合院布局，莱姆石铺地，青砖影壁，搭配天井与盆景，体现礼制秩序与自然情趣的平衡。' },
+  { id:'zen-dry', name:'枯山水禅庭', nameEn:'Zen Dry Garden', style:'日式·禅', tags:['白碎石','青板岩','苔藓','耙纹','蹲踞'], mats:['bluestone','gravel'], desc:'以白碎石耙纹象征水波，配以青板岩踏石，苔藓点缀，营造静谧禅意空间。' },
+  { id:'japanese-garden', name:'日式池泉庭', nameEn:'Japanese Pond Garden', style:'日式·池泉', tags:['鹅卵石','花岗岩','红枫','石灯笼','锦鲤池'], mats:['cobble','granite'], desc:'鹅卵石铺就曲径，花岗岩踏石引路，红枫与石灯笼点缀，四季皆有景致。' },
+  { id:'moss-garden', name:'苔庭·雨露风', nameEn:'Moss & Stone Garden', style:'日式·苔庭', tags:['青苔','石灯笼','溪流','鹅卵石','蕨类'], mats:['cobble','bluestone'], desc:'以大面积青苔为地毯，鹅卵石溪流蜿蜒，石灯笼半掩苔痕，湿润阴翳中透出生机，尤适成都多雨气候。' },
+  { id:'wabi-sabi', name:'侘寂自然风', nameEn:'Wabi-Sabi Natural', style:'日式·侘寂', tags:['自然石','枯木','野草','锈铁','青苔'], mats:['cobble','bluestone'], desc:'接受不完美与无常，以自然风化石材、野生苔藓、枯木残枝构建庭院，在岁月痕迹中寻见宁静与深邃。' },
+  { id:'mixed-modern', name:'现代东方极简', nameEn:'Modern East-Asian Minimal', style:'融合·现代', tags:['花岗岩大板','线形水景','清水混凝土','留白','极简'], mats:['granite','limestone'], desc:'以现代简约手法重诠东方留白美学，花岗岩大板铺地，清水混凝土墙面，线形水景倒映天光，去繁归简。' },
+  { id:'industrial-modern', name:'工业现代风', nameEn:'Industrial Modern', style:'现代·工业', tags:['耐候钢板','清水混凝土','砾石','黑色铁艺','观赏草'], mats:['granite','gravel'], desc:'耐候钢板自然锈蚀成暖棕色，清水混凝土墙配砾石地面，铁艺构架点缀观赏草，粗粝中透出克制的当代气质。' },
+  { id:'minimalist', name:'极简白盒子', nameEn:'Minimalist White Box', style:'现代·极简', tags:['白色涂料','莱姆石大板','水景','线条','留白'], mats:['limestone','granite'], desc:'纯白墙面与浅色大板铺地，以比例和光影为设计语言，减去一切多余元素，让空间本身成为主角。' },
+  { id:'english-cottage', name:'英式乡村花园', nameEn:'English Cottage Garden', style:'欧式·英', tags:['莱姆石','碎拼石','玫瑰','薰衣草','铸铁'], mats:['limestone','cobble'], desc:'自由生长的宿根花卉溢满边界，莱姆石小径蜿蜒其间，铸铁园艺装饰点缀，浪漫而不失野趣的英伦乡村气息。' },
+  { id:'french-formal', name:'法式规则园', nameEn:'French Formal Garden', style:'欧式·法', tags:['花岗岩','黄砂岩','修剪绿篱','喷泉','对称轴线'], mats:['granite','sandstone'], desc:'笛卡尔式几何美学，严格对称轴线，花岗岩铺就放射形园路，修剪精整的黄杨绿篱，中央喷泉为视觉焦点。' },
+  { id:'mediterranean', name:'地中海庭院', nameEn:'Mediterranean Courtyard', style:'欧式·地中海', tags:['石灰岩','赭石','橄榄树','陶罐','藤架'], mats:['limestone','sandstone'], desc:'粗犷石灰岩铺地，赭红陶罐盛满薰衣草，古老橄榄树撑起一片荫凉，藤架缠绕葡萄，尽是南欧慵懒诗意。' },
+  { id:'american-farmhouse', name:'美式农场风', nameEn:'American Farmhouse', style:'欧式·美', tags:['碎石路','木栅栏','多年生花境','秋千','草坪'], mats:['gravel','cobble'], desc:'白色木栅栏围合大草坪，碎石小路串联花境与菜园，秋千与壁炉台点缀其间，实用、放松、充满生活气息。' },
+  { id:'nanyang', name:'南洋热带园', nameEn:'Tropical Nanyang Garden', style:'热带·南洋', tags:['黄砂岩','碎石','芭蕉','棕榈','流水'], mats:['sandstone','cobble'], desc:'融合中式与东南亚热带风情，黄砂岩铺地，茂密热带植物，流水叮咚，呈现闽南华侨庭院的南洋情调。' },
+  { id:'tropical-jungle', name:'热带雨林风', nameEn:'Tropical Jungle', style:'热带·雨林', tags:['岩石叠层','芭蕉','龟背竹','流瀑','蕨类'], mats:['sandstone','cobble'], desc:'浓密植物层层叠叠，芭蕉与龟背竹营造丛林感，岩石叠层引水成瀑，成都夏季的湿热气候是天然优势。' },
+  { id:'naturalistic', name:'自然野趣风', nameEn:'Naturalistic Garden', style:'自然', tags:['自然石','野花草甸','砾石','枯木','昆虫旅馆'], mats:['cobble','gravel'], desc:'模仿自然生态群落，自播野花、观赏草与本土植物混种，自然石随意散落，减少人工干预，与自然共生。' },
+  { id:'zen-tea', name:'茶禅一味', nameEn:'Tea Garden Zen', style:'中日·茶境', tags:['莱姆石','青板岩','竹篱','茶席','流水'], mats:['limestone','bluestone'], desc:'以茶事为核心动线，青板岩铺就的入茶之路，竹篱围合静谧茶席空间，流水声掩去城市喧嚣，专为品茗而造。' },
+];
+
+const DEFAULT_MATERIALS = [
+  { id:'limestone', name:'莱姆石', nameEn:'Limestone', cat:'石材', desc:'质地细腻，色泽温润，适用于庭院地铺、景观墙面及水景边缘。' },
+  { id:'bluestone', name:'青板岩', nameEn:'Bluestone Slate', cat:'石材', desc:'层理清晰，色调沉稳，适合铺设步道、踏石及景观台阶，极具禅意。' },
+  { id:'sandstone', name:'黄砂岩', nameEn:'Yellow Sandstone', cat:'石材', desc:'色调温暖，纹理自然，适合中式庭院景墙、花坛边框及园林小品。' },
+  { id:'granite', name:'芝麻灰花岗岩', nameEn:'Granite', cat:'石材', desc:'质地坚硬，颗粒均匀，防滑耐磨，适合高流量庭院地面与台阶。' },
+  { id:'cobble', name:'鹅卵石', nameEn:'River Pebble', cat:'地铺', desc:'圆润自然，色彩丰富，可铺设日式枯山水、中式园路或装饰性水景。' },
+  { id:'gravel', name:'白碎石', nameEn:'White Gravel', cat:'地铺', desc:'洁净明亮，是日式枯山水的经典铺材，与苔藓、黑松搭配极具禅境。' },
+];
+
+const STYLE_PROMPTS = {
+  'zen-dry':{style:'Japanese Zen dry garden (karesansui)',ground:'meticulously raked white gravel with concentric wave patterns',features:'precisely placed large boulders, minimalist moss patches between stepping stones, a weathered stone lantern, low bamboo fence',plants:'black pine bonsai, moss clumps, ornamental grasses',atmosphere:'serene, meditative, monochromatic, quiet morning mist'},
+  'japanese-garden':{style:'traditional Japanese stroll garden with pond',ground:'river pebble paths, granite stepping stones, moss lawn',features:'koi pond with arched stone bridge, stone lantern, bamboo water spout (tsukubai), wooden pergola',plants:'Japanese maple (momiji), black pine, cherry blossom, irises by water',atmosphere:'lush, four-season beauty, dappled light through maple canopy'},
+  'song-dynasty':{style:'Song Dynasty Chinese scholar garden',ground:'aged grey brick paving in herringbone pattern, smooth flagstone paths',features:'Taihu rock sculptural stones, white plastered walls with moon gate openings, bamboo grove',plants:'slender bamboo, winter plum blossom, chrysanthemum, orchid, pine',atmosphere:'scholarly, poetic, ink-wash painting aesthetic, misty and refined'},
+  'chinese-courtyard':{style:'Ming-Qing dynasty Chinese courtyard',ground:'traditional grey brick courtyard floor in grid pattern, limestone threshold stones',features:'decorative screen wall, carved stone flower pots, wooden lattice windows, central water jar',plants:'potted osmanthus, pomegranate tree, banana palm',atmosphere:'dignified, ordered symmetry, warm afternoon sunlight on grey brick'},
+  'nanyang':{style:'tropical Nanyang garden',ground:'warm yellow sandstone tiles, terracotta paving, river pebble borders',features:'ornate ceramic pots, carved stone railings with peranakan motifs, small water feature with lotus, wooden pavilion',plants:'banana palm, bird of paradise, frangipani, torch ginger, bougainvillea',atmosphere:'lush tropical, vibrant color, humid warmth, Straits Chinese heritage'},
+  'english-cottage':{style:'English cottage garden',ground:'weathered limestone path winding through garden beds, old brick edging',features:'rustic wooden picket fence, cast iron garden bench, terracotta pots, climbing rose trellis, sundial',plants:'roses, lavender, foxglove, hollyhock, delphinium, wisteria on walls',atmosphere:'romantic, abundant, soft pastels, bees and butterflies, golden afternoon'},
+  'french-formal':{style:'French formal garden (jardin à la française)',ground:'perfectly symmetrical granite pathways in geometric grid, light gravel parterres',features:'precisely clipped boxwood hedges in geometric shapes, central stone fountain, classical urns on pedestals',plants:'topiary yew and boxwood, standard rose trees, pleached lime allée',atmosphere:'grand, perfectly symmetrical, Baroque elegance, crisp shadow lines'},
+  'mediterranean':{style:'Mediterranean courtyard garden',ground:'terracotta tiles, rough limestone slabs, mosaic accent panels',features:'whitewashed or stone walls draped in bougainvillea, large terracotta urns, pergola with grape vine',plants:'olive tree, bougainvillea, rosemary, lavender, cypress, citrus trees',atmosphere:'warm sun-drenched, vibrant color against white walls, relaxed Provencal charm'},
+  'mixed-modern':{style:'modern East-Asian minimalist garden',ground:'large-format granite or limestone slabs with thin dark joints',features:'slim linear water channel, concrete or corten steel planter walls, recessed lighting, minimalist sculpture',plants:'ornamental grasses, single specimen tree, low spreading juniper, bamboo screen',atmosphere:'clean, contemporary, strong geometry, evening mood lighting'},
+  'wabi-sabi':{style:'wabi-sabi natural garden',ground:'irregular mossy stepping stones, bare earth paths, weathered pebbles',features:'naturally weathered driftwood, lichen-covered boulders, rusty metal accents, imperfect handmade ceramic pots',plants:'wild moss, ferns, seed heads left standing, gnarled old tree, bamboo grass',atmosphere:'imperfect beauty, quiet decay, soft overcast light, profound stillness'},
+};
+
+const MAT_COLORS = { limestone:'#d4c9b5', bluestone:'#5a6270', sandstone:'#c8a96e', granite:'#9a9890', cobble:'#a89880', gravel:'#dddbd5' };
+
+const SUPABASE_URL = 'https://zehfyibwmxyedswbdyjw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_wGGWRcVnkzfIWK4Pp42J8w_vhoTBsKg';
+
+async function loadCustomMaterials() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/materials?order=created_at.asc`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    return data.map(row => ({
+      id: row.id, name: row.material, color: row.color, spec: row.spec,
+      price: row.price, unit: row.unit, cat: row.cat, desc: row.description, img: row.img,
+    }));
+  } catch (e) {
+    console.warn('Supabase load failed:', e);
+    try { const l = localStorage.getItem('shijing-materials-v1'); return l ? JSON.parse(l) : []; }
+    catch { return []; }
+  }
+}
+
+function drawTexture(ctx, type, w, h) {
+  const r = {
+    limestone:()=>{ctx.fillStyle='#d4c9b5';ctx.fillRect(0,0,w,h);for(let i=0;i<25;i++){ctx.beginPath();ctx.strokeStyle=`rgba(150,135,110,${0.1+Math.random()*0.25})`;ctx.lineWidth=0.3+Math.random()*1.2;const x=Math.random()*w,y=Math.random()*h;ctx.moveTo(x,y);ctx.bezierCurveTo(x+(Math.random()-.5)*60,y+(Math.random()-.5)*30,x+(Math.random()-.5)*60,y+(Math.random()-.5)*30,x+(Math.random()-.5)*90,y+(Math.random()-.5)*50);ctx.stroke();}},
+    bluestone:()=>{ctx.fillStyle='#4e5a66';ctx.fillRect(0,0,w,h);for(let y=0;y<h;y+=3+Math.random()*5){ctx.beginPath();ctx.strokeStyle=`rgba(30,40,55,${0.12+Math.random()*0.22})`;ctx.lineWidth=0.6;ctx.moveTo(0,y);ctx.lineTo(w,y+(Math.random()-.5)*4);ctx.stroke();}},
+    sandstone:()=>{ctx.fillStyle='#c8a96e';ctx.fillRect(0,0,w,h);for(let i=0;i<20;i++){ctx.beginPath();ctx.strokeStyle=`rgba(160,110,50,${0.08+Math.random()*0.28})`;ctx.lineWidth=1+Math.random()*3;const y=Math.random()*h;ctx.moveTo(0,y);ctx.lineTo(w,y+(Math.random()-.5)*10);ctx.stroke();}},
+    granite:()=>{ctx.fillStyle='#9a9890';ctx.fillRect(0,0,w,h);for(let i=0;i<280;i++){const x=Math.random()*w,y=Math.random()*h,s=1+Math.random()*2;ctx.fillStyle=`rgba(${50+Math.random()*100},${50+Math.random()*100},${50+Math.random()*100},0.4)`;ctx.fillRect(x,y,s,s);}},
+    cobble:()=>{ctx.fillStyle='#a89880';ctx.fillRect(0,0,w,h);for(let i=0;i<70;i++){const x=Math.random()*w,y=Math.random()*h,rx=5+Math.random()*12,ry=4+Math.random()*9,g=100+Math.floor(Math.random()*80);ctx.beginPath();ctx.ellipse(x,y,rx,ry,Math.random()*Math.PI,0,Math.PI*2);ctx.fillStyle=`rgba(${g},${g-8},${g-15},0.75)`;ctx.fill();ctx.strokeStyle='rgba(60,50,40,0.12)';ctx.lineWidth=0.5;ctx.stroke();}},
+    gravel:()=>{ctx.fillStyle='#dddbd5';ctx.fillRect(0,0,w,h);for(let i=0;i<280;i++){const x=Math.random()*w,y=Math.random()*h,s=1+Math.random()*4,v=195+Math.floor(Math.random()*55);ctx.fillStyle=`rgba(${v},${v},${v},0.9)`;ctx.beginPath();ctx.arc(x,y,s/2,0,Math.PI*2);ctx.fill();}},
+  };
+  const fn = r[type]; if (fn) fn(); else r.limestone();
+  try { const id = ctx.getImageData(0, 0, w, h), d = id.data; for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - .5) * 18; d[i] += n; d[i + 1] += n; d[i + 2] += n; } ctx.putImageData(id, 0, 0); } catch {}
+}
+
+createApp({
+  data() {
+    return {
+      REF_STYLES, DEFAULT_MATERIALS, MAT_COLORS,
+      currentStep: 1,
+      // Step 1
+      uploadedImgBase64: null, uploadedImgEl: null, analyzing: false,
+      aiAnalysis: null, selectedRefId: null, generating: false,
+      dalleVisible: false, dalleLoading: false, dalleImgSrc: null, dallePromptText: '',
+      userNotes: '',
+      // Step 2
+      materials: [...DEFAULT_MATERIALS], selectedMatId: null,
+      tool: 'brush', brushSize: 40, opacityPct: 65, opacity: 0.65, blendMode: 'multiply',
+      isDrawing: false, canvasW: 0, canvasH: 0, thumbCanvases: {},
+      areaMain: null, areaPath: null, areaWall: null, areaWater: null,
+      // Step 3
+      genPlanLoading: false, planStreaming: false, planStreamText: '', planResult: null,
+      // Notify
+      notifyMsg: '', notifyTimer: null,
+    };
+  },
+  computed: {
+    totalArea() { return (this.areaMain || 0) + (this.areaPath || 0) + (this.areaWall || 0) + (this.areaWater || 0); },
+    genBtnText() { if (!this.uploadedImgBase64) return '请先上传院子照片'; if (!this.selectedRefId) return '选择风格后生成效果图'; const r = REF_STYLES.find(x => x.id === this.selectedRefId); return r ? `生成「${r.name}」效果图` : '生成效果图'; },
+    refHint() { if (!this.selectedRefId) return '点击上方任意风格卡片选择，再点按钮生成'; const r = REF_STYLES.find(x => x.id === this.selectedRefId); return r ? `已选：${r.name} · ${r.style}` : ''; },
+    matCategories() { const c = new Set(); this.materials.forEach(m => c.add(m.cat)); return [...c]; },
+    selectedMat() { return this.materials.find(m => m.id === this.selectedMatId) || null; },
+    summaryChips() {
+      const refStyle = this.selectedRefId ? REF_STYLES.find(r => r.id === this.selectedRefId) : null;
+      return [
+        { icon:'🎨', label:'风格', val: refStyle?.name || this.aiAnalysis?.styleName || '—' },
+        { icon:'🪨', label:'主材', val: (this.selectedMat?.name) || '莱姆石' },
+        { icon:'📐', label:'总面积', val: this.totalArea > 0 ? `${this.totalArea} ㎡` : '未填写' },
+      ];
+    },
+  },
+  watch: {
+    currentStep(n) {
+      if (n === 2 && this.uploadedImgEl) nextTick(() => this.initCanvas());
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+  },
+  methods: {
+    stepClass(n) { if (n < this.currentStep) return 'done'; if (n === this.currentStep) return 'active'; return ''; },
+    goStep(n) { this.currentStep = n; },
+    showNotify(msg) { this.notifyMsg = msg; clearTimeout(this.notifyTimer); this.notifyTimer = setTimeout(() => this.notifyMsg = '', 3000); },
+
+    // ─── STEP 1 ───
+    onFileChange(e) {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1024; let w = img.naturalWidth, h = img.naturalHeight;
+          if (w > MAX || h > MAX) { if (w >= h) { h = Math.round(h * MAX / w); w = MAX; } else { w = Math.round(w * MAX / h); h = MAX; } }
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          this.uploadedImgBase64 = c.toDataURL('image/jpeg', 0.85);
+          this.uploadedImgEl = img;
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    },
+
+    selectRef(id) { this.selectedRefId = id; },
+
+    getMatName(id) { const m = this.materials.find(x => x.id === id); return m ? m.name : ''; },
+    quickSelectMat(id) { this.selectedMatId = id; this.showNotify(`已预选材料：${this.getMatName(id)}`); },
+
+    async analyzePhoto() {
+      if (!this.uploadedImgBase64) return;
+      this.analyzing = true;
+      try {
+        const base64Data = this.uploadedImgBase64.split(',')[1];
+        const mediaType = this.uploadedImgBase64.split(';')[0].split(':')[1];
+        const userNotes = this.userNotes || '';
+        const promptText = `你是一位专业的庭院设计师，擅长中日式及各类风格户外空间。请分析这张院子照片，结合用户需求，用JSON格式返回，不要有任何其他文字。\n\n用户备注的需求：${userNotes || '暂无'}\n\n请返回：\n{\n  "styleName": "最适合的风格名称",\n  "styleEn": "English style name",\n  "description": "2-3句：描述院子现状和改造方向",\n  "tags": ["特征标签1","特征标签2","特征标签3","特征标签4"],\n  "recommendedMaterials": ["材料id1","材料id2","材料id3"],\n  "bestRefStyle": "最匹配的参考风格id"\n}\n材料id：limestone, bluestone, sandstone, granite, cobble, gravel\n参考风格id：new-chinese, song-dynasty, chinese-courtyard, zen-dry, japanese-garden, moss-garden, wabi-sabi, mixed-modern, industrial-modern, minimalist, english-cottage, french-formal, mediterranean, american-farmhouse, nanyang, tropical-jungle, naturalistic, zen-tea`;
+
+        const response = await fetch('/.netlify/functions/analyze', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'gpt-4o', max_tokens: 1000,
+            messages: [{ role: 'user', content: [
+              { type: 'image_url', image_url: { url: `data:${mediaType};base64,${base64Data}` } },
+              { type: 'text', text: promptText }
+            ]}]
+          })
+        });
+        const data = await response.json();
+        if (!response.ok || data.error) throw new Error(data?.error?.message || 'Request failed');
+        const text = data?.choices?.[0]?.message?.content;
+        if (!text) throw new Error('No content returned');
+        this.aiAnalysis = JSON.parse(text.replace(/```json|```/g, '').trim());
+        if (this.aiAnalysis.bestRefStyle) this.selectRef(this.aiAnalysis.bestRefStyle);
+        this.showNotify(`✓ 分析完成：${this.aiAnalysis.styleName} · 请在右侧选择风格生成效果图`);
+      } catch (err) {
+        console.error('analyzePhoto error:', err);
+        const notes = this.userNotes || '';
+        this.aiAnalysis = {
+          styleName: notes ? '根据您的需求定制' : '现代东方简约', styleEn: 'Custom Garden Style',
+          description: notes ? `根据您描述的需求"${notes.slice(0, 40)}"，建议从右侧风格卡片中选择最符合您想象的风格。` : '您的院子有不错的改造空间。请从右侧选择您喜欢的参考风格。',
+          tags: ['待定制', '请选择风格', '石材铺装', '庭院改造'], recommendedMaterials: ['limestone', 'bluestone', 'cobble'], bestRefStyle: 'mixed-modern'
+        };
+        this.showNotify(`⚠ 分析失败：${(err?.message || String(err)).slice(0, 60)}`);
+      }
+      this.analyzing = false;
+    },
+
+    async generateFromRef() {
+      if (!this.uploadedImgBase64 || !this.selectedRefId) return;
+      this.generating = true; this.dalleVisible = true; this.dalleLoading = true; this.dalleImgSrc = null;
+      const ref = REF_STYLES.find(r => r.id === this.selectedRefId);
+      const recipe = STYLE_PROMPTS[this.selectedRefId] || STYLE_PROMPTS['mixed-modern'];
+      const mat = this.materials.find(m => m.id === this.selectedMatId) || this.materials.find(m => m.id === (this.aiAnalysis?.recommendedMaterials?.[0]));
+      const matNameEn = mat?.nameEn || mat?.name || recipe.ground.split(' ')[0];
+      const prompt = `Transform this garden photo into a stunning ${recipe.style}. IMPORTANT: Keep the exact same camera angle, perspective, spatial layout and architecture. Ground surface: ${recipe.ground}${mat ? `, using ${matNameEn} stone` : ''}. Key features to add: ${recipe.features}. Plants: ${recipe.plants}. Overall atmosphere: ${recipe.atmosphere}. Photorealistic, high quality, professional garden photography.`;
+
+      try {
+        const mimeType = this.uploadedImgBase64.split(';')[0].split(':')[1];
+        const base64Data = this.uploadedImgBase64.split(',')[1];
+        let data = null, usedModel = '';
+        for (const model of ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image-preview', 'gemini-2.0-flash-exp']) {
+          const res = await fetch('/.netlify/functions/analyze', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model, contents: [{ parts: [{ inline_data: { mime_type: mimeType, data: base64Data } }, { text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } })
+          });
+          const json = await res.json();
+          if (!json.error) { data = json; usedModel = model; break; }
+        }
+        if (!data) throw new Error('所有模型均不可用');
+        const imgPart = (data.candidates?.[0]?.content?.parts || []).find(p => p.inlineData);
+        if (!imgPart) throw new Error('未收到图像数据');
+        this.dalleImgSrc = `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
+        this.dalleLoading = false;
+        const matName = mat ? `${mat.name}${mat.nameEn ? ` (${mat.nameEn})` : ''}` : recipe.style;
+        this.dallePromptText = `${ref?.name || recipe.style} · 主材：${matName} · ${usedModel}`;
+        this.showNotify('✓ 改造效果图已生成');
+      } catch (err) { this.dalleLoading = false; this.dallePromptText = `生成失败：${err.message}`; }
+      this.generating = false;
+    },
+
+    // ─── STEP 2 ───
+    setThumb(id, el) { if (!el || this.thumbCanvases[id]) return; this.thumbCanvases[id] = el; nextTick(() => { el.width = el.clientWidth || 40; el.height = 30; drawTexture(el.getContext('2d'), id, el.width, el.height); }); },
+    selectMat(id) { this.selectedMatId = id; if (this.canvasW > 0) this.renderOverlay(); },
+    onOpacityChange() { this.opacity = this.opacityPct / 100; if (this.selectedMatId && this.canvasW) this.renderOverlay(); },
+    setBlend(mode) { this.blendMode = mode; if (this.selectedMatId && this.canvasW) this.renderOverlay(); },
+
+    initCanvas() {
+      const img = this.uploadedImgEl; if (!img) return;
+      const wrap = this.$refs.canvasWrap; const cw = wrap.clientWidth, ch = wrap.clientHeight;
+      [this.$refs.baseCanvas, this.$refs.maskCanvas, this.$refs.previewCanvas].forEach(c => { c.width = cw; c.height = ch; });
+      this.canvasW = cw; this.canvasH = ch;
+      const scale = Math.min(cw / img.width, ch / img.height);
+      const dw = img.width * scale, dh = img.height * scale;
+      this.$refs.baseCanvas.getContext('2d').drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+      this.$refs.maskCanvas.getContext('2d').clearRect(0, 0, cw, ch);
+      this.$refs.previewCanvas.getContext('2d').clearRect(0, 0, cw, ch);
+      if (!this.selectedMatId && this.aiAnalysis?.recommendedMaterials?.length) { this.selectedMatId = this.aiAnalysis.recommendedMaterials[0]; }
+    },
+
+    getPos(e) { const c = this.$refs.previewCanvas, r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) }; },
+    startDraw(e) { if (!this.canvasW) return; this.isDrawing = true; this.paint(this.getPos(e)); },
+    startDrawTouch(e) { if (!this.canvasW) return; this.isDrawing = true; this.paint(this.getPos(e.touches[0])); },
+    onDraw(e) { if (!this.isDrawing || !this.canvasW) return; this.paint(this.getPos(e)); },
+    onDrawTouch(e) { if (!this.isDrawing || !this.canvasW) return; this.paint(this.getPos(e.touches[0])); },
+    stopDraw() { this.isDrawing = false; },
+
+    paint(pos) {
+      const maskCtx = this.$refs.maskCanvas.getContext('2d');
+      maskCtx.globalCompositeOperation = this.tool === 'erase' ? 'destination-out' : 'source-over';
+      maskCtx.fillStyle = 'rgba(255,255,255,1)'; maskCtx.beginPath();
+      maskCtx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2); maskCtx.fill();
+      maskCtx.globalCompositeOperation = 'source-over';
+      this.renderOverlay();
+    },
+    clearMask() { this.$refs.maskCanvas.getContext('2d').clearRect(0, 0, this.canvasW, this.canvasH); this.$refs.previewCanvas.getContext('2d').clearRect(0, 0, this.canvasW, this.canvasH); },
+
+    renderOverlay() {
+      if (!this.selectedMatId) return;
+      const tc = document.createElement('canvas'); tc.width = 200; tc.height = 200;
+      drawTexture(tc.getContext('2d'), this.selectedMatId, 200, 200);
+      const previewCtx = this.$refs.previewCanvas.getContext('2d');
+      const tmp = document.createElement('canvas'); tmp.width = this.canvasW; tmp.height = this.canvasH;
+      const tmpCtx = tmp.getContext('2d');
+      tmpCtx.fillStyle = previewCtx.createPattern(tc, 'repeat'); tmpCtx.fillRect(0, 0, this.canvasW, this.canvasH);
+      previewCtx.clearRect(0, 0, this.canvasW, this.canvasH);
+      previewCtx.drawImage(tmp, 0, 0);
+      previewCtx.globalCompositeOperation = 'destination-in';
+      previewCtx.drawImage(this.$refs.maskCanvas, 0, 0);
+      previewCtx.globalCompositeOperation = 'source-over';
+      this.$refs.previewCanvas.style.mixBlendMode = this.blendMode;
+      this.$refs.previewCanvas.style.opacity = this.opacity;
+    },
+
+    // ─── STEP 3 ───
+    async generatePlan() {
+      this.genPlanLoading = true; this.planResult = null; this.planStreaming = false; this.planStreamText = '';
+      const mat = this.selectedMat, userNotes = this.userNotes || '';
+      const refStyle = this.selectedRefId ? REF_STYLES.find(r => r.id === this.selectedRefId) : null;
+      const chosenStyle = refStyle?.name || this.aiAnalysis?.styleName || '现代简约庭院';
+      const aiDesc = this.aiAnalysis?.description || '';
+      const areaLines = [this.areaMain>0?`• 主铺装地面：${this.areaMain}㎡`:'', this.areaPath>0?`• 步道/踏石：${this.areaPath}㎡`:'', this.areaWall>0?`• 景墙/立面：${this.areaWall}㎡`:'', this.areaWater>0?`• 水景/其他：${this.areaWater}㎡`:''].filter(Boolean).join('\n');
+
+      let accumulated = '', streamErr = null;
+      try {
+        const resp = await fetch('/api/plan-stream', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: [
+            { role: 'system', content: '你是专业庭院设计师，专注中日式及各类风格户外空间。严格按用户选定风格生成造园方案。' },
+            { role: 'user', content: `【用户选定风格】${chosenStyle}${refStyle?.nameEn ? `（${refStyle.nameEn}）` : ''}\n【用户主选石材】${mat?.name || '莱姆石'}${mat?.color ? `（${mat.color}）` : ''}\n【用户填写面积】\n${this.totalArea > 0 ? areaLines : '用户未填写，材料用量给出合理参考范围'}\n【AI分析院子现状】${aiDesc || '暂无'}\n【用户的想法与需求】${userNotes || '暂无额外备注'}\n\n要求：\n- styleDirection 和 concept 必须明确体现"${chosenStyle}"风格特征\n- materials 第一项必须是"${mat?.name || '莱姆石'}"\n- 有面积给精确用量，无面积给合理范围\n- styleDirection：2-3句 / concept：3-4句 / materials：3-5种(name/use/quantity/price)\n- constructionNotes：3-4条，用 • 分隔 / plantingPairing：2-3段` }
+          ]})
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        this.planStreaming = true;
+        const reader = resp.body.getReader(); const decoder = new TextDecoder(); let buf = '';
+        while (true) {
+          const { done, value } = await reader.read(); if (done) break;
+          buf += decoder.decode(value, { stream: true }); const lines = buf.split('\n'); buf = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue; const p = line.slice(6).trim(); if (p === '[DONE]') continue;
+            try { const d = JSON.parse(p).choices?.[0]?.delta?.content ?? ''; if (d) { accumulated += d; this.planStreamText = extractReadable(accumulated); } } catch {}
+          }
+        }
+      } catch (e) { streamErr = e; }
+      this.planStreaming = false;
+      if (!streamErr && accumulated) {
+        try { this.planResult = JSON.parse(accumulated.replace(/```json|```/g, '').trim()); } catch { this.planResult = buildFallback(mat, chosenStyle, userNotes, this); }
+      } else { this.planResult = buildFallback(mat, chosenStyle, userNotes, this); }
+      this.genPlanLoading = false;
+    },
+
+    formatNotes(t) { return t ? t.replace(/\n/g, '<br>').replace(/•/g, '<strong>•</strong>') : ''; },
+    formatPlanting(t) { return t ? t.replace(/\n\n/g, '</p><p style="margin-top:0.8rem">').replace(/^/, '<p>') + '</p>' : ''; },
+
+    copyPhone() { navigator.clipboard.writeText('18780433777').then(() => this.showNotify('✓ 已复制'), () => this.showNotify('电话：18780433777')); },
+    copyWechat(e) { if (!/iPhone|Android/i.test(navigator.userAgent)) { if (e) e.preventDefault(); navigator.clipboard.writeText('18780433777').then(() => this.showNotify('✓ 已复制微信号')); } },
+  },
+
+  async mounted() {
+    const custom = await loadCustomMaterials();
+    custom.forEach(m => { if (!this.materials.find(x => x.id === m.id)) this.materials.push(m); });
+  },
+}).mount('#app');
+
+// ─── Helpers (outside Vue to avoid reactivity overhead) ───
+function extractReadable(raw) {
+  let out = '', inStr = false, isKey = true, esc = false;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (esc) { esc = false; if (inStr && !isKey) out += c === 'n' ? '\n' : c; continue; }
+    if (c === '\\') { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; if (!inStr) isKey = true; continue; }
+    if (!inStr) { if (c === ':') isKey = false; if (c === ',') isKey = true; continue; }
+    if (inStr && !isKey) out += c;
+  }
+  return out.trim();
+}
+
+function buildFallback(mat, chosenStyle, userNotes, vm) {
+  return {
+    styleDirection: `以${chosenStyle}为核心风格，结合${mat?.name || '莱姆石'}的材质特性，打造与用户生活方式契合的庭院空间。`,
+    concept: `方案以用户需求为出发点，以${mat?.name || '莱姆石'}作为铺装主材。${userNotes ? `特别考虑到用户提到的"${userNotes.slice(0, 30)}"，` : ''}设计注重实用与美观的结合。`,
+    materials: [
+      { name: mat?.name || '莱姆石', use: '主铺装地面', quantity: vm.areaMain > 0 ? `${vm.areaMain}㎡` : '约15-25㎡', price: '¥100-180/㎡' },
+      { name: '青板岩', use: '步道踏石', quantity: vm.areaPath > 0 ? `${vm.areaPath}㎡` : '约6-10㎡', price: '¥80-130/㎡' },
+      { name: '鹅卵石', use: '装饰填充', quantity: '适量', price: '¥30-50/㎡' },
+      { name: '黄砂岩', use: '景墙贴面', quantity: vm.areaWall > 0 ? `${vm.areaWall}㎡` : '约5-8㎡', price: '¥90-140/㎡' },
+    ],
+    constructionNotes: `• 铺装前处理好基层排水，坡度1%-2%避免积水\n• ${mat?.name || '莱姆石'}缝隙3-5mm，用同色勾缝剂收边\n• 踏石间距60-65cm，按正常步幅布置\n• 景墙高度建议1.2-1.5m，兼顾私密性与通透感`,
+    plantingPairing: `根据${chosenStyle}的风格特点，植物配置以简洁为主。\n\n主景植物可选形态感强的品种，与${mat?.name || '莱姆石'}的质感相互衬托。\n\n地被与边界植物以低矮、易打理的品种为主。`,
+  };
+}
+</script>
+</body>
+</html>

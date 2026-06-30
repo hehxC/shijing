@@ -1,0 +1,4 @@
+INFO:     127.0.0.1:57025 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60222 - "GET /static/admin.html HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61645 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61655 - "GET /openapi.json HTTP/1.1" 200 OK
