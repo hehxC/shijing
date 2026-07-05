@@ -30,6 +30,11 @@ VALID_IMAGE_SOURCES = {"uploaded", "reference", "generated", "none"}
 
 PRICE_PATTERN = re.compile(r"(?:价格|多少钱|报价|估价|预估|预算|费用|单价|平米|㎡|m2|平方)")
 MATERIAL_QUERY_PATTERN = re.compile(r"(?:石材|石头|材料|规格|颜色|色系|莱姆石|大理石|花岗岩|洞石)")
+IMAGE_ANALYSIS_PATTERN = re.compile(
+    r"(?:识图|识别.{0,8}(?:图|图片|照片|效果图)|分析.{0,8}(?:图|图片|照片|效果图)|"
+    r"看(?:一下)?(?:这张|这幅|这个|上一张|上张|刚才).{0,8}(?:图|图片|照片|效果图)|"
+    r"(?:图|图片|照片|效果图).{0,8}(?:里|中|上).{0,12}(?:有什么|有哪些|是什么|识别|分析))"
+)
 
 
 @dataclass(frozen=True)
@@ -119,6 +124,10 @@ def _fallback_route(
     """LLM Router 不可用时的安全降级，覆盖明确场景。"""
     text = message.strip()
 
+    if IMAGE_ANALYSIS_PATTERN.search(text):
+        image_source = "uploaded" if has_uploaded_image else "generated" if has_generated_image else "reference" if has_reference_image else "none"
+        return ChatIntent("analyze_image", image_source, 0.8, "rule fallback: explicit image analysis")
+
     if needs_effect_image(text):
         is_edit_request = is_effect_image_edit_request(text)
         if has_uploaded_image:
@@ -171,7 +180,7 @@ def route_chat_intent(
         has_generated_image=has_generated_image,
         has_material_analysis=has_material_analysis,
     )
-    if fallback.intent == "generate_effect_image":
+    if fallback.intent in {"generate_effect_image", "analyze_image"}:
         return fallback
 
     system_prompt = (

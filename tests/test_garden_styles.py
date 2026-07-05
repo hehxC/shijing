@@ -42,6 +42,61 @@ class GardenStyleTests(unittest.TestCase):
         self.assertEqual("generate_effect_image", intent.intent)
         self.assertEqual("generated", intent.use_image)
 
+    def test_recognize_image_routes_to_generated_image_analysis(self):
+        intent = route_chat_intent(
+            "请识别这张图，分析庭院空间、硬景材料、植物配置、光照条件和可优化建议。",
+            has_uploaded_image=False,
+            has_reference_image=True,
+            has_generated_image=True,
+            has_material_analysis=False,
+            text_chat_model="unused",
+        )
+
+        self.assertEqual("analyze_image", intent.intent)
+        self.assertEqual("generated", intent.use_image)
+
+    def test_recognize_image_ignores_supplemental_edit_words(self):
+        intent = route_chat_intent(
+            "请识别这张图，分析庭院空间、硬景材料、植物配置、光照条件和可优化建议。用户补充要求：增加瓦片围边",
+            has_uploaded_image=False,
+            has_reference_image=True,
+            has_generated_image=True,
+            has_material_analysis=False,
+            text_chat_model="unused",
+        )
+
+        self.assertEqual("analyze_image", intent.intent)
+        self.assertEqual("generated", intent.use_image)
+
+    @patch("app.service.chat_service.remember_material_analysis")
+    @patch("app.service.chat_service._stream_model_agent", return_value=iter(["识图结果"]))
+    @patch("app.service.chat_service.generate_effect_image")
+    @patch("app.service.chat_service.generated_image_as_data_url", return_value="data:image/png;base64,old")
+    @patch("app.service.chat_service.get_session_context")
+    def test_recognize_image_uses_previous_generated_image_without_generating(
+        self, mock_context, mock_data_url, mock_generate, mock_stream, mock_remember_analysis
+    ):
+        mock_context.return_value = SessionContext(
+            session_id="recognize-test",
+            reference_image_data_url="data:image/jpeg;base64,original",
+            reference_image_request="原始庭院照片",
+            generated_image_url="/static/generated/old.png",
+            generation_request="原始效果图需求",
+            material_analysis=None,
+        )
+
+        response = "".join(
+            stream_chat(
+                "请识别这张图，分析庭院空间、硬景材料、植物配置、光照条件和可优化建议。",
+                session_id="recognize-test",
+            )
+        )
+
+        mock_generate.assert_not_called()
+        mock_data_url.assert_called_once_with("/static/generated/old.png")
+        self.assertEqual("data:image/png;base64,old", mock_stream.call_args.args[2])
+        self.assertIn("识图结果", response)
+
     @patch("app.service.chat_service.remember_generated_image")
     @patch("app.service.chat_service._clear_session_checkpoints")
     @patch("app.service.chat_service.generate_effect_image", return_value="/static/generated/edited.jpg")
