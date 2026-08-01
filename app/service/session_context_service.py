@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from app.database import SessionLocal
 from app.models.chat_session_context import ChatSessionContext
+from app.service.design_session_service import mark_effect_generated, save_space_image
 
 
 @dataclass(frozen=True)
@@ -14,6 +15,10 @@ class SessionContext:
     generated_image_url: str | None
     generation_request: str | None
     material_analysis: dict | None
+    selected_style_id: str | None = None
+    context_revision: int = 0
+    effect_revision: int | None = None
+    effect_is_current: bool = False
 
 
 def _snapshot(row: ChatSessionContext) -> SessionContext:
@@ -24,6 +29,12 @@ def _snapshot(row: ChatSessionContext) -> SessionContext:
         generated_image_url=row.generated_image_url,
         generation_request=row.generation_request,
         material_analysis=row.material_analysis,
+        selected_style_id=row.selected_style_id,
+        context_revision=row.context_revision or 0,
+        effect_revision=row.effect_revision,
+        effect_is_current=bool(
+            row.generated_image_url and row.effect_revision == (row.context_revision or 0)
+        ),
     )
 
 
@@ -36,29 +47,13 @@ def get_session_context(session_id: str) -> SessionContext | None:
 
 def remember_reference_image(session_id: str, image: str, request: str) -> None:
     """保存用户最近一次上传的原始参考图，供后续效果图生成复用。"""
-    cleaned_image = image.strip()
-    if not cleaned_image:
-        return
-
-    with SessionLocal.begin() as db:
-        row = db.get(ChatSessionContext, session_id)
-        if row is None:
-            row = ChatSessionContext(session_id=session_id)
-            db.add(row)
-        row.reference_image_data_url = cleaned_image
-        row.reference_image_request = request.strip()
+    if image.strip():
+        save_space_image(session_id, image, request=request)
 
 
 def remember_generated_image(session_id: str, image_url: str, request: str) -> None:
     """新效果图会替换旧效果图，并清空旧图的材料分析。"""
-    with SessionLocal.begin() as db:
-        row = db.get(ChatSessionContext, session_id)
-        if row is None:
-            row = ChatSessionContext(session_id=session_id)
-            db.add(row)
-        row.generated_image_url = image_url
-        row.generation_request = request.strip()
-        row.material_analysis = None
+    mark_effect_generated(session_id, image_url, request)
 
 
 def remember_material_analysis(

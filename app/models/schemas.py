@@ -12,6 +12,25 @@ class ChatRequest(BaseModel):
     generate_effect_image: bool = False
 
 
+class DesignImageCreate(BaseModel):
+    image: str
+    original_name: str | None = Field(default=None, max_length=255)
+
+
+class MaterialReferenceCreate(DesignImageCreate):
+    name: str | None = Field(default=None, max_length=100)
+    usages: list[str] = Field(default_factory=list, max_length=7)
+
+
+class MaterialReferenceUpdate(BaseModel):
+    name: str | None = Field(default=None, max_length=100)
+    usages: list[str] = Field(default_factory=list, max_length=7)
+
+
+class DesignStyleUpdate(BaseModel):
+    style_id: str = Field(min_length=1, max_length=64)
+
+
 class UserCredentials(BaseModel):
     username: str = Field(min_length=3, max_length=50)
     password: str = Field(min_length=6, max_length=128)

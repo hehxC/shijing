@@ -93,14 +93,38 @@ header {
 .chat-shell {
   height: calc(100vh - 78px);
   display: grid;
-  grid-template-rows: 1fr auto;
-  width: 100%;
-  padding: 2rem 0 1.4rem;
+  grid-template-columns: minmax(320px, 390px) minmax(0, 1fr);
+  gap: 1.25rem;
+  width: min(1600px, 100%);
+  margin: 0 auto;
+  padding: 1.5rem clamp(1rem, 2.5vw, 2.5rem);
+  overflow: hidden;
+}
+.design-sidebar {
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ash) transparent;
+}
+.design-sidebar::-webkit-scrollbar { width: 4px; }
+.design-sidebar::-webkit-scrollbar-thumb { background: var(--ash); }
+.chat-workspace {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
 }
 .messages {
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: 0.5rem max(1.5rem, calc((100vw - 920px) / 2 + 1.5rem)) 1.5rem;
+  padding: 1rem 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.42);
   scroll-behavior: smooth;
 }
 .messages::-webkit-scrollbar { width: 4px; }
@@ -313,8 +337,8 @@ header {
   background: #fdf3ef;
 }
 .style-picker {
-  width: min(920px, calc(100% - 3rem));
-  margin: 0 auto 0.7rem;
+  width: 100%;
+  margin: 0;
   border: none;
   background: transparent;
   box-shadow: none;
@@ -420,8 +444,9 @@ header {
 }
 .style-card.selected .style-card-category { color: rgba(245,241,234,0.68); }
 .composer {
-  width: min(920px, calc(100% - 3rem));
-  margin: 0 auto;
+  flex: 0 0 auto;
+  width: 100%;
+  margin: 0;
   border: 1px solid var(--border);
   background: var(--ivory);
   padding: 0.85rem;
@@ -587,10 +612,9 @@ header {
   }
 }
 .hint {
-  width: min(920px, calc(100% - 3rem));
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 0.65rem;
+  flex: 0 0 auto;
+  width: 100%;
+  margin: 0;
   text-align: center;
   font-family: "Cormorant Garamond", serif;
   font-style: italic;
@@ -745,6 +769,96 @@ header {
   font-size: 0.72rem;
   color: #9b3636;
 }
+.design-assets {
+  width: 100%;
+  margin: 0 0 0.8rem;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.72);
+  padding: 0.85rem;
+}
+.design-assets-head,
+.asset-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.design-assets-title { font-size: 0.82rem; color: var(--deep); letter-spacing: 0.08em; }
+.design-assets-sub,
+.asset-help,
+.design-status { font-size: 0.66rem; color: var(--stone); line-height: 1.6; }
+.asset-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.65fr);
+  gap: 0.7rem;
+  margin-top: 0.7rem;
+}
+.asset-section { border: 1px solid var(--border); background: var(--ivory); padding: 0.65rem; min-width: 0; }
+.asset-section-title { font-size: 0.72rem; color: var(--deep); }
+.asset-btn,
+.asset-clear-btn,
+.new-design-btn {
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--deep);
+  padding: 0.38rem 0.58rem;
+  font-family: "Noto Serif SC", serif;
+  font-size: 0.66rem;
+  cursor: pointer;
+}
+.asset-btn:hover,
+.asset-clear-btn:hover,
+.new-design-btn:hover { border-color: var(--clay); background: #ede6d8; }
+.asset-btn:disabled,
+.asset-clear-btn:disabled,
+.new-design-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.asset-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.55rem; margin-top: 0.55rem; }
+.asset-card { position: relative; border: 1px solid var(--border); background: white; padding: 0.45rem; min-width: 0; }
+.asset-card.space-card { display: grid; grid-template-columns: 86px 1fr; gap: 0.55rem; align-items: center; }
+.asset-thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border: 1px solid var(--border); cursor: zoom-in; }
+.asset-card.space-card .asset-thumb { width: 86px; }
+.asset-card-name { width: 100%; margin-top: 0.35rem; border: 1px solid var(--border); padding: 0.35rem; font: inherit; font-size: 0.66rem; }
+.asset-remove { position: absolute; top: 0.2rem; right: 0.2rem; width: 24px; height: 24px; border: none; background: rgba(27,25,22,0.82); color: white; cursor: pointer; }
+.usage-list { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.35rem; }
+.usage-option { font-size: 0.58rem; color: var(--stone); border: 1px solid var(--border); padding: 0.2rem 0.3rem; cursor: pointer; }
+.usage-option input { margin-right: 0.18rem; vertical-align: middle; }
+.empty-asset { margin-top: 0.5rem; min-height: 64px; border: 1px dashed var(--border); display: grid; place-items: center; color: var(--ash); font-size: 0.66rem; text-align: center; padding: 0.5rem; }
+.design-status { min-height: 1.1rem; margin-top: 0.45rem; }
+.design-status.error { color: #9b3636; }
+.design-sidebar .asset-columns { grid-template-columns: 1fr; }
+.design-sidebar .asset-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.design-sidebar .style-picker-header {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.design-sidebar .style-picker-actions {
+  width: 100%;
+  justify-content: space-between;
+}
+.design-sidebar .style-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1050px) {
+  .chat-shell {
+    height: auto;
+    min-height: calc(100vh - 78px);
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .design-sidebar {
+    height: auto;
+    overflow: visible;
+    padding-right: 0;
+  }
+  .chat-workspace { height: auto; }
+  .messages {
+    flex: 0 0 auto;
+    height: clamp(320px, 45vh, 520px);
+  }
+  .design-sidebar .asset-columns {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.65fr);
+  }
+  .design-sidebar .asset-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .design-sidebar .style-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 @media (max-width: 768px) {
   header {
     height: 64px;
@@ -757,7 +871,8 @@ header {
   .auth-user { display: none; }
   .auth-btn { padding: 0.38rem 0.52rem; font-size: 0.66rem; }
   .chat-shell {
-    height: calc(100vh - 64px);
+    height: auto;
+    min-height: calc(100vh - 64px);
     padding: 1rem 0 0.9rem;
   }
   .messages {
@@ -786,7 +901,7 @@ header {
     flex-basis: 100%;
     justify-content: space-between;
   }
-  .style-grid {
+  .design-sidebar .style-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.42rem;
   }
@@ -796,6 +911,9 @@ header {
   .hint {
     width: calc(100% - 1.7rem);
   }
+  .design-assets { width: calc(100% - 1.7rem); }
+  .design-sidebar .asset-columns { grid-template-columns: 1fr; }
+  .design-sidebar .asset-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .actions { justify-content: flex-end; }
   .image-lightbox {
     padding: 1rem;
@@ -816,18 +934,44 @@ header {
     <span class="auth-user" id="authUser">未登录</span>
     <button class="auth-btn" type="button" id="authOpenButton">登录</button>
     <button class="auth-btn" type="button" id="logoutButton" hidden>退出</button>
+    <button class="new-design-btn" type="button" id="newDesignButton">新建设计</button>
   </div>
 </header>
 
 <main class="chat-shell">
-  <section class="messages" id="messages" aria-live="polite">
-    <div class="empty-state" id="emptyState">
-      <div class="empty-title">有什么可以帮您？</div>
-      <div class="empty-sub">Ask about garden design, materials, routes, places, or anything else.</div>
+  <aside class="design-sidebar" aria-label="设计配置">
+    <div class="design-assets" id="designAssets">
+      <div class="design-assets-head">
+        <div>
+          <div class="design-assets-title">设计素材</div>
+          <div class="design-assets-sub">生成时同时使用空间图与全部石材图；没有空间图时按所选风格自行布局。</div>
+        </div>
+      </div>
+      <div class="asset-columns">
+        <div class="asset-section">
+          <div class="asset-section-head">
+            <div class="asset-section-title">庭院空间图 · 最多 1 张</div>
+            <button class="asset-btn" type="button" id="spaceUploadButton" data-design-control>上传/替换</button>
+          </div>
+          <input id="spaceImageInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+          <div id="spaceImageCard"></div>
+          <div class="asset-help">用于约束空间结构、透视和建筑边界。</div>
+        </div>
+        <div class="asset-section">
+          <div class="asset-section-head">
+            <div class="asset-section-title">石材方案 · 1–6 张</div>
+            <div>
+              <button class="asset-clear-btn" type="button" id="clearMaterialsButton" data-design-control>清空</button>
+              <button class="asset-btn" type="button" id="materialUploadButton" data-design-control>添加石材图</button>
+            </div>
+          </div>
+          <input id="materialImageInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+          <div class="asset-list" id="materialImageList"></div>
+          <div class="asset-help">每张图代表一种石材；名称可留空，用途可多选。</div>
+        </div>
+      </div>
+      <div class="design-status" id="designStatus" aria-live="polite"></div>
     </div>
-  </section>
-
-  <section>
     <div class="style-picker" id="stylePicker">
       <div class="style-picker-header">
         <div class="style-picker-title">选择庭院风格</div>
@@ -838,6 +982,15 @@ header {
       </div>
       <div class="style-grid" id="styleGrid" aria-live="polite"></div>
     </div>
+  </aside>
+
+  <section class="chat-workspace">
+    <section class="messages" id="messages" aria-live="polite">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-title">有什么可以帮您？</div>
+        <div class="empty-sub">Ask about garden design, materials, routes, places, or anything else.</div>
+      </div>
+    </section>
     <form class="composer" id="composer">
       <div class="input-stack">
         <div class="tool-actions" aria-label="快捷功能">
@@ -854,7 +1007,7 @@ header {
               <path d="m21 15-5-5L5 19"></path>
             </svg>
           </button>
-          <input id="imageInput" type="file" accept="image/*" hidden>
+          <input id="imageInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
           <div class="image-preview" id="imagePreview">
             <img id="imagePreviewImg" alt="已选择的图片">
             <span class="image-name" id="imageName"></span>
@@ -943,6 +1096,15 @@ const stylePicker = document.getElementById("stylePicker");
 const styleGrid = document.getElementById("styleGrid");
 const styleSelection = document.getElementById("styleSelection");
 const styleToggleButton = document.getElementById("styleToggleButton");
+const newDesignButton = document.getElementById("newDesignButton");
+const spaceUploadButton = document.getElementById("spaceUploadButton");
+const spaceImageInput = document.getElementById("spaceImageInput");
+const spaceImageCard = document.getElementById("spaceImageCard");
+const materialUploadButton = document.getElementById("materialUploadButton");
+const materialImageInput = document.getElementById("materialImageInput");
+const materialImageList = document.getElementById("materialImageList");
+const clearMaterialsButton = document.getElementById("clearMaterialsButton");
+const designStatus = document.getElementById("designStatus");
 
 let abortController = null;
 let selectedImage = null;
@@ -950,10 +1112,12 @@ let selectedStyle = null;
 let styleGridExpanded = true;
 let pendingStyleGeneration = false;
 let authMode = "login";
+let gardenStyles = [];
+let designState = { space_image: null, materials: [], selected_style_id: null, expired: false };
 const SESSION_ID_KEY = "shijing_chat_session_id";
 const AUTH_TOKEN_KEY = "shijing_auth_token";
 const AUTH_USER_KEY = "shijing_auth_user";
-const sessionId = getOrCreateSessionId();
+let sessionId = getOrCreateSessionId();
 
 function getAuthToken() {
   return localStorage.getItem(AUTH_TOKEN_KEY);
@@ -1027,6 +1191,7 @@ async function submitAuth() {
       throw new Error(payload.detail || `HTTP ${response.status}`);
     }
     setAuthSession(payload.access_token, payload.user);
+    await loadDesignSession();
     authForm.reset();
     closeAuthModal();
     input.focus();
@@ -1066,6 +1231,304 @@ function getOrCreateSessionId() {
   return value;
 }
 
+function createNewSessionId() {
+  const value = crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}_${Array.from(crypto.getRandomValues(new Uint32Array(4))).map(v => v.toString(36)).join("")}`;
+  localStorage.setItem(SESSION_ID_KEY, value);
+  return value;
+}
+
+function designHeaders(json = false) {
+  const headers = { "X-Design-Session": sessionId };
+  const token = getAuthToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (json) headers["Content-Type"] = "application/json";
+  return headers;
+}
+
+async function designRequest(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: { ...designHeaders(Boolean(options.body)), ...(options.headers || {}) },
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.detail || `HTTP ${response.status}`);
+  }
+  if (response.status === 204) return null;
+  return response.json();
+}
+
+function setDesignStatus(message = "", isError = false) {
+  designStatus.textContent = message;
+  designStatus.classList.toggle("error", isError);
+}
+
+function renderSpaceImage() {
+  spaceImageCard.replaceChildren();
+  const item = designState.space_image;
+  if (!item) {
+    const empty = document.createElement("div");
+    empty.className = "empty-asset";
+    empty.textContent = "尚未上传；生成时将自行设计庭院布局";
+    spaceImageCard.appendChild(empty);
+    return;
+  }
+  const card = document.createElement("div");
+  card.className = "asset-card space-card";
+  const img = document.createElement("img");
+  img.className = "asset-thumb";
+  img.src = item.image;
+  img.alt = item.original_name || "庭院空间图";
+  img.addEventListener("click", () => openImageLightbox(item.image, img.alt));
+  const info = document.createElement("div");
+  const title = document.createElement("div");
+  title.className = "asset-section-title";
+  title.textContent = item.original_name || "庭院空间图";
+  const hint = document.createElement("div");
+  hint.className = "asset-help";
+  hint.textContent = "刷新后自动恢复";
+  info.append(title, hint);
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "asset-remove";
+  remove.dataset.designControl = "";
+  remove.title = "删除庭院空间图";
+  remove.textContent = "×";
+  remove.addEventListener("click", removeSpaceImage);
+  card.append(img, info, remove);
+  spaceImageCard.appendChild(card);
+}
+
+const MATERIAL_USAGES = ["地面铺装", "墙面", "台阶", "围边", "景墙", "水景", "其他"];
+
+function renderMaterialImages() {
+  materialImageList.replaceChildren();
+  clearMaterialsButton.disabled = designState.materials.length === 0 || Boolean(abortController);
+  materialUploadButton.disabled = designState.materials.length >= 6 || Boolean(abortController);
+  if (!designState.materials.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-asset";
+    empty.textContent = "可一次选择多张，失败图片可单独重试";
+    materialImageList.appendChild(empty);
+    return;
+  }
+  for (const item of designState.materials) {
+    const card = document.createElement("div");
+    card.className = "asset-card";
+    const img = document.createElement("img");
+    img.className = "asset-thumb";
+    img.src = item.image;
+    img.alt = item.name || item.original_name || "石材参考图";
+    img.addEventListener("click", () => openImageLightbox(item.image, img.alt));
+    const name = document.createElement("input");
+    name.className = "asset-card-name";
+    name.placeholder = "石材名称（可留空）";
+    name.maxLength = 100;
+    name.value = item.name || "";
+    name.dataset.designControl = "";
+    const usageList = document.createElement("div");
+    usageList.className = "usage-list";
+    for (const usage of MATERIAL_USAGES) {
+      const label = document.createElement("label");
+      label.className = "usage-option";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = usage;
+      checkbox.checked = (item.usages || []).includes(usage);
+      checkbox.dataset.designControl = "";
+      label.append(checkbox, document.createTextNode(usage));
+      usageList.appendChild(label);
+      checkbox.addEventListener("change", () => saveMaterialMetadata(item, card));
+    }
+    name.addEventListener("change", () => saveMaterialMetadata(item, card));
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "asset-remove";
+    remove.dataset.designControl = "";
+    remove.title = "删除石材参考图";
+    remove.textContent = "×";
+    remove.addEventListener("click", () => removeMaterialImage(item.id));
+    card.append(img, name, usageList, remove);
+    materialImageList.appendChild(card);
+  }
+}
+
+function renderDesignState() {
+  renderSpaceImage();
+  renderMaterialImages();
+  if (designState.expired) {
+    setDesignStatus("设计图片已过期，请重新上传。已选择的庭院风格仍可继续使用。", true);
+  }
+}
+
+async function loadDesignSession() {
+  try {
+    designState = await designRequest("/api/design/session");
+    renderDesignState();
+    const restoredStyle = gardenStyles.find(style => style.id === designState.selected_style_id);
+    if (restoredStyle) {
+      selectStyle(restoredStyle, false);
+      pendingStyleGeneration = !designState.generated_image_url;
+    }
+    if (designState.generated_image_url) {
+      const existing = messagesEl.querySelector(`[data-generated-url="${CSS.escape(designState.generated_image_url)}"]`);
+      if (!existing) {
+        const bubble = addMessage("assistant", "");
+        bubble.dataset.generatedUrl = designState.generated_image_url;
+        const label = designState.effect_is_current ? "当前效果图" : "历史效果图（设计素材已变化）";
+        bubble.innerHTML = renderMarkdown(`**${label}**\n\n![庭院效果图](${designState.generated_image_url})`);
+        scrollToBottom();
+      }
+    }
+  } catch (error) {
+    setDesignStatus(`设计素材恢复失败：${error.message}`, true);
+  }
+}
+
+function validateImageFile(file) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    throw new Error(`${file.name}：仅支持 JPEG、PNG 或 WebP`);
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error(`${file.name}：原图不能超过 10MB`);
+  }
+}
+
+async function uploadSpaceImage(file) {
+  try {
+    validateImageFile(file);
+    setDesignStatus(`正在上传 ${file.name}…`);
+    const image = await compressImage(file);
+    designState.space_image = await designRequest("/api/design/space-image", {
+      method: "PUT",
+      body: JSON.stringify({ image, original_name: file.name }),
+    });
+    designState.expired = false;
+    renderDesignState();
+    setDesignStatus("庭院空间图已保存");
+  } catch (error) {
+    setDesignStatus(error.message, true);
+  } finally {
+    spaceImageInput.value = "";
+  }
+}
+
+async function removeSpaceImage() {
+  try {
+    await designRequest("/api/design/space-image", { method: "DELETE" });
+    designState.space_image = null;
+    renderDesignState();
+    setDesignStatus("庭院空间图已删除；下次生成将自行设计布局");
+  } catch (error) {
+    setDesignStatus(error.message, true);
+  }
+}
+
+async function uploadMaterialImages(files) {
+  const available = Math.max(0, 6 - designState.materials.length);
+  const selected = Array.from(files).slice(0, available);
+  const errors = [];
+  for (const file of selected) {
+    try {
+      validateImageFile(file);
+      setDesignStatus(`正在上传 ${file.name}…`);
+      const image = await compressImage(file);
+      const saved = await designRequest("/api/design/material-images", {
+        method: "POST",
+        body: JSON.stringify({ image, original_name: file.name, name: null, usages: [] }),
+      });
+      designState.materials.push(saved);
+      renderMaterialImages();
+    } catch (error) {
+      errors.push(`${file.name}：${error.message}`);
+    }
+  }
+  if (Array.from(files).length > available) errors.push(`最多保留 6 张，超出的图片未上传`);
+  materialImageInput.value = "";
+  designState.expired = false;
+  setDesignStatus(
+    errors.length ? `部分图片上传失败：${errors.join("；")}` : `已保存 ${selected.length} 张石材参考图`,
+    errors.length > 0,
+  );
+}
+
+async function saveMaterialMetadata(item, card) {
+  const name = card.querySelector(".asset-card-name").value.trim();
+  const usages = Array.from(card.querySelectorAll('.usage-option input:checked')).map(input => input.value);
+  try {
+    const saved = await designRequest(`/api/design/material-images/${item.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: name || null, usages }),
+    });
+    Object.assign(item, saved);
+    setDesignStatus("石材名称与用途已保存");
+  } catch (error) {
+    setDesignStatus(error.message, true);
+  }
+}
+
+async function removeMaterialImage(imageId) {
+  try {
+    await designRequest(`/api/design/material-images/${imageId}`, { method: "DELETE" });
+    designState.materials = designState.materials.filter(item => item.id !== imageId);
+    renderMaterialImages();
+    setDesignStatus("石材参考图已删除");
+  } catch (error) {
+    setDesignStatus(error.message, true);
+  }
+}
+
+async function clearMaterialImages() {
+  if (!designState.materials.length) return;
+  if (!confirm("确认清空当前石材方案？")) return;
+  try {
+    await designRequest("/api/design/material-images", { method: "DELETE" });
+    designState.materials = [];
+    renderMaterialImages();
+    setDesignStatus("石材方案已清空");
+  } catch (error) {
+    setDesignStatus(error.message, true);
+  }
+}
+
+async function persistSelectedStyle(style) {
+  try {
+    await designRequest("/api/design/style", {
+      method: "PATCH",
+      body: JSON.stringify({ style_id: style.id }),
+    });
+    designState.selected_style_id = style.id;
+  } catch (error) {
+    setDesignStatus(`风格保存失败：${error.message}`, true);
+  }
+}
+
+async function startNewDesign() {
+  if (!confirm("确认新建设计？当前会话中的空间图、石材图、效果图和消息将立即清除。")) return;
+  try {
+    await designRequest("/api/design/reset", { method: "POST" });
+    sessionId = createNewSessionId();
+    designState = { space_image: null, materials: [], selected_style_id: null, expired: false };
+    selectedStyle = null;
+    pendingStyleGeneration = false;
+    styleGridExpanded = true;
+    styleSelection.textContent = "选择一种风格后可直接生成效果图";
+    styleGrid.querySelectorAll(".style-card").forEach(card => {
+      card.classList.remove("selected");
+      card.setAttribute("aria-pressed", "false");
+    });
+    updateStylePickerVisibility();
+    messagesEl.querySelectorAll(".message-row").forEach(row => row.remove());
+    emptyState.hidden = false;
+    renderDesignState();
+    setDesignStatus("已创建新的设计会话");
+  } catch (error) {
+    setDesignStatus(error.message, true);
+  }
+}
+
 function scrollToBottom() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -1086,13 +1549,13 @@ function renderStyleCards(styles) {
     category.className = "style-card-category";
     category.textContent = style.category;
     card.append(name, category);
-    card.addEventListener("click", () => selectStyle(style));
+    card.addEventListener("click", () => selectStyle(style, true));
     styleGrid.appendChild(card);
   }
   updateStylePickerVisibility();
 }
 
-function selectStyle(style) {
+function selectStyle(style, persist = true) {
   selectedStyle = style;
   styleGridExpanded = false;
   pendingStyleGeneration = true;
@@ -1103,6 +1566,7 @@ function selectStyle(style) {
     card.setAttribute("aria-pressed", String(selected));
   });
   updateStylePickerVisibility();
+  if (persist) persistSelectedStyle(style);
   input.focus();
 }
 
@@ -1125,7 +1589,9 @@ async function loadGardenStyles() {
     const response = await fetch("/api/styles");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const styles = await response.json();
+    gardenStyles = styles;
     renderStyleCards(styles);
+    return styles;
   } catch {
     styleSelection.textContent = "风格列表加载失败，仍可正常聊天";
     styleToggleButton.hidden = true;
@@ -1150,9 +1616,10 @@ function addMessage(role, text = "", extraClass = "") {
   return bubble;
 }
 
-function addUserMessage(text, image) {
+function addUserMessage(text, images) {
   const bubble = addMessage("user", text || "请分析这张图片");
-  if (image) {
+  const imageList = Array.isArray(images) ? images : (images ? [images] : []);
+  for (const image of imageList) {
     const img = document.createElement("img");
     img.src = image.dataUrl;
     img.alt = image.name || "用户上传的图片";
@@ -1380,6 +1847,11 @@ function setLoading(isLoading) {
   recognizeButton.disabled = isLoading;
   effectButton.disabled = isLoading;
   quoteButton.disabled = isLoading;
+  newDesignButton.disabled = isLoading;
+  document.querySelectorAll("[data-design-control]").forEach(control => {
+    control.disabled = isLoading;
+  });
+  styleGrid.querySelectorAll(".style-card").forEach(card => { card.disabled = isLoading; });
   stopButton.hidden = !isLoading;
   sendIcon.hidden = isLoading;
   if (isLoading) {
@@ -1391,6 +1863,7 @@ function setLoading(isLoading) {
     document.getElementById("sendSpinner")?.remove();
     sendIcon.hidden = false;
     abortController = null;
+    renderMaterialImages();
   }
 }
 
@@ -1444,8 +1917,17 @@ async function sendMessage(mode = "chat") {
 
   const token = getAuthToken();
 
-  const imageForRequest = selectedImage;
-  addUserMessage(actionRequest.displayText, imageForRequest);
+  const imageForRequest = actionRequest.shouldGenerateEffectImage ? null : selectedImage;
+  const designThumbnails = actionRequest.shouldGenerateEffectImage
+    ? [
+        ...(designState.space_image ? [{ dataUrl: designState.space_image.image, name: "庭院空间图" }] : []),
+        ...designState.materials.map((item, index) => ({
+          dataUrl: item.image,
+          name: item.name || item.original_name || `石材 ${index + 1}`,
+        })),
+      ]
+    : imageForRequest;
+  addUserMessage(actionRequest.displayText, designThumbnails);
   input.value = "";
   clearSelectedImage();
   resizeInput();
@@ -1517,6 +1999,7 @@ authOpenButton.addEventListener("click", () => openAuthModal("login"));
 authCloseButton.addEventListener("click", closeAuthModal);
 logoutButton.addEventListener("click", () => {
   clearAuthSession();
+  loadDesignSession();
   input.focus();
 });
 loginTab.addEventListener("click", () => setAuthMode("login"));
@@ -1534,8 +2017,11 @@ uploadButton.addEventListener("click", () => imageInput.click());
 imageInput.addEventListener("change", async () => {
   const file = imageInput.files?.[0];
   if (!file) return;
-  if (!file.type.startsWith("image/")) {
+  try {
+    validateImageFile(file);
+  } catch (error) {
     clearSelectedImage();
+    setDesignStatus(error.message, true);
     return;
   }
 
@@ -1580,7 +2066,15 @@ styleToggleButton.addEventListener("click", () => {
     stylePicker.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 });
-loadGardenStyles();
+spaceUploadButton.addEventListener("click", () => spaceImageInput.click());
+spaceImageInput.addEventListener("change", () => {
+  const file = spaceImageInput.files?.[0];
+  if (file) uploadSpaceImage(file);
+});
+materialUploadButton.addEventListener("click", () => materialImageInput.click());
+materialImageInput.addEventListener("change", () => uploadMaterialImages(materialImageInput.files || []));
+clearMaterialsButton.addEventListener("click", clearMaterialImages);
+newDesignButton.addEventListener("click", startNewDesign);
 
 stopButton.addEventListener("click", () => {
   abortController?.abort();
@@ -1596,7 +2090,12 @@ document.addEventListener("keydown", (event) => {
 });
 
 updateAuthUi();
-refreshCurrentUser();
+async function initializeDesignApp() {
+  await refreshCurrentUser();
+  await loadGardenStyles();
+  await loadDesignSession();
+}
+initializeDesignApp();
 input.focus();
 </script>
 </body>
