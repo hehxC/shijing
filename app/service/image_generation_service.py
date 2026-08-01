@@ -23,9 +23,10 @@ GEMINI_IMAGE_MODEL = (
     or os.getenv("IMAGE_MODEL")
     or "gemini-3.1-flash-image"
 )
-GEMINI_IMAGE_ENDPOINT_TEMPLATE = os.getenv(
-    "GEMINI_IMAGE_ENDPOINT_TEMPLATE",
-    "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+GEMINI_IMAGE_ENDPOINT = (
+    os.getenv("GEMINI_IMAGE_ENDPOINT")
+    or os.getenv("GEMINI_IMAGE_ENDPOINT_TEMPLATE")
+    or "https://generativelanguage.googleapis.com/v1beta/interactions"
 )
 GENERATED_DIR = Path(__file__).resolve().parents[2] / "static" / "generated"
 MAX_PROMPT_MATERIALS = int(
@@ -131,7 +132,55 @@ def _build_prompt(message: str, has_reference_image: bool) -> str:
     )
 
 
-def _image_data_url_to_gemini_part(image: str) -> dict:
+def build_design_generation_prompt(
+    user_request: str,
+    *,
+    has_space_image: bool,
+    materials,
+    editing_previous_effect: bool = False,
+) -> str:
+    """Build the invariant prompt shared by initial generation and later edits."""
+    material_lines = []
+    for index, material in enumerate(materials, 1):
+        name = getattr(material, "name", None) or getattr(material, "original_name", None)
+        usages = tuple(getattr(material, "usages", ()) or ())
+        usage_text = "、".join(usages) if usages else "由系统根据方案合理安排"
+        material_lines.append(
+            f"{index}. {name or f'石材 {index}'}；预期用途：{usage_text}；"
+            "颜色、纹理和质感以对应参考图为准。"
+        )
+
+    if editing_previous_effect:
+        layout_rule = (
+            "第 1 张输入图是上一轮已生成的效果图（当前效果图）。保持其构图、透视、建筑边界和未要求修改的元素，"
+            "只执行本轮文字修改。不要使用庭院空间图重新布局。"
+        )
+    elif has_space_image:
+        layout_rule = (
+            "第 1 张输入图是庭院空间图。严格保留空间结构、透视关系和主要建筑边界，"
+            "在该空间内完成庭院设计。"
+        )
+    else:
+        layout_rule = "没有庭院空间图，请根据所选庭院风格自行设计完整、合理的庭院布局。"
+
+    if material_lines:
+        material_rule = (
+            "后续输入图是石材参考图，顺序与下列清单一致。所有石材都必须在最终效果图中清晰出现；"
+            "不得改变石材颜色、纹理或质感，不得替换，也不得增加方案之外的其他石材。"
+            "可以使用植物、木材、金属和水景等非石材元素。\n"
+            + "\n".join(material_lines)
+        )
+    else:
+        material_rule = "没有石材参考图，可按庭院风格选择合理石材。"
+
+    request = user_request.strip() or "生成庭院效果图"
+    return (
+        f"{layout_rule}\n{material_rule}\n"
+        f"本轮要求：{request}\n"
+        "只生成一次最终效果图。输出为 16:9、2K 的专业庭院建筑可视化，"
+        "空间尺度合理、施工逻辑可落地、自然光影、高清真实，不添加水印、标题、标注或无关文字。"
+    )
+def _image_data_url_to_interaction_input(image: str) -> dict:
     try:
         header, data = image.split(",", 1)
         mime_type = header.split(";", 1)[0].split(":", 1)[1]
@@ -142,10 +191,9 @@ def _image_data_url_to_gemini_part(image: str) -> dict:
         raise ImageGenerationError("参考图片必须是有效的图片 Data URL")
 
     return {
-        "inline_data": {
-            "mime_type": mime_type,
-            "data": data,
-        }
+        "type": "image",
+        "mime_type": mime_type,
+        "data": data,
     }
 
 
@@ -174,24 +222,33 @@ def _save_generated_image_data(mime_type: str, data: str) -> str:
     return f"/static/generated/{filename}"
 
 
-def _call_gemini_image(prompt: str, image: str | None) -> str:
+def _call_gemini_image(
+    prompt: str,
+    image: str | None,
+    additional_images: list[str] | tuple[str, ...] | None = None,
+) -> str:
     api_key = os.getenv("GEMINI_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key:
         raise ImageGenerationError("未配置 GEMINI_KEY")
 
-    parts: list[dict] = []
+    inputs: list[dict] = []
     if image:
-        parts.append(_image_data_url_to_gemini_part(image))
-    parts.append({"text": prompt})
+        inputs.append(_image_data_url_to_interaction_input(image))
+    for additional_image in additional_images or []:
+        inputs.append(_image_data_url_to_interaction_input(additional_image))
+    inputs.append({"type": "text", "text": prompt})
 
     payload = {
-        "contents": [{"role": "user", "parts": parts}],
-        "generationConfig": {
-            "responseModalities": ["TEXT", "IMAGE"],
+        "model": GEMINI_IMAGE_MODEL,
+        "input": inputs,
+        "response_format": {
+            "type": "image",
+            "aspect_ratio": "16:9",
+            "image_size": "2K",
         },
     }
     request = Request(
-        GEMINI_IMAGE_ENDPOINT_TEMPLATE.format(model=GEMINI_IMAGE_MODEL),
+        GEMINI_IMAGE_ENDPOINT.format(model=GEMINI_IMAGE_MODEL),
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
@@ -210,20 +267,25 @@ def _call_gemini_image(prompt: str, image: str | None) -> str:
         raise ImageGenerationError(f"效果图生成服务请求失败：{exc}") from exc
 
     try:
-        parts = result["candidates"][0]["content"]["parts"]
-        for part in parts:
-            inline_data = part.get("inlineData") or part.get("inline_data")
-            if not inline_data:
+        for step in reversed(result.get("steps") or []):
+            if step.get("type") != "model_output":
                 continue
-            mime_type = inline_data.get("mimeType") or inline_data.get("mime_type") or "image/png"
-            data = inline_data["data"]
-            return _save_generated_image_data(mime_type, data)
-    except (KeyError, IndexError, TypeError) as exc:
+            for content in reversed(step.get("content") or []):
+                if content.get("type") != "image" or not content.get("data"):
+                    continue
+                mime_type = content.get("mime_type") or content.get("mimeType") or "image/jpeg"
+                return _save_generated_image_data(mime_type, content["data"])
+    except (AttributeError, KeyError, TypeError) as exc:
         message = result.get("error", {}).get("message") or "未返回图片数据"
         raise ImageGenerationError(f"效果图生成失败：{message}") from exc
     raise ImageGenerationError("效果图生成失败：未返回图片数据")
 
 
-def generate_effect_image(message: str, image: str | None = None) -> str:
+def generate_effect_image(
+    message: str,
+    image: str | None = None,
+    *,
+    additional_images: list[str] | tuple[str, ...] | None = None,
+) -> str:
     prompt = _build_prompt(message, has_reference_image=bool(image))
-    return _call_gemini_image(prompt, image)
+    return _call_gemini_image(prompt, image, additional_images)

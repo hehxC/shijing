@@ -21,8 +21,13 @@ from app.garden_styles import GardenStyle, build_style_generation_request
 from app.service.chat_intent_router import route_chat_intent
 from app.service.image_generation_service import (
     ImageGenerationError,
+    build_design_generation_prompt,
     generated_image_as_data_url,
     generate_effect_image,
+)
+from app.service.design_session_service import (
+    get_design_generation_context,
+    material_scheme_summary,
 )
 from app.service.session_context_service import (
     get_session_context,
@@ -250,27 +255,64 @@ def _effect_image_agent(state: ChatAgentState) -> Iterator[str]:
         image_alt = "AI 生成的装修效果图"
 
     try:
-        if not image and generated_context:
-            if (
-                not state["force_generate_effect_image"]
-                and intent
-                and intent.use_image == "generated"
-                and generated_context.generated_image_url
-            ):
-                image = generated_image_as_data_url(generated_context.generated_image_url)
-                generation_request = (
-                    "基于上一轮已生成的效果图进行局部修改，保持原有构图、透视、主体风格、"
-                    f"已有材料和植物不变，只按用户新要求调整：{generation_request}"
-                )
-            elif generated_context.reference_image_data_url:
-                image = generated_context.reference_image_data_url
-                if not state["force_generate_effect_image"]:
-                    generation_request = f"基于用户上次上传的原始参考图，{generation_request}"
+        try:
+            design = get_design_generation_context(current_session_id)
+        except Exception:
+            # Keep the pre-design-session chat flow usable while an old database is migrating.
+            design = None
 
-        image_url = generate_effect_image(generation_request, image)
+        materials = design.materials if design else ()
+        additional_images: list[str] = []
+        editing_previous_effect = False
+
+        if (
+            not state["force_generate_effect_image"]
+            and intent
+            and intent.use_image == "generated"
+            and generated_context
+            and generated_context.generated_image_url
+            and (
+                design.effect_is_current
+                if design and design.generated_image_url
+                else True
+            )
+        ):
+            image = generated_image_as_data_url(generated_context.generated_image_url)
+            additional_images = [material.image for material in materials]
+            editing_previous_effect = True
+        else:
+            if not image:
+                if design and design.space_image:
+                    image = design.space_image
+                elif generated_context and generated_context.reference_image_data_url:
+                    image = generated_context.reference_image_data_url
+            material_images = [material.image for material in materials]
+            if image and material_images and image == material_images[0]:
+                additional_images = material_images[1:]
+            else:
+                additional_images = material_images
+            if not image and material_images:
+                image = material_images[0]
+                additional_images = material_images[1:]
+
+        generation_request = build_design_generation_prompt(
+            generation_request,
+            has_space_image=bool(design and design.space_image and not editing_previous_effect),
+            materials=materials,
+            editing_previous_effect=editing_previous_effect,
+        )
+        image_url = generate_effect_image(
+            generation_request,
+            image,
+            additional_images=additional_images,
+        )
         _clear_session_checkpoints(current_session_id)
         remember_generated_image(current_session_id, image_url, generation_request)
-        yield f"{success_prefix}：\n\n![{image_alt}]({image_url})"
+        summary = material_scheme_summary(materials)
+        yield (
+            f"{success_prefix}：\n\n![{image_alt}]({image_url})"
+            f"\n\n**本次石材方案**\n{summary}"
+        )
     except ImageGenerationError as exc:
         yield f"效果图生成失败：{exc}"
 

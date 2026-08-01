@@ -9,6 +9,7 @@ from app.service.auth_service import get_optional_current_user
 from app.service.chat_message_log_service import remember_user_message
 from app.service.chat_service import stream_chat  # 业务逻辑：向大模型发消息并获取流式回复
 from app.garden_styles import get_garden_style, list_garden_styles
+from app.service.design_session_service import save_selected_style
 
 router = APIRouter()  # 创建一个路由器实例，main.py 会通过 include_router 把它挂载到主应用上
 
@@ -54,6 +55,8 @@ async def chat(req: ChatRequest, current_user: User | None = Depends(get_optiona
     selected_style = get_garden_style(req.style_id)
     if req.generate_effect_image and selected_style is None:
         raise HTTPException(status_code=400, detail="请选择有效的庭院风格后再生成效果图")
+    if req.generate_effect_image and selected_style is not None:
+        save_selected_style(session_id, selected_style.id)
 
     logged_message = req.message
     if req.generate_effect_image and selected_style is not None:

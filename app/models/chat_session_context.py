@@ -22,6 +22,10 @@ class ChatSessionContext(Base):
     generated_image_url: Mapped[str | None] = mapped_column(String(512))
     generation_request: Mapped[str | None] = mapped_column(Text)
     material_analysis: Mapped[dict | None] = mapped_column(JSON)
+    selected_style_id: Mapped[str | None] = mapped_column(String(64))
+    context_revision: Mapped[int] = mapped_column(nullable=False, default=0)
+    effect_revision: Mapped[int | None] = mapped_column()
+    assets_expired_at: Mapped[datetime | None] = mapped_column(DateTime)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
