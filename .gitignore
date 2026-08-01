@@ -1,2 +1,56 @@
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.tox/
+.nox/
+
+# Test and coverage output
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Packaging output
+build/
+dist/
+*.egg-info/
+
+# IDE and editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local AI and agent tooling
+.claude/
+.codex/
 .firecrawl/
+.jbeval/
+
+# Runtime files and generated artifacts
+*.log
+tmp/
+temp/
+output/
 static/generated/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
