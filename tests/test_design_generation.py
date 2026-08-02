@@ -40,8 +40,15 @@ class DesignGenerationTests(unittest.TestCase):
         name, usages = normalize_material_metadata("  青石  ", ["台阶", "台阶", "景墙"])
         self.assertEqual("青石", name)
         self.assertEqual(["台阶", "景墙"], usages)
+        _, new_usages = normalize_material_metadata(None, ["汀步", "水景", "水景观", "驳岸"])
+        self.assertEqual(["汀步", "水景", "水景观", "驳岸"], new_usages)
         with self.assertRaises(DesignSessionError):
             normalize_material_metadata(None, ["屋顶"])
+        with self.assertRaisesRegex(DesignSessionError, "最多选择 7 个用途"):
+            normalize_material_metadata(
+                None,
+                ["地面铺装", "汀步", "台阶", "墙面", "景墙", "围边", "水景", "驳岸"],
+            )
 
     def test_prompt_uses_space_and_every_material_without_substitution(self):
         prompt = build_design_generation_prompt(

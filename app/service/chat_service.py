@@ -13,7 +13,6 @@ from langchain_community.utilities import SQLDatabase
 from langchain_deepseek import ChatDeepSeek
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import AIMessage, AIMessageChunk
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, StateGraph
 
 from app.database import engine
@@ -35,6 +34,10 @@ from app.service.session_context_service import (
     remember_material_analysis,
     remember_reference_image,
 )
+from app.service.conversation_service import (
+    load_recent_model_history,
+    protected_generated_url,
+)
 
 load_dotenv()
 
@@ -44,7 +47,6 @@ IMAGE_CHAT_MODEL = os.getenv("IMAGE_CHAT_MODEL", "qwen-vl-max-latest")
 DEFAULT_SESSION_ID = "default"
 VISION_THREAD_SUFFIX = "vision"
 TEXT_THREAD_SUFFIX = "text"
-CHECKPOINTER = InMemorySaver()
 SQL_DB = SQLDatabase(
     engine,
     include_tables=["materials"],
@@ -91,7 +93,6 @@ def get_chat_agent(model_name: str):
         model,
         tools=tools,
         system_prompt=load_chat_agent_prompt(),
-        checkpointer=CHECKPOINTER,
     )
 
 
@@ -138,12 +139,8 @@ def _checkpoint_thread_id(session_id: str, model_name: str) -> str:
 
 
 def _clear_session_checkpoints(session_id: str) -> None:
-    """生成新效果图后清理旧方案的模型短期历史。
-    应用层的 MySQL 会话上下文仍然保留并随后更新；这里只清理可能包含
-    旧图片或旧估价的 LangGraph checkpoint。
-    """
-    for suffix in (VISION_THREAD_SUFFIX, TEXT_THREAD_SUFFIX):
-        CHECKPOINTER.delete_thread(f"{session_id}:{suffix}")
+    """Compatibility hook retained after moving model memory to MySQL."""
+    return None
 
 
 class ChatAgentState(TypedDict):
@@ -160,6 +157,7 @@ class ChatAgentState(TypedDict):
     generated_context: object | None
     intent: object | None
     analyzing_generated_image: bool
+    history: list[dict]
 
 
 def _stream_model_agent(
@@ -167,18 +165,15 @@ def _stream_model_agent(
         message: str,
         image: str | None,
         session_id: str,
+        history: list[dict] | None = None,
 ) -> Iterator[str]:
-    """调用具体模型 Agent，并保持原来的流式输出行为。"""
+    """调用具体模型 Agent，并注入最近 10 轮持久化成功历史。"""
     agent = get_chat_agent(model)
-    config = {
-        "configurable": {
-            "thread_id": _checkpoint_thread_id(session_id, model),
-        }
-    }
+    messages = list(history or [])
+    messages.append({"role": "user", "content": _build_user_content(message, image)})
 
     for update in agent.stream(
-            {"messages": [{"role": "user", "content": _build_user_content(message, image)}]},
-            config=config,
+            {"messages": messages},
             stream_mode="updates",
     ):
         # 工具调用前的模型草稿可能包含 SQL，只发送没有工具调用的最终模型回复。
@@ -204,6 +199,7 @@ def _build_agent_state(
         remember_reference_image(current_session_id, image, message)
 
     generated_context = get_session_context(current_session_id)
+    history = load_recent_model_history(current_session_id, limit_turns=10)
     return {
         "message": message,
         "image": image,
@@ -213,6 +209,7 @@ def _build_agent_state(
         "generated_context": generated_context,
         "intent": None,
         "analyzing_generated_image": False,
+        "history": history,
     }
 
 
@@ -309,8 +306,9 @@ def _effect_image_agent(state: ChatAgentState) -> Iterator[str]:
         _clear_session_checkpoints(current_session_id)
         remember_generated_image(current_session_id, image_url, generation_request)
         summary = material_scheme_summary(materials)
+        display_image_url = protected_generated_url(current_session_id, image_url)
         yield (
-            f"{success_prefix}：\n\n![{image_alt}]({image_url})"
+            f"{success_prefix}：\n\n![{image_alt}]({display_image_url})"
             f"\n\n**本次石材方案**\n{summary}"
         )
     except ImageGenerationError as exc:
@@ -348,7 +346,9 @@ def _vision_analysis_agent(state: ChatAgentState) -> Iterator[str]:
         return
 
     final_response_parts: list[str] = []
-    for text in _stream_model_agent(IMAGE_CHAT_MODEL, message, image, current_session_id):
+    for text in _stream_model_agent(
+        IMAGE_CHAT_MODEL, message, image, current_session_id, state["history"]
+    ):
         final_response_parts.append(text)
         yield text
 
@@ -378,7 +378,9 @@ def _text_agent(state: ChatAgentState) -> Iterator[str]:
             f"用户当前问题：{message}"
         )
 
-    yield from _stream_model_agent(TEXT_CHAT_MODEL, message, None, state["session_id"])
+    yield from _stream_model_agent(
+        TEXT_CHAT_MODEL, message, None, state["session_id"], state["history"]
+    )
 
 
 def _stream_multi_agent_chat(
