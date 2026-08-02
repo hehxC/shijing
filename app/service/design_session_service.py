@@ -9,12 +9,14 @@ from sqlalchemy import delete, func, select
 
 from app.database import SessionLocal
 from app.models.chat_session_context import ChatSessionContext
+from app.models.chat_conversation import ChatConversation
 from app.models.design_reference_image import DesignReferenceImage
 
 
 SPACE_IMAGE = "space"
 MATERIAL_IMAGE = "material"
 MAX_MATERIAL_IMAGES = 6
+MAX_MATERIAL_USAGES = 7
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 RETENTION_DAYS = 30
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
@@ -25,6 +27,9 @@ ALLOWED_MATERIAL_USAGES = {
     "围边",
     "景墙",
     "水景",
+    "汀步",
+    "水景观",
+    "驳岸",
     "其他",
 }
 GENERATED_DIR = Path(__file__).resolve().parents[2] / "static" / "generated"
@@ -90,6 +95,8 @@ def normalize_material_metadata(
             raise DesignSessionError(f"不支持的石材用途：{value}")
         if value not in unique_usages:
             unique_usages.append(value)
+        if len(unique_usages) > MAX_MATERIAL_USAGES:
+            raise DesignSessionError(f"每种石材最多选择 {MAX_MATERIAL_USAGES} 个用途")
     return cleaned_name, unique_usages
 
 
@@ -323,14 +330,11 @@ def save_selected_style(session_id: str, style_id: str) -> None:
 def mark_effect_generated(session_id: str, image_url: str, request: str) -> None:
     with SessionLocal.begin() as db:
         context = _get_or_create_context(db, session_id)
-        old_image_url = context.generated_image_url
         context.generated_image_url = image_url
         context.generation_request = request.strip()
         context.material_analysis = None
         context.effect_revision = context.context_revision or 0
         context.updated_at = utcnow()
-    if old_image_url and old_image_url != image_url:
-        _delete_generated_file(old_image_url)
 
 
 def reset_design_session(session_id: str) -> None:
@@ -357,6 +361,9 @@ def cleanup_expired_design_assets(now: datetime | None = None) -> int:
                 select(ChatSessionContext).where(
                     ChatSessionContext.updated_at < cutoff,
                     ChatSessionContext.assets_expired_at.is_(None),
+                    ChatSessionContext.session_id.not_in(
+                        select(ChatConversation.session_id)
+                    ),
                 )
             )
         )
