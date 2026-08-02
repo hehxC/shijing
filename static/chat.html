@@ -1380,8 +1380,8 @@ a:focus-visible {
 
 /* 2026 structural refinement: tabbed brief + continuous conversation canvas. */
 .chat-shell {
-  grid-template-columns: minmax(340px, 380px) minmax(0, 1fr);
-  gap: clamp(1rem, 1.8vw, 1.6rem);
+  grid-template-columns: minmax(340px, 380px) clamp(76px, 6.5vw, 96px) minmax(0, 1fr);
+  gap: 0;
 }
 
 .design-sidebar {
@@ -1774,10 +1774,81 @@ a:focus-visible {
 .conversation-surface .tool-action-btn:hover { background: rgba(86, 101, 78, 0.15); }
 .conversation-surface .hint { padding: 0.52rem 1rem 0.65rem; }
 
+.design-transfer {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  isolation: isolate;
+}
+
+.design-transfer::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(214, 194, 155, 0.7), rgba(86, 101, 78, 0.24));
+}
+
+.effect-transfer-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 88px;
+  min-height: 48px;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(47, 53, 45, 0.24);
+  border-radius: 14px 5px 14px 5px;
+  background: #ece3d2;
+  color: #333a31;
+  box-shadow: 0 12px 28px rgba(47, 53, 45, 0.13);
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.22s ease, background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+.effect-transfer-arrow {
+  display: inline-block;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.15rem;
+  line-height: 0.8;
+  transition: transform 0.22s ease;
+}
+
+.effect-transfer-btn:hover,
+.effect-transfer-btn.is-ready {
+  border-color: #56654e;
+  background: #56654e;
+  color: #fffaf0;
+  box-shadow: 0 16px 34px rgba(47, 53, 45, 0.2);
+}
+
+.effect-transfer-btn:hover { transform: translateY(-1px); }
+.effect-transfer-btn:hover .effect-transfer-arrow { transform: translateX(3px); }
+.effect-transfer-btn:focus-visible { outline: 3px solid rgba(86, 101, 78, 0.26); outline-offset: 3px; }
+.effect-transfer-btn:disabled {
+  border-color: rgba(110, 106, 97, 0.18);
+  background: #e5dfd5;
+  color: rgba(110, 106, 97, 0.62);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
 button:active { transform: translateY(1px) scale(0.985); }
 
 @media (max-width: 1100px) {
-  .chat-shell { grid-template-columns: 330px minmax(0, 1fr); }
+  .chat-shell { grid-template-columns: 330px 72px minmax(0, 1fr); }
+  .effect-transfer-btn { min-width: 72px; padding-inline: 0.65rem; }
   .empty-state-inner { grid-template-columns: minmax(0, 1fr) minmax(180px, 0.72fr); gap: 1.2rem; }
   .empty-title { font-size: clamp(1.85rem, 3.8vw, 2.7rem); }
   .empty-visual { min-height: 220px; }
@@ -1794,6 +1865,18 @@ button:active { transform: translateY(1px) scale(0.985); }
 
 @media (max-width: 860px) {
   .chat-shell { grid-template-columns: 1fr; }
+  .design-transfer { min-height: 68px; }
+  .design-transfer::before {
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    height: auto;
+    background: linear-gradient(180deg, rgba(214, 194, 155, 0.7), rgba(86, 101, 78, 0.24));
+  }
+  .effect-transfer-btn { min-width: 132px; min-height: 42px; }
+  .effect-transfer-arrow { transform: rotate(90deg); }
+  .effect-transfer-btn:hover .effect-transfer-arrow { transform: rotate(90deg) translateX(3px); }
   .design-sidebar { height: min(690px, calc(100dvh - 96px)); min-height: 560px; overflow: hidden; padding: 0; }
   .chat-workspace { height: min(780px, calc(100dvh - 96px)); min-height: 650px; }
   .conversation-surface { height: 100%; }
@@ -1832,6 +1915,11 @@ button:active { transform: translateY(1px) scale(0.985); }
   .empty-flow { gap: 0.38rem; font-size: 0.58rem; }
   .empty-visual { display: none; }
   .conversation-surface .composer { width: auto; margin-inline: 0.65rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .effect-transfer-btn,
+  .effect-transfer-arrow { transition: none; }
 }
 
 .auth-gate {
@@ -2036,6 +2124,571 @@ button:active { transform: translateY(1px) scale(0.985); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* Bold architectural workbench: cold concrete, graphite and vermilion. */
+:root {
+  --ink: #191c19;
+  --stone: #626862;
+  --sand: #cfd3ce;
+  --rice: #dfe2de;
+  --moss: #191c19;
+  --clay: #b83215;
+  --ash: #9fa59f;
+  --deep: #191c19;
+  --ivory: #f4f5f2;
+  --border: rgba(25, 28, 25, 0.18);
+  --surface: #f4f5f2;
+  --surface-muted: #e7e9e5;
+  --focus: rgba(184, 50, 21, 0.28);
+  --shadow-soft: 0 22px 60px rgba(25, 28, 25, 0.12);
+  --accent: #b83215;
+  --accent-bright: #ff7a55;
+  --graphite: #191c19;
+  --canvas: #dfe2de;
+  --panel: #f4f5f2;
+}
+
+html,
+body { background: var(--canvas); }
+
+body {
+  color: var(--ink);
+  font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+body::after { display: none; }
+
+header {
+  height: 64px;
+  padding: 0 clamp(1rem, 2.7vw, 2.5rem);
+  border-bottom: 1px solid var(--graphite);
+  background: rgba(223, 226, 222, 0.94);
+  backdrop-filter: blur(18px);
+}
+
+.logo {
+  font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.logo-sep {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 1;
+  transform: rotate(45deg);
+}
+
+.logo-sub {
+  color: #505650;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.auth-user { color: #505650; font-size: 0.68rem; }
+
+.auth-btn,
+.new-design-btn {
+  min-height: 34px;
+  border-color: rgba(25, 28, 25, 0.26);
+  border-radius: 9px;
+  background: rgba(244, 245, 242, 0.7);
+  color: var(--graphite);
+  font-weight: 600;
+}
+
+.new-design-btn {
+  border-color: var(--graphite);
+  background: var(--graphite);
+  color: #f7f8f5;
+}
+
+.auth-btn:hover,
+.new-design-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.chat-shell {
+  height: calc(100dvh - 64px);
+  grid-template-columns: minmax(350px, 410px) clamp(82px, 7vw, 108px) minmax(0, 1fr);
+  gap: 0;
+  width: min(1760px, 100%);
+  padding: clamp(0.75rem, 1.4vw, 1.15rem) clamp(0.75rem, 1.8vw, 1.5rem);
+}
+
+.design-sidebar {
+  border: 1px solid var(--graphite);
+  border-radius: 18px;
+  background: var(--graphite);
+  color: #f4f5f2;
+  box-shadow: var(--shadow-soft);
+}
+
+.sidebar-intro {
+  padding: 1.35rem 1.4rem 1.05rem;
+  border-bottom-color: rgba(244, 245, 242, 0.14);
+}
+
+.sidebar-kicker,
+.workspace-kicker {
+  color: var(--accent);
+  font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: none;
+}
+
+.sidebar-kicker { color: var(--accent-bright); }
+.workspace-kicker { color: var(--accent); }
+
+.sidebar-title-row { margin-top: 0.45rem; }
+.sidebar-title-row h2 {
+  font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.sidebar-intro p {
+  max-width: 31ch;
+  margin-top: 0.45rem;
+  color: rgba(244, 245, 242, 0.56);
+  font-size: 0.7rem;
+}
+
+.config-progress {
+  color: #f4f5f2;
+  font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-size: 0.68rem;
+}
+
+.config-tabs {
+  padding: 0 1rem;
+  border-bottom-color: rgba(244, 245, 242, 0.14);
+}
+
+.config-tab {
+  padding: 0.92rem 0.35rem 0.82rem;
+  color: rgba(244, 245, 242, 0.48);
+}
+
+.config-tab::after { height: 3px; background: var(--accent); }
+.config-tab.active { color: #fff; }
+.config-tab-index { color: var(--accent-bright); font-family: "Noto Sans SC", sans-serif; }
+.config-panel-stack { padding: 1.15rem 1rem 1.25rem 1.15rem; }
+
+.design-sidebar .section-index {
+  color: rgba(244, 245, 242, 0.52);
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.design-sidebar .section-index::before { width: 0.75rem; background: var(--accent); }
+.design-sidebar .design-assets-title,
+.design-sidebar .style-picker-title {
+  color: #fff;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.design-sidebar .design-assets-sub,
+.design-sidebar .asset-help,
+.design-sidebar .style-selection { color: rgba(244, 245, 242, 0.54); }
+
+.design-sidebar .asset-section,
+.design-sidebar .style-card {
+  border-color: rgba(244, 245, 242, 0.16);
+  border-radius: 12px;
+  background: rgba(244, 245, 242, 0.055);
+}
+
+.design-sidebar .asset-section { padding: 0.9rem; }
+.design-sidebar .asset-btn,
+.design-sidebar .asset-clear-btn,
+.design-sidebar .style-toggle-btn {
+  border-color: rgba(244, 245, 242, 0.2);
+  border-radius: 8px;
+  background: rgba(244, 245, 242, 0.08);
+}
+
+.design-sidebar .asset-btn:hover,
+.design-sidebar .asset-clear-btn:hover,
+.design-sidebar .style-toggle-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.design-sidebar .empty-asset {
+  border-color: rgba(244, 245, 242, 0.18);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.design-sidebar .asset-card {
+  border-radius: 10px;
+  background: #f4f5f2;
+}
+
+.design-sidebar .style-card { min-height: 78px; }
+.design-sidebar .style-card:hover {
+  border-color: rgba(184, 50, 21, 0.72);
+  background: rgba(184, 50, 21, 0.12);
+}
+
+.design-sidebar .style-card.selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.design-sidebar .style-card.selected .style-card-category { color: rgba(255, 255, 255, 0.7); }
+
+.sidebar-status {
+  border-top-color: rgba(244, 245, 242, 0.14);
+  background: #111311;
+}
+
+.sidebar-status .design-status { color: #f29a83; }
+.design-summary span { color: rgba(244, 245, 242, 0.42); }
+.design-summary strong { color: #fff; }
+
+.design-transfer::before {
+  height: 2px;
+  background: linear-gradient(90deg, var(--graphite), var(--accent) 50%, rgba(25, 28, 25, 0.28));
+}
+
+.effect-transfer-btn {
+  width: 92px;
+  height: 92px;
+  min-width: 92px;
+  min-height: 92px;
+  padding: 0;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 18px 38px rgba(117, 35, 17, 0.3);
+  font-size: 0.76rem;
+}
+
+.effect-transfer-btn:hover,
+.effect-transfer-btn.is-ready {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 22px 46px rgba(117, 35, 17, 0.38);
+}
+
+.effect-transfer-btn:not(.is-ready) { filter: saturate(0.45); }
+.effect-transfer-arrow { font-family: "Noto Sans SC", sans-serif; font-size: 1rem; }
+.effect-transfer-btn:focus-visible { outline-color: rgba(184, 50, 21, 0.34); }
+
+.conversation-surface {
+  border: 1px solid var(--graphite);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+}
+
+.workspace-head {
+  min-height: 74px;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--graphite);
+}
+
+.workspace-head h1 {
+  margin-top: 0.15rem;
+  color: var(--graphite);
+  font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.workspace-state { color: #505650; font-weight: 500; }
+.workspace-state span {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: none;
+  transform: rotate(45deg);
+}
+
+.conversation-surface .messages {
+  padding: clamp(1rem, 2.2vw, 1.8rem);
+  background: #eceeea;
+}
+
+.empty-state-inner {
+  grid-template-columns: minmax(240px, 0.72fr) minmax(360px, 1.28fr);
+  gap: clamp(1.2rem, 2.5vw, 2.4rem);
+  width: min(1080px, 100%);
+}
+
+.empty-kicker {
+  color: var(--accent);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.empty-kicker::before { width: 0.85rem; height: 2px; background: var(--accent); }
+.empty-title {
+  max-width: 520px;
+  margin: 0.8rem 0 0.95rem;
+  color: var(--graphite);
+  font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-size: clamp(2.2rem, 4.3vw, 4.6rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.055em;
+}
+
+.empty-sub {
+  max-width: 420px;
+  color: #4f554f;
+  font-size: 0.78rem;
+  line-height: 1.85;
+}
+
+.empty-flow {
+  margin-top: 1.6rem;
+  color: #444944;
+  font-size: 0.64rem;
+  font-weight: 600;
+}
+
+.empty-flow i { height: 2px; background: rgba(25, 28, 25, 0.18); }
+.empty-visual {
+  min-height: 390px;
+  overflow: hidden;
+  border: 1px solid var(--graphite);
+  border-radius: 14px;
+  background: #c8ccc7;
+}
+
+.empty-visual::before { display: none; }
+.empty-visual img {
+  width: 100%;
+  height: 100%;
+  min-height: 390px;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.92) contrast(1.03);
+}
+
+.message { border-radius: 12px; }
+.message.user {
+  border-color: var(--graphite);
+  border-radius: 12px 12px 3px 12px;
+  background: var(--graphite);
+}
+
+.message.assistant {
+  border-color: rgba(25, 28, 25, 0.2);
+  border-radius: 12px 12px 12px 3px;
+  background: #fff;
+}
+
+.conversation-surface .composer {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-top: 1px solid var(--graphite);
+  border-radius: 0;
+  background: #f4f5f2;
+}
+
+.conversation-surface .composer:focus-within {
+  border-color: var(--graphite);
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+.conversation-surface .tool-action-btn {
+  border-color: rgba(25, 28, 25, 0.18);
+  border-radius: 7px;
+  background: #e6e8e4;
+}
+
+.conversation-surface .tool-action-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.conversation-surface textarea { color: var(--graphite); }
+.icon-btn { border-radius: 10px; }
+.icon-btn {
+  min-width: 62px;
+  padding: 0 0.9rem;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.icon-btn:not(.stop-btn) { background: var(--graphite); }
+.icon-btn:not(.stop-btn):hover { background: var(--accent); }
+.conversation-surface .hint {
+  padding: 0.45rem 1rem 0.55rem;
+  border-top: 1px solid rgba(25, 28, 25, 0.12);
+  color: #686e68;
+  background: #f4f5f2;
+}
+
+.auth-gate {
+  inset: 64px 0 0;
+  background: rgba(223, 226, 222, 0.78);
+}
+
+.auth-gate-card {
+  border-color: var(--graphite);
+  border-radius: 18px;
+  background: #f4f5f2;
+  box-shadow: 0 28px 70px rgba(25, 28, 25, 0.2);
+}
+
+.auth-gate-kicker { color: var(--accent); font-family: "Noto Sans SC", sans-serif; text-transform: none; }
+.auth-gate h2 { font-family: "Noto Sans SC", sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+.auth-gate-primary { border-color: var(--accent); background: var(--accent); }
+.auth-gate-secondary { border-color: var(--graphite); }
+
+.auth-modal { background: rgba(25, 28, 25, 0.58); backdrop-filter: blur(10px); }
+.auth-card {
+  border-color: var(--graphite);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 28px 70px rgba(25, 28, 25, 0.26);
+}
+.auth-card h2 { font-family: "Noto Sans SC", sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+.auth-card p,
+.auth-field label { color: #555b55; }
+.auth-close {
+  border-color: rgba(25, 28, 25, 0.2);
+  border-radius: 8px;
+  background: #e5e8e3;
+  color: var(--graphite);
+}
+.auth-close:hover { border-color: var(--accent); background: var(--accent); color: #fff; }
+.auth-tab,
+.auth-submit,
+.auth-field input { border-radius: 8px; font-family: "Noto Sans SC", sans-serif; }
+.auth-tab { border-color: rgba(25, 28, 25, 0.22); background: #e7e9e5; color: #555b55; }
+.auth-tab.active,
+.auth-submit { border-color: var(--accent); background: var(--accent); color: #fff; }
+.auth-field input { border-color: rgba(25, 28, 25, 0.26); background: #fff; }
+.auth-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(184, 50, 21, 0.12); }
+
+.history-backdrop { background: rgba(25, 28, 25, 0.46); }
+.history-drawer {
+  border-right: 1px solid rgba(244, 245, 242, 0.18);
+  background: var(--graphite);
+  color: #f4f5f2;
+  box-shadow: 26px 0 72px rgba(25, 28, 25, 0.34);
+}
+.history-head { border-bottom-color: rgba(244, 245, 242, 0.14); }
+.history-head span { color: var(--accent-bright); font-family: "Noto Sans SC", sans-serif; text-transform: none; }
+.history-head h2,
+.history-empty strong { font-family: "Noto Sans SC", sans-serif; font-weight: 700; }
+.history-close { border-radius: 9px; }
+.history-close:hover { border-color: var(--accent-bright); color: var(--accent-bright); }
+.history-new {
+  border-color: var(--accent);
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+}
+.history-item.active .history-select strong { color: var(--accent-bright); }
+.history-item-actions button { border-radius: 7px; }
+.history-item-actions button:hover { border-color: var(--accent-bright); color: var(--accent-bright); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .design-sidebar { animation: workbench-enter 0.58s cubic-bezier(.16, 1, .3, 1) both; }
+  .conversation-surface { animation: canvas-enter 0.62s 0.08s cubic-bezier(.16, 1, .3, 1) both; }
+  .effect-transfer-btn { animation: transfer-enter 0.48s 0.2s cubic-bezier(.16, 1, .3, 1) both; }
+}
+
+@keyframes workbench-enter {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes canvas-enter {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes transfer-enter {
+  from { opacity: 0; transform: scale(0.72); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 1180px) {
+  .chat-shell { grid-template-columns: 340px 82px minmax(0, 1fr); }
+  .effect-transfer-btn { width: 76px; height: 76px; min-width: 76px; min-height: 76px; }
+  .empty-state-inner { grid-template-columns: minmax(220px, 0.82fr) minmax(300px, 1.18fr); }
+  .empty-title { font-size: clamp(2.2rem, 4.2vw, 3.7rem); }
+  .empty-visual,
+  .empty-visual img { min-height: 330px; }
+}
+
+@media (max-width: 860px) {
+  body { overflow-y: auto; }
+  .chat-shell {
+    height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+    padding: 0.75rem;
+  }
+  .design-sidebar { min-height: 560px; height: min(660px, calc(100dvh - 84px)); }
+  .design-transfer { min-height: 84px; }
+  .design-transfer::before {
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    height: auto;
+    background: linear-gradient(180deg, var(--graphite), var(--accent) 50%, rgba(25, 28, 25, 0.28));
+  }
+  .effect-transfer-btn { width: 70px; height: 70px; min-width: 70px; min-height: 70px; }
+  .effect-transfer-arrow { transform: rotate(90deg); }
+  .effect-transfer-btn:hover .effect-transfer-arrow { transform: rotate(90deg) translateX(3px); }
+  .chat-workspace { min-height: 720px; height: min(820px, calc(100dvh - 84px)); }
+  .empty-state-inner { grid-template-columns: minmax(0, 0.78fr) minmax(280px, 1.22fr); }
+}
+
+@media (max-width: 620px) {
+  header { height: 60px; padding-inline: 0.8rem; }
+  .logo { font-size: 1.1rem; }
+  .logo-sep,
+  .logo-sub,
+  .auth-user { display: none; }
+  .auth-actions { gap: 0.35rem; }
+  .auth-btn,
+  .new-design-btn { min-height: 32px; padding-inline: 0.62rem; font-size: 0.66rem; }
+  .chat-shell { padding: 0.55rem; }
+  .design-sidebar { min-height: 570px; height: min(650px, calc(100dvh - 72px)); border-radius: 14px; }
+  .conversation-surface { border-radius: 14px; }
+  .empty-state-inner { display: grid; grid-template-columns: 1fr; }
+  .empty-title { font-size: clamp(2.25rem, 12vw, 3.1rem); }
+  .empty-visual { display: block; min-height: 220px; }
+  .empty-visual img { min-height: 220px; }
+  .empty-flow { white-space: normal; }
+  .chat-workspace { min-height: 760px; height: auto; }
+  .conversation-surface { min-height: 760px; }
+  .auth-gate { inset: 60px 0 0; }
+}
 </style>
 </head>
 <body>
@@ -2056,12 +2709,12 @@ button:active { transform: translateY(1px) scale(0.985); }
 <main class="chat-shell">
   <aside class="design-sidebar" aria-label="设计配置">
     <div class="sidebar-intro">
-      <div class="sidebar-kicker">Design brief</div>
+      <div class="sidebar-kicker">庭院设计输入</div>
       <div class="sidebar-title-row">
         <h2>方案配置</h2>
         <span class="config-progress" id="configProgress">0 / 2</span>
       </div>
-      <p>先准备设计依据，再到右侧生成庭院效果图。</p>
+      <p>组织空间、石材与风格，再通过中间入口生成方案。</p>
     </div>
 
     <nav class="config-tabs" aria-label="方案配置步骤" role="tablist">
@@ -2085,7 +2738,7 @@ button:active { transform: translateY(1px) scale(0.985); }
     <div class="design-assets config-panel" id="designAssets" data-config-panel="assets" role="tabpanel">
       <div class="design-assets-head">
         <div>
-          <div class="section-index">Material references</div>
+          <div class="section-index">空间与材料</div>
           <div class="design-assets-title">准备空间与石材</div>
           <div class="design-assets-sub">生成时同时使用空间图与全部石材图；没有空间图时按所选风格自行布局。</div>
         </div>
@@ -2102,7 +2755,7 @@ button:active { transform: translateY(1px) scale(0.985); }
         </div>
         <div class="asset-section">
           <div class="asset-section-head">
-            <div class="asset-section-title">石材方案 · 1–6 张</div>
+            <div class="asset-section-title">石材方案 · 1-6 张</div>
             <div>
               <button class="asset-clear-btn" type="button" id="clearMaterialsButton" data-design-control>清空</button>
               <button class="asset-btn" type="button" id="materialUploadButton" data-design-control>添加石材图</button>
@@ -2117,7 +2770,7 @@ button:active { transform: translateY(1px) scale(0.985); }
     <div class="style-picker config-panel" id="stylePicker" data-config-panel="styles" role="tabpanel" hidden>
       <div class="style-picker-header">
         <div>
-          <div class="section-index">Garden direction</div>
+          <div class="section-index">风格方向</div>
           <div class="style-picker-title">选择庭院风格</div>
         </div>
         <div class="style-picker-actions">
@@ -2138,12 +2791,19 @@ button:active { transform: translateY(1px) scale(0.985); }
     </footer>
   </aside>
 
+  <div class="design-transfer" aria-label="从方案配置生成效果图">
+    <button class="effect-transfer-btn" type="button" id="effectButton" title="使用左侧配置生成效果图">
+      <span>效果图</span>
+      <span class="effect-transfer-arrow" aria-hidden="true">→</span>
+    </button>
+  </div>
+
   <section class="chat-workspace">
     <div class="conversation-surface">
     <header class="workspace-head">
       <div>
-        <div class="workspace-kicker">AI garden studio</div>
-        <h1>庭院方案对话</h1>
+        <div class="workspace-kicker">AI 庭院协作</div>
+        <h1>方案生成与调整</h1>
       </div>
       <div class="workspace-state"><span aria-hidden="true"></span>设计服务已就绪</div>
     </header>
@@ -2152,27 +2812,18 @@ button:active { transform: translateY(1px) scale(0.985); }
         <div class="empty-state-inner">
           <div class="empty-copy">
             <div class="empty-kicker">从石材出发，构成一座庭院</div>
-            <div class="empty-title">让每一块石头<br>落在恰当的位置</div>
-            <div class="empty-sub">空间图决定尺度与边界，石材图决定质感与用途，庭院风格决定整体气质。三者准备好后，发送即可生成完整效果图。</div>
+            <div class="empty-title">以石造园<br>庭院成形</div>
+            <div class="empty-sub">上传空间图和石材，选择风格后生成方案；后续修改直接在对话中完成。</div>
             <div class="empty-flow" aria-label="生成效果图所需内容">
               <span>空间图可选</span>
               <i aria-hidden="true"></i>
-              <span>石材 1–6 张</span>
+              <span>石材 1-6 张</span>
               <i aria-hidden="true"></i>
               <span>选择风格</span>
             </div>
           </div>
-          <div class="empty-visual" aria-hidden="true">
-            <svg viewBox="0 0 420 340" role="presentation">
-              <path class="landscape-line landscape-line-soft" d="M20 251c47-19 76-53 113-58 43-6 57 26 96 12 39-15 50-63 96-72 29-6 51 6 75 25"/>
-              <path class="landscape-line" d="M17 273c55-8 79-38 121-39 50-2 73 25 121 5 46-19 76-61 142-48"/>
-              <path class="landscape-line" d="M52 289c35-2 57-16 87-16 37 0 52 17 91 12 50-7 68-41 130-41"/>
-              <path class="stone-shape stone-one" d="M124 214c-11-37 11-84 52-98 38-13 76 12 82 55 5 38-20 67-64 73-34 5-62-4-70-30Z"/>
-              <path class="stone-shape stone-two" d="M261 189c-5-28 16-58 48-65 30-7 58 11 62 39 4 30-18 53-50 56-31 3-55-7-60-30Z"/>
-              <circle class="sun-mark" cx="330" cy="70" r="22"/>
-              <path class="tree-mark" d="M85 213c4-58-2-100-20-143m20 143c-3-54 8-88 35-112M76 122c-12-9-24-13-39-13m55 49c15-15 32-24 50-27"/>
-            </svg>
-            <span>空间 · 材质 · 风格</span>
+          <div class="empty-visual">
+            <img src="/static/assets/garden-workbench-empty.webp" width="1448" height="1086" alt="玄武岩、混凝土与朱橙构筑物组成的现代庭院" fetchpriority="high">
           </div>
         </div>
       </div>
@@ -2181,22 +2832,16 @@ button:active { transform: translateY(1px) scale(0.985); }
       <div class="input-stack">
         <div class="tool-actions" aria-label="快捷功能">
           <button class="tool-action-btn" type="button" id="recognizeButton">识图</button>
-          <button class="tool-action-btn" type="button" id="effectButton">效果图</button>
           <button class="tool-action-btn" type="button" id="quoteButton">报价</button>
         </div>
         <textarea id="messageInput" rows="1" placeholder="选风格后点发送生成效果图；生成后可直接输入修改要求"></textarea>
       </div>
       <div class="actions">
         <button class="icon-btn stop-btn" type="button" id="stopButton" title="停止生成" hidden>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <rect x="6" y="6" width="12" height="12" rx="1.5"></rect>
-          </svg>
+          <span>停止</span>
         </button>
         <button class="icon-btn" type="submit" id="sendButton" title="发送">
-          <svg id="sendIcon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M22 2 11 13"></path>
-            <path d="m22 2-7 20-4-9-9-4Z"></path>
-          </svg>
+          <span id="sendIcon">发送</span>
         </button>
       </div>
     </form>
@@ -2207,7 +2852,7 @@ button:active { transform: translateY(1px) scale(0.985); }
 
 <section class="auth-gate" id="authGate" aria-labelledby="authGateTitle">
   <div class="auth-gate-card">
-    <div class="auth-gate-kicker">Private design workspace</div>
+    <div class="auth-gate-kicker">账号设计空间</div>
     <h2 id="authGateTitle">登录后开始庭院设计</h2>
     <p>你的聊天记录、设计素材和效果图将保存在账号中，并可在其他设备继续使用。</p>
     <div class="auth-gate-actions">
@@ -2221,7 +2866,7 @@ button:active { transform: translateY(1px) scale(0.985); }
 <aside class="history-drawer" id="historyDrawer" aria-label="历史设计" aria-hidden="true" inert>
   <header class="history-head">
     <div>
-      <span>Design archive</span>
+      <span>设计存档</span>
       <h2>历史设计</h2>
     </div>
     <button class="history-close" type="button" id="historyCloseButton" aria-label="关闭历史设计">×</button>
@@ -2789,6 +3434,10 @@ function updateConfigProgress() {
   const summaryParts = [...assetParts];
   if (selectedStyle) summaryParts.push(selectedStyle.name);
   designSummary.textContent = summaryParts.length ? summaryParts.join(" · ") : "等待添加设计素材";
+  effectButton.classList.toggle("is-ready", Boolean(selectedStyle));
+  effectButton.title = selectedStyle
+    ? `生成「${selectedStyle.name}」效果图`
+    : "请先在左侧选择庭院风格";
 }
 
 function renderMaterialImages() {
