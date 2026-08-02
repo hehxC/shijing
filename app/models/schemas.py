@@ -6,10 +6,15 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 class ChatRequest(BaseModel):
     message: str = ""
-    image: str | None = None
-    session_id: str | None = Field(default=None, max_length=128)
+    display_message: str | None = Field(default=None, max_length=20_000)
+    message_type: str = Field(default="chat", pattern="^(chat|recognize|effect|quote)$")
+    session_id: str | None = Field(default=None, max_length=64)
     style_id: str | None = Field(default=None, max_length=64)
     generate_effect_image: bool = False
+
+
+class ConversationRename(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
 
 
 class DesignImageCreate(BaseModel):

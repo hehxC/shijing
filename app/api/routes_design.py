@@ -1,4 +1,3 @@
-import hashlib
 import re
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
@@ -11,7 +10,8 @@ from app.models.schemas import (
     MaterialReferenceUpdate,
 )
 from app.models.user import User
-from app.service.auth_service import get_optional_current_user
+from app.service.auth_service import get_current_user
+from app.service.conversation_service import protected_generated_url
 from app.service.design_session_service import (
     DesignSessionError,
     add_material_reference,
@@ -28,22 +28,20 @@ from app.service.design_session_service import (
 
 
 router = APIRouter(prefix="/api/design", tags=["design"])
-_GUEST_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
+_SESSION_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{32,64}$")
 
 
 def design_session_id(
     raw_session_id: str = Header(alias="X-Design-Session"),
-    current_user: User | None = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> str:
     token = raw_session_id.strip()
-    if current_user is None and not _GUEST_TOKEN_PATTERN.fullmatch(token):
+    if not _SESSION_TOKEN_PATTERN.fullmatch(token):
         raise HTTPException(
             status_code=400,
-            detail="匿名设计会话标识必须是至少 32 位的随机令牌",
+            detail="设计会话标识必须是至少 32 位的随机令牌",
         )
-    if len(token) > 128:
-        token = hashlib.sha256(token.encode("utf-8")).hexdigest()
-    return f"user:{current_user.id}:{token}" if current_user else f"guest:{token}"
+    return f"user:{current_user.id}:{token}"
 
 
 def _raise_bad_request(exc: DesignSessionError):
@@ -53,7 +51,12 @@ def _raise_bad_request(exc: DesignSessionError):
 @router.get("/session")
 def read_design_session(session_id: str = Depends(design_session_id)):
     cleanup_expired_design_assets()
-    return get_design_state(session_id)
+    state = get_design_state(session_id)
+    if state["generated_image_url"]:
+        state["generated_image_url"] = protected_generated_url(
+            session_id, state["generated_image_url"]
+        )
+    return state
 
 
 @router.put("/space-image")

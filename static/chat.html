@@ -2,9 +2,10 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>石境 · AI 对话</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="石境 AI 庭院设计工作台：结合空间图、石材图与庭院风格生成设计方案。">
+<title>石境 · AI 庭院设计工作台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
   --ink: #1a1612;
@@ -822,6 +823,7 @@ header {
 .usage-list { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.35rem; }
 .usage-option { font-size: 0.58rem; color: var(--stone); border: 1px solid var(--border); padding: 0.2rem 0.3rem; cursor: pointer; }
 .usage-option input { margin-right: 0.18rem; vertical-align: middle; }
+.usage-option.disabled { opacity: 0.42; cursor: not-allowed; }
 .empty-asset { margin-top: 0.5rem; min-height: 64px; border: 1px dashed var(--border); display: grid; place-items: center; color: var(--ash); font-size: 0.66rem; text-align: center; padding: 0.5rem; }
 .design-status { min-height: 1.1rem; margin-top: 0.45rem; }
 .design-status.error { color: #9b3636; }
@@ -923,15 +925,1128 @@ header {
     right: 0.75rem;
   }
 }
+
+/* 2026 workspace redesign: clearer hierarchy, calmer surfaces, stronger states. */
+:root {
+  --ink: #25241f;
+  --stone: #6e6a61;
+  --sand: #e9e3d8;
+  --rice: #f2eee6;
+  --moss: #56654e;
+  --clay: #a7794e;
+  --ash: #aaa398;
+  --deep: #2f302a;
+  --ivory: #fbf9f4;
+  --border: rgba(70, 64, 54, 0.16);
+  --surface: rgba(251, 249, 244, 0.92);
+  --surface-muted: #f0ebe2;
+  --focus: rgba(86, 101, 78, 0.34);
+  --shadow-soft: 0 18px 48px rgba(53, 46, 36, 0.09);
+}
+
+html { background: var(--rice); }
+
+body {
+  min-height: 100dvh;
+  overflow: hidden;
+  font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  background: var(--rice);
+}
+
+body::after {
+  z-index: 100;
+  opacity: 0.52;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 10000;
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  background: var(--deep);
+  color: white;
+  font-size: 0.78rem;
+  transform: translateY(-180%);
+  transition: transform 0.18s ease;
+}
+
+.skip-link:focus { transform: translateY(0); }
+
+header {
+  position: relative;
+  z-index: 30;
+  height: 72px;
+  padding: 0 clamp(1.1rem, 3vw, 3rem);
+  gap: 1rem;
+  border-bottom-color: rgba(70, 64, 54, 0.13);
+  background: rgba(242, 238, 230, 0.9);
+  backdrop-filter: blur(16px);
+}
+
+.logo {
+  font-family: "Noto Serif SC", serif;
+  font-size: 1.45rem;
+  line-height: 1;
+  letter-spacing: 0.28em;
+}
+
+.logo-sep { height: 1.4rem; background: var(--clay); opacity: 0.46; }
+
+.logo-sub {
+  font-family: "Noto Sans SC", sans-serif;
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--stone);
+  letter-spacing: 0.08em;
+}
+
+.auth-actions { gap: 0.5rem; }
+.auth-user { font-size: 0.74rem; }
+
+.auth-btn,
+.new-design-btn {
+  min-height: 36px;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.new-design-btn {
+  border-color: var(--deep);
+  background: var(--deep);
+  color: #fffdf8;
+}
+
+.auth-btn:hover,
+.new-design-btn:hover {
+  border-color: var(--moss);
+  background: var(--moss);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.chat-shell {
+  height: calc(100dvh - 72px);
+  grid-template-columns: minmax(330px, 370px) minmax(0, 1fr);
+  gap: clamp(0.9rem, 1.5vw, 1.35rem);
+  width: min(1680px, 100%);
+  padding: clamp(0.9rem, 2vw, 1.5rem) clamp(0.9rem, 2.5vw, 2.5rem);
+}
+
+.design-sidebar {
+  height: 100%;
+  padding: 1.15rem 0.85rem 1.2rem 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgba(53, 46, 36, 0.055);
+  scrollbar-color: rgba(110, 106, 97, 0.34) transparent;
+}
+
+.design-sidebar::-webkit-scrollbar { width: 5px; }
+.design-sidebar::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(110, 106, 97, 0.34); }
+
+.chat-workspace { gap: 0.8rem; }
+
+.messages {
+  padding: clamp(1rem, 2.2vw, 2rem);
+  border-color: var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  scrollbar-color: rgba(110, 106, 97, 0.32) transparent;
+}
+
+.messages::-webkit-scrollbar { width: 5px; }
+.messages::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(110, 106, 97, 0.32); }
+
+.empty-state {
+  min-height: 0;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
+  color: var(--stone);
+}
+
+.empty-state-inner { width: min(760px, 100%); margin: 0 auto; }
+
+.empty-kicker,
+.section-index {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--moss);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.empty-kicker::before,
+.section-index::before {
+  content: "";
+  width: 1.3rem;
+  height: 1px;
+  background: currentColor;
+}
+
+.empty-title {
+  max-width: 620px;
+  margin: 0.85rem 0 0.8rem;
+  font-family: "Noto Serif SC", serif;
+  font-size: clamp(2rem, 4vw, 3.55rem);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  color: var(--deep);
+}
+
+.empty-sub {
+  max-width: 590px;
+  font-family: "Noto Sans SC", sans-serif;
+  font-style: normal;
+  font-size: 0.9rem;
+  line-height: 1.85;
+  color: var(--stone);
+  letter-spacing: 0;
+}
+
+.empty-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-top: clamp(2rem, 4vw, 3.2rem);
+}
+
+.empty-step { padding-top: 0.85rem; border-top: 1px solid var(--border); }
+.empty-step-number { display: block; margin-bottom: 0.55rem; color: var(--clay); font: 600 0.66rem/1 "Cormorant Garamond", serif; letter-spacing: 0.14em; }
+.empty-step strong { display: block; margin-bottom: 0.3rem; color: var(--deep); font-family: "Noto Serif SC", serif; font-size: 0.88rem; }
+.empty-step span:last-child { display: block; color: var(--stone); font-size: 0.72rem; line-height: 1.65; }
+
+.message-row { margin: 1.15rem 0; }
+.message {
+  border-radius: 16px 16px 16px 4px;
+  border-color: var(--border);
+  font-size: 0.9rem;
+  line-height: 1.85;
+}
+
+.message.user { border-radius: 16px 16px 4px 16px; background: var(--deep); }
+.message.assistant { background: #fffdf8; }
+
+.design-assets {
+  margin: 0 0 1.05rem;
+  padding: 0 0.3rem 1.1rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+.design-assets-head { display: block; }
+.design-assets-title {
+  margin-top: 0.48rem;
+  font-family: "Noto Serif SC", serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.design-assets-sub { margin-top: 0.35rem; font-size: 0.72rem; line-height: 1.7; }
+.asset-columns { gap: 0.7rem; margin-top: 0.85rem; }
+
+.asset-section {
+  padding: 0.8rem;
+  border-color: rgba(70, 64, 54, 0.13);
+  border-radius: 14px;
+  background: var(--surface-muted);
+}
+
+.asset-section-head { align-items: flex-start; }
+.asset-section-title { padding-top: 0.2rem; font-size: 0.76rem; font-weight: 600; line-height: 1.45; }
+.design-assets-sub,
+.asset-help,
+.design-status { color: var(--stone); }
+.asset-help { margin-top: 0.55rem; font-size: 0.68rem; line-height: 1.6; }
+
+.asset-btn,
+.asset-clear-btn,
+.style-toggle-btn {
+  min-height: 30px;
+  padding: 0.35rem 0.58rem;
+  border-color: var(--border);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.88);
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 0.66rem;
+  font-weight: 500;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.asset-btn:hover,
+.asset-clear-btn:hover,
+.style-toggle-btn:hover {
+  border-color: var(--moss);
+  background: white;
+  color: var(--moss);
+  transform: translateY(-1px);
+}
+
+.empty-asset {
+  min-height: 76px;
+  border-color: rgba(86, 101, 78, 0.26);
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.58);
+  color: #8b857b;
+  font-size: 0.68rem;
+  line-height: 1.55;
+}
+
+.asset-card { border-radius: 10px; border-color: var(--border); }
+.asset-thumb { border-radius: 7px; border: 0; }
+.asset-card-name { border-radius: 7px; font-family: "Noto Sans SC", sans-serif; font-size: 0.68rem; }
+.asset-remove { border-radius: 7px; }
+.usage-list { gap: 0.3rem; }
+.usage-option { border-radius: 999px; background: #faf7f1; font-size: 0.62rem; }
+
+.style-picker { padding: 0 0.3rem 0 0; }
+.style-picker-header { gap: 0.55rem; padding: 0 0 0.75rem; }
+.style-picker-title {
+  font-family: "Noto Serif SC", serif;
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.style-selection { font-size: 0.7rem; line-height: 1.55; }
+.style-grid { gap: 0.5rem; }
+.style-card {
+  min-height: 68px;
+  padding: 0.68rem 0.7rem;
+  border-color: rgba(70, 64, 54, 0.14);
+  border-radius: 11px;
+  background: rgba(255, 253, 248, 0.7);
+  font-family: "Noto Sans SC", sans-serif;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.style-card:hover {
+  border-color: rgba(86, 101, 78, 0.55);
+  background: #fffdf8;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(53, 46, 36, 0.07);
+}
+
+.style-card.selected { border-color: var(--moss); background: var(--moss); }
+.style-card-name { font-size: 0.78rem; font-weight: 600; }
+.style-card-category { margin-top: 0.24rem; font-size: 0.62rem; }
+
+.composer {
+  padding: 0.9rem 0.95rem;
+  border-color: var(--border);
+  border-radius: 18px;
+  background: rgba(251, 249, 244, 0.96);
+  box-shadow: 0 12px 34px rgba(53, 46, 36, 0.09);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.composer:focus-within {
+  border-color: rgba(86, 101, 78, 0.55);
+  box-shadow: 0 0 0 4px var(--focus), 0 16px 38px rgba(53, 46, 36, 0.1);
+}
+
+.tool-actions { gap: 0.38rem; margin-bottom: 0.5rem; }
+.tool-action-btn {
+  min-height: 30px;
+  padding: 0 0.68rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.tool-action-btn:hover { border: 0; background: #e2dbcf; color: var(--moss); }
+.composer textarea { min-height: 44px; font-family: "Noto Sans SC", sans-serif; font-size: 0.9rem; line-height: 1.7; }
+.composer textarea::placeholder { color: #9d978d; font-style: normal; }
+
+.attach-btn,
+.icon-btn {
+  border-radius: 12px;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.attach-btn { border-color: var(--border); background: transparent; }
+.attach-btn:hover { border-color: var(--moss); background: var(--surface-muted); color: var(--moss); transform: translateY(-1px); }
+.icon-btn { min-width: 48px; height: 48px; background: var(--moss); }
+.icon-btn:hover { background: var(--deep); transform: translateY(-1px); }
+.stop-btn { background: transparent; color: var(--stone); }
+
+.hint {
+  font-family: "Noto Sans SC", sans-serif;
+  font-style: normal;
+  font-size: 0.64rem;
+  color: #948e84;
+  letter-spacing: 0.04em;
+}
+
+.auth-card { border-radius: 20px; }
+.auth-tab,
+.auth-submit,
+.auth-field input { border-radius: 10px; font-family: "Noto Sans SC", sans-serif; }
+
+button:focus-visible,
+textarea:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--moss);
+  outline-offset: 3px;
+}
+
+.composer textarea:focus-visible { outline: none; }
+
+@media (max-width: 1100px) {
+  .chat-shell { grid-template-columns: 310px minmax(0, 1fr); }
+  .empty-title { font-size: clamp(1.8rem, 4vw, 2.8rem); }
+  .empty-steps { gap: 0.85rem; }
+}
+
+@media (max-height: 760px) and (min-width: 861px) {
+  .empty-title { font-size: 2.55rem; margin-top: 0.65rem; }
+  .empty-steps { margin-top: 1.6rem; }
+}
+
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  .chat-shell {
+    height: auto;
+    min-height: calc(100dvh - 72px);
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .design-sidebar { height: auto; overflow: visible; padding: 1rem; }
+  .chat-workspace { height: auto; }
+  .messages { flex: 0 0 auto; height: clamp(420px, 55vh, 620px); }
+  .design-sidebar .asset-columns { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.65fr); }
+  .design-sidebar .asset-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .design-sidebar .style-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  header { height: 64px; padding: 0 0.9rem; gap: 0.55rem; }
+  .logo { font-size: 1.2rem; }
+  .logo-sep,
+  .logo-sub,
+  .auth-user { display: none; }
+  .auth-btn,
+  .new-design-btn { min-height: 32px; padding: 0.35rem 0.58rem; font-size: 0.66rem; }
+  .chat-shell { min-height: calc(100dvh - 64px); padding: 0.7rem; gap: 0.7rem; }
+  .design-sidebar,
+  .messages,
+  .composer { width: 100%; border-radius: 16px; }
+  .design-sidebar { padding: 0.9rem; }
+  .design-sidebar .asset-columns { grid-template-columns: 1fr; }
+  .design-sidebar .asset-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .design-sidebar .style-grid {
+    grid-template-columns: none;
+    grid-template-rows: repeat(2, 68px);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(138px, 46%);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline proximity;
+    scrollbar-width: thin;
+    padding-bottom: 0.45rem;
+  }
+  .design-sidebar .style-card { scroll-snap-align: start; }
+  .messages { height: min(520px, 60vh); padding: 1.2rem; }
+  .empty-state { min-height: 420px; }
+  .empty-title { font-size: 1.85rem; }
+  .empty-sub { font-size: 0.82rem; }
+  .empty-steps { grid-template-columns: 1fr; gap: 0.7rem; margin-top: 1.6rem; }
+  .empty-step { display: grid; grid-template-columns: 28px 84px 1fr; gap: 0.45rem; align-items: baseline; padding-top: 0.65rem; }
+  .empty-step-number,
+  .empty-step strong { margin: 0; }
+  .composer { grid-template-columns: 1fr auto; gap: 0.5rem; }
+  .actions { align-self: end; }
+  .hint { width: 100%; }
+}
+
+/* 2026 structural refinement: tabbed brief + continuous conversation canvas. */
+.chat-shell {
+  grid-template-columns: minmax(340px, 380px) minmax(0, 1fr);
+  gap: clamp(1rem, 1.8vw, 1.6rem);
+}
+
+.design-sidebar {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 24px 8px 24px 8px;
+  background: #333a31;
+  color: #f7f2e8;
+  box-shadow: 0 24px 58px rgba(43, 48, 40, 0.2);
+}
+
+.sidebar-intro {
+  padding: 1.45rem 1.45rem 1.15rem;
+  border-bottom: 1px solid rgba(247, 242, 232, 0.11);
+}
+
+.sidebar-kicker,
+.workspace-kicker {
+  color: #cbb58d;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.sidebar-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.sidebar-title-row h2 {
+  font-family: "Noto Serif SC", serif;
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.05em;
+}
+
+.sidebar-intro p {
+  margin-top: 0.4rem;
+  color: rgba(247, 242, 232, 0.57);
+  font-size: 0.72rem;
+  line-height: 1.7;
+}
+
+.config-progress {
+  min-width: 3.2rem;
+  color: rgba(247, 242, 232, 0.72);
+  font: 600 0.72rem/1 "Cormorant Garamond", serif;
+  letter-spacing: 0.12em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.config-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0 1.05rem;
+  border-bottom: 1px solid rgba(247, 242, 232, 0.11);
+}
+
+.config-tab {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.92rem 0.35rem 0.82rem;
+  border: 0;
+  background: transparent;
+  color: rgba(247, 242, 232, 0.52);
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.22s ease, transform 0.22s ease;
+}
+
+.config-tab::after {
+  content: "";
+  position: absolute;
+  right: 0.35rem;
+  bottom: -1px;
+  left: 0.35rem;
+  height: 2px;
+  background: #d6c29b;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.24s ease;
+}
+
+.config-tab:hover { color: rgba(247, 242, 232, 0.85); }
+.config-tab:active { transform: translateY(1px); }
+.config-tab.active { color: #fffaf0; }
+.config-tab.active::after { transform: scaleX(1); }
+
+.config-tab-index {
+  color: #cbb58d;
+  font: 600 0.66rem/1 "Cormorant Garamond", serif;
+  letter-spacing: 0.08em;
+}
+
+.config-tab-copy { min-width: 0; }
+.config-tab-copy strong,
+.config-tab-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-tab-copy strong { font-size: 0.74rem; font-weight: 600; }
+.config-tab-copy small { margin-top: 0.2rem; color: inherit; font-size: 0.6rem; font-weight: 400; }
+
+.config-panel-stack {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.15rem 0.9rem 1.35rem 1.15rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(247, 242, 232, 0.24) transparent;
+}
+
+.config-panel-stack::-webkit-scrollbar { width: 5px; }
+.config-panel-stack::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(247, 242, 232, 0.24); }
+.config-panel[hidden] { display: none !important; }
+
+.design-sidebar .design-assets {
+  margin: 0;
+  padding: 0 0.25rem 0 0;
+  border: 0;
+}
+
+.design-sidebar .section-index {
+  color: #cbb58d;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 0.64rem;
+  letter-spacing: 0.15em;
+}
+
+.design-sidebar .section-index::before { width: 1rem; }
+.design-sidebar .design-assets-title,
+.design-sidebar .style-picker-title { color: #fffaf0; }
+.design-sidebar .design-assets-title { font-size: 1.08rem; }
+.design-sidebar .design-assets-sub,
+.design-sidebar .asset-help,
+.design-sidebar .style-selection {
+  color: rgba(247, 242, 232, 0.56);
+}
+
+.design-sidebar .asset-columns { margin-top: 1rem; gap: 0.75rem; }
+.design-sidebar .asset-section {
+  padding: 0.9rem;
+  border: 1px solid rgba(247, 242, 232, 0.1);
+  border-radius: 14px 5px 14px 5px;
+  background: rgba(247, 242, 232, 0.055);
+}
+
+.design-sidebar .asset-section > .asset-section-head .asset-section-title { color: #f7f2e8; }
+.design-sidebar .asset-btn,
+.design-sidebar .asset-clear-btn,
+.design-sidebar .style-toggle-btn {
+  border-color: rgba(247, 242, 232, 0.15);
+  background: rgba(247, 242, 232, 0.1);
+  color: #f7f2e8;
+}
+
+.design-sidebar .asset-btn:hover,
+.design-sidebar .asset-clear-btn:hover,
+.design-sidebar .style-toggle-btn:hover {
+  border-color: #d6c29b;
+  background: #f7f2e8;
+  color: #333a31;
+}
+
+.design-sidebar .empty-asset {
+  border-color: rgba(214, 194, 155, 0.28);
+  background: rgba(17, 21, 17, 0.1);
+  color: rgba(247, 242, 232, 0.45);
+}
+
+.design-sidebar .asset-card { background: #f7f3eb; color: var(--deep); }
+.design-sidebar .asset-card .asset-section-title { color: var(--deep); }
+.design-sidebar .asset-card .asset-help { color: var(--stone); }
+.design-sidebar .style-picker { padding: 0 0.25rem 0 0; }
+.design-sidebar .style-picker-header { padding-bottom: 0.95rem; }
+.design-sidebar .style-grid { gap: 0.55rem; }
+.design-sidebar .style-card {
+  min-height: 76px;
+  border: 1px solid rgba(247, 242, 232, 0.1);
+  border-radius: 12px 4px 12px 4px;
+  background: rgba(247, 242, 232, 0.055);
+  color: #f7f2e8;
+}
+
+.design-sidebar .style-card-category { color: rgba(247, 242, 232, 0.47); }
+.design-sidebar .style-card:hover {
+  border-color: rgba(214, 194, 155, 0.58);
+  background: rgba(247, 242, 232, 0.1);
+  color: #fffaf0;
+  box-shadow: none;
+}
+
+.design-sidebar .style-card.selected {
+  border-color: #d6c29b;
+  background: #d6c29b;
+  color: #2f352d;
+}
+
+.design-sidebar .style-card.selected .style-card-category { color: rgba(47, 53, 45, 0.62); }
+
+.sidebar-status {
+  padding: 0.8rem 1.25rem 0.95rem;
+  border-top: 1px solid rgba(247, 242, 232, 0.11);
+  background: rgba(17, 21, 17, 0.12);
+}
+
+.sidebar-status .design-status {
+  min-height: 0;
+  margin: 0;
+  color: #d6c29b;
+  font-size: 0.66rem;
+}
+
+.sidebar-status .design-status:not(:empty) { margin-bottom: 0.55rem; }
+.sidebar-status .design-status.error { color: #f0b1a7; }
+.design-summary { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+.design-summary span { color: rgba(247, 242, 232, 0.42); font-size: 0.6rem; letter-spacing: 0.08em; }
+.design-summary strong {
+  min-width: 0;
+  overflow: hidden;
+  color: rgba(247, 242, 232, 0.82);
+  font-size: 0.66rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-workspace { display: block; }
+.conversation-surface {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(70, 64, 54, 0.13);
+  border-radius: 8px 28px 8px 28px;
+  background: #fbf8f1;
+  box-shadow: 0 24px 58px rgba(53, 46, 36, 0.11);
+}
+
+.workspace-head {
+  position: static;
+  z-index: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: auto;
+  min-height: 78px;
+  padding: 1rem 1.35rem 0.95rem;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.workspace-kicker { color: var(--clay); font-size: 0.66rem; }
+.workspace-head h1 {
+  margin-top: 0.18rem;
+  color: var(--deep);
+  font-family: "Noto Serif SC", serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.workspace-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--stone);
+  font-size: 0.66rem;
+}
+
+.workspace-state span {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--moss);
+  box-shadow: 0 0 0 4px rgba(86, 101, 78, 0.11);
+}
+
+.conversation-surface .messages {
+  min-height: 0;
+  padding: clamp(1.25rem, 2.5vw, 2.25rem);
+  border: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 88% 16%, rgba(86, 101, 78, 0.055), transparent 28%),
+    #fbf8f1;
+  box-shadow: none;
+}
+
+.empty-state { height: 100%; min-height: 0; }
+.empty-state-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(220px, 0.82fr);
+  gap: clamp(1.2rem, 3vw, 3.2rem);
+  align-items: center;
+  width: min(900px, 100%);
+}
+
+.empty-copy { min-width: 0; }
+.empty-kicker { font-size: 0.64rem; }
+.empty-title {
+  margin: 0.72rem 0 0.8rem;
+  font-size: clamp(2rem, 3.65vw, 3.35rem);
+  line-height: 1.24;
+  letter-spacing: 0.025em;
+  text-wrap: balance;
+}
+
+.empty-sub { font-size: 0.82rem; line-height: 1.9; text-wrap: pretty; }
+.empty-flow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.45rem;
+  color: var(--stone);
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+.empty-flow i { flex: 1 1 1.1rem; max-width: 2.2rem; height: 1px; background: var(--border); }
+.empty-visual { position: relative; align-self: stretch; display: grid; place-items: center; min-height: 250px; }
+.empty-visual::before {
+  content: "";
+  position: absolute;
+  inset: 8% 2% 4% 10%;
+  border: 1px solid rgba(86, 101, 78, 0.14);
+  border-radius: 52% 48% 44% 56% / 45% 38% 62% 55%;
+  transform: rotate(-4deg);
+}
+
+.empty-visual svg { position: relative; width: min(100%, 360px); overflow: visible; }
+.empty-visual > span {
+  position: absolute;
+  right: 5%;
+  bottom: 5%;
+  color: var(--clay);
+  font-family: "Noto Serif SC", serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  writing-mode: vertical-rl;
+}
+
+.landscape-line,
+.stone-shape,
+.tree-mark,
+.sun-mark { vector-effect: non-scaling-stroke; }
+.landscape-line { fill: none; stroke: rgba(47, 48, 42, 0.56); stroke-width: 1.2; }
+.landscape-line-soft { stroke: rgba(86, 101, 78, 0.28); }
+.stone-shape { fill: rgba(86, 101, 78, 0.065); stroke: rgba(47, 48, 42, 0.55); stroke-width: 1.1; }
+.stone-two { fill: rgba(167, 121, 78, 0.055); stroke: rgba(167, 121, 78, 0.52); }
+.sun-mark { fill: none; stroke: rgba(167, 121, 78, 0.55); stroke-width: 1; }
+.tree-mark { fill: none; stroke: rgba(86, 101, 78, 0.58); stroke-width: 1.1; }
+
+.conversation-surface .composer {
+  width: auto;
+  margin: 0 1rem;
+  padding: 0.85rem 0.85rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 14px 5px 14px 5px;
+  background: #f4efe6;
+  box-shadow: none;
+}
+
+.conversation-surface .composer:focus-within {
+  border-color: rgba(86, 101, 78, 0.56);
+  box-shadow: 0 0 0 3px rgba(86, 101, 78, 0.1);
+}
+
+.conversation-surface .tool-action-btn { background: rgba(86, 101, 78, 0.08); }
+.conversation-surface .tool-action-btn:hover { background: rgba(86, 101, 78, 0.15); }
+.conversation-surface .hint { padding: 0.52rem 1rem 0.65rem; }
+
+button:active { transform: translateY(1px) scale(0.985); }
+
+@media (max-width: 1100px) {
+  .chat-shell { grid-template-columns: 330px minmax(0, 1fr); }
+  .empty-state-inner { grid-template-columns: minmax(0, 1fr) minmax(180px, 0.72fr); gap: 1.2rem; }
+  .empty-title { font-size: clamp(1.85rem, 3.8vw, 2.7rem); }
+  .empty-visual { min-height: 220px; }
+}
+
+@media (max-height: 760px) and (min-width: 861px) {
+  .workspace-head { min-height: 68px; padding-block: 0.75rem; }
+  .empty-title { margin-top: 0.52rem; font-size: 2.15rem; }
+  .empty-sub { font-size: 0.76rem; }
+  .empty-flow { margin-top: 1rem; }
+  .empty-visual { min-height: 210px; }
+  .empty-visual svg { width: min(100%, 310px); }
+}
+
+@media (max-width: 860px) {
+  .chat-shell { grid-template-columns: 1fr; }
+  .design-sidebar { height: min(690px, calc(100dvh - 96px)); min-height: 560px; overflow: hidden; padding: 0; }
+  .chat-workspace { height: min(780px, calc(100dvh - 96px)); min-height: 650px; }
+  .conversation-surface { height: 100%; }
+  .design-sidebar .asset-columns { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.65fr); }
+  .design-sidebar .asset-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .design-sidebar .style-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .chat-shell { gap: 0.75rem; }
+  .design-sidebar { min-height: 590px; height: min(660px, calc(100dvh - 82px)); border-radius: 18px 6px 18px 6px; }
+  .sidebar-intro { padding: 1.1rem 1rem 0.9rem; }
+  .sidebar-title-row h2 { font-size: 1.25rem; }
+  .config-tabs { padding-inline: 0.7rem; }
+  .config-panel-stack { padding: 0.9rem 0.7rem 1rem 0.9rem; }
+  .design-sidebar .asset-columns { grid-template-columns: 1fr; }
+  .design-sidebar .asset-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .design-sidebar .style-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+  .chat-workspace { min-height: 690px; height: min(760px, calc(100dvh - 82px)); }
+  .conversation-surface { border-radius: 6px 20px 6px 20px; }
+  .workspace-head { min-height: 66px; padding: 0.75rem 0.9rem; }
+  .workspace-head h1 { font-size: 1rem; }
+  .workspace-state { font-size: 0.6rem; }
+  .conversation-surface .messages { height: auto; padding: 1rem; }
+  .empty-state { min-height: 0; }
+  .empty-state-inner { display: block; }
+  .empty-title { font-size: 2rem; }
+  .empty-sub { font-size: 0.78rem; }
+  .empty-flow { gap: 0.38rem; font-size: 0.58rem; }
+  .empty-visual { display: none; }
+  .conversation-surface .composer { width: auto; margin-inline: 0.65rem; }
+}
+
+.auth-gate {
+  position: fixed;
+  z-index: 120;
+  inset: 72px 0 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(242, 238, 230, 0.72);
+  backdrop-filter: blur(14px);
+}
+
+.auth-gate[hidden] { display: none !important; }
+.auth-gate-card {
+  width: min(480px, 100%);
+  padding: 2.2rem 2.25rem 2.35rem;
+  border: 1px solid rgba(70, 64, 54, 0.14);
+  border-radius: 8px 28px 8px 28px;
+  background: #fbf8f1;
+  box-shadow: 0 28px 72px rgba(53, 46, 36, 0.16);
+}
+
+.auth-gate-kicker {
+  color: var(--clay);
+  font-family: "Cormorant Garamond", serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.auth-gate h2 {
+  margin-top: 0.45rem;
+  color: var(--deep);
+  font-family: "Noto Serif SC", serif;
+  font-size: clamp(1.65rem, 4vw, 2.2rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.auth-gate p { margin-top: 0.8rem; color: var(--stone); font-size: 0.82rem; line-height: 1.85; }
+.auth-gate-actions { display: flex; gap: 0.65rem; margin-top: 1.5rem; }
+.auth-gate-primary,
+.auth-gate-secondary {
+  min-height: 42px;
+  padding: 0 1.1rem;
+  border-radius: 10px 3px 10px 3px;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-gate-primary { border: 1px solid var(--moss); background: var(--moss); color: white; }
+.auth-gate-secondary { border: 1px solid var(--border); background: transparent; color: var(--deep); }
+
+.history-backdrop {
+  position: fixed;
+  z-index: 180;
+  inset: 0;
+  background: rgba(31, 33, 28, 0.34);
+  backdrop-filter: blur(4px);
+}
+
+.history-backdrop[hidden] { display: none !important; }
+.history-drawer {
+  position: fixed;
+  z-index: 190;
+  top: 0;
+  left: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: min(410px, 92vw);
+  height: 100dvh;
+  overflow: hidden;
+  padding: 1.3rem;
+  background: #30372f;
+  color: #f7f2e8;
+  box-shadow: 24px 0 70px rgba(31, 33, 28, 0.28);
+  transform: translateX(-104%);
+  transition: transform 0.28s cubic-bezier(.22,.8,.34,1);
+}
+
+.history-drawer.show { transform: translateX(0); }
+.history-head {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: auto;
+  padding: 0 0 1rem;
+  border: 0;
+  border-bottom: 1px solid rgba(247, 242, 232, 0.12);
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.history-head span { color: #cbb58d; font: 600 0.64rem/1 "Cormorant Garamond", serif; letter-spacing: 0.17em; text-transform: uppercase; }
+.history-head h2 { margin-top: 0.3rem; font: 600 1.35rem/1.4 "Noto Serif SC", serif; letter-spacing: 0.05em; }
+.history-close {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(247, 242, 232, 0.14);
+  border-radius: 50%;
+  background: transparent;
+  color: #f7f2e8;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.history-new {
+  min-height: 42px;
+  margin: 1rem 0 0.8rem;
+  border: 1px solid #d6c29b;
+  border-radius: 10px 3px 10px 3px;
+  background: #d6c29b;
+  color: #2f352d;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.history-list { min-height: 0; overflow-y: auto; padding-right: 0.3rem; scrollbar-width: thin; scrollbar-color: rgba(247,242,232,.25) transparent; }
+.history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(247, 242, 232, 0.1);
+}
+
+.history-select {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #f7f2e8;
+  text-align: left;
+  cursor: pointer;
+}
+
+.history-select strong,
+.history-select span,
+.history-select small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-select strong { font-size: 0.78rem; font-weight: 600; }
+.history-select span { margin-top: 0.3rem; color: rgba(247,242,232,.52); font-size: 0.66rem; }
+.history-select small { margin-top: 0.38rem; color: rgba(203,181,141,.72); font: 500 0.58rem/1 "Cormorant Garamond", serif; letter-spacing: 0.06em; }
+.history-item.active .history-select strong { color: #d6c29b; }
+.history-item-actions { display: flex; align-items: flex-start; gap: 0.28rem; }
+.history-item-actions button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(247,242,232,.12);
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(247,242,232,.64);
+  cursor: pointer;
+}
+
+.history-item-actions button:hover { border-color: #d6c29b; color: #fffaf0; }
+.history-empty { align-self: start; padding: 1.3rem 0; color: rgba(247,242,232,.54); }
+.history-empty strong,
+.history-empty span { display: block; }
+.history-empty strong { color: #f7f2e8; font-family: "Noto Serif SC", serif; font-size: 0.88rem; }
+.history-empty span { margin-top: 0.35rem; font-size: 0.68rem; line-height: 1.7; }
+
+.message.user.incomplete { border-color: rgba(214, 194, 155, 0.62); background: #504b3d; }
+.message-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(255,255,255,.14);
+  color: rgba(255,255,255,.62);
+  font-size: 0.64rem;
+}
+
+.message-retry {
+  border: 0;
+  background: transparent;
+  color: #f0d7a7;
+  font: 600 0.64rem/1 "Noto Sans SC", sans-serif;
+  cursor: pointer;
+}
+
+.generated-image.protected-loading {
+  min-height: 180px;
+  background: var(--surface-muted);
+  opacity: 0.72;
+}
+
+@media (max-width: 620px) {
+  .auth-gate { inset: 64px 0 0; padding: 0.8rem; }
+  .auth-gate-card { padding: 1.6rem 1.35rem 1.75rem; }
+  .history-open-btn { display: inline-flex; }
+  .history-drawer { padding: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
 </style>
 </head>
 <body>
+<a class="skip-link" href="#messages">跳到设计对话</a>
 <header>
   <div class="logo">石境</div>
   <div class="logo-sep"></div>
-  <div class="logo-sub">Shijing Garden Materials · AI Conversation</div>
+  <div class="logo-sub">AI 庭院设计工作台</div>
   <div class="auth-actions">
     <span class="auth-user" id="authUser">未登录</span>
+    <button class="auth-btn history-open-btn" type="button" id="historyButton" hidden>历史设计</button>
     <button class="auth-btn" type="button" id="authOpenButton">登录</button>
     <button class="auth-btn" type="button" id="logoutButton" hidden>退出</button>
     <button class="new-design-btn" type="button" id="newDesignButton">新建设计</button>
@@ -940,10 +2055,38 @@ header {
 
 <main class="chat-shell">
   <aside class="design-sidebar" aria-label="设计配置">
-    <div class="design-assets" id="designAssets">
+    <div class="sidebar-intro">
+      <div class="sidebar-kicker">Design brief</div>
+      <div class="sidebar-title-row">
+        <h2>方案配置</h2>
+        <span class="config-progress" id="configProgress">0 / 2</span>
+      </div>
+      <p>先准备设计依据，再到右侧生成庭院效果图。</p>
+    </div>
+
+    <nav class="config-tabs" aria-label="方案配置步骤" role="tablist">
+      <button class="config-tab active" type="button" data-config-tab="assets" aria-selected="true" role="tab" aria-controls="designAssets">
+        <span class="config-tab-index">01</span>
+        <span class="config-tab-copy">
+          <strong>设计素材</strong>
+          <small id="assetTabMeta">尚未添加</small>
+        </span>
+      </button>
+      <button class="config-tab" type="button" data-config-tab="styles" aria-selected="false" role="tab" aria-controls="stylePicker">
+        <span class="config-tab-index">02</span>
+        <span class="config-tab-copy">
+          <strong>庭院风格</strong>
+          <small id="styleTabMeta">未选择</small>
+        </span>
+      </button>
+    </nav>
+
+    <div class="config-panel-stack">
+    <div class="design-assets config-panel" id="designAssets" data-config-panel="assets" role="tabpanel">
       <div class="design-assets-head">
         <div>
-          <div class="design-assets-title">设计素材</div>
+          <div class="section-index">Material references</div>
+          <div class="design-assets-title">准备空间与石材</div>
           <div class="design-assets-sub">生成时同时使用空间图与全部石材图；没有空间图时按所选风格自行布局。</div>
         </div>
       </div>
@@ -970,11 +2113,13 @@ header {
           <div class="asset-help">每张图代表一种石材；名称可留空，用途可多选。</div>
         </div>
       </div>
-      <div class="design-status" id="designStatus" aria-live="polite"></div>
     </div>
-    <div class="style-picker" id="stylePicker">
+    <div class="style-picker config-panel" id="stylePicker" data-config-panel="styles" role="tabpanel" hidden>
       <div class="style-picker-header">
-        <div class="style-picker-title">选择庭院风格</div>
+        <div>
+          <div class="section-index">Garden direction</div>
+          <div class="style-picker-title">选择庭院风格</div>
+        </div>
         <div class="style-picker-actions">
           <div class="style-selection" id="styleSelection">选择一种风格后可直接生成效果图</div>
           <button class="style-toggle-btn" type="button" id="styleToggleButton" hidden>更换风格</button>
@@ -982,13 +2127,54 @@ header {
       </div>
       <div class="style-grid" id="styleGrid" aria-live="polite"></div>
     </div>
+    </div>
+
+    <footer class="sidebar-status">
+      <div class="design-status" id="designStatus" aria-live="polite"></div>
+      <div class="design-summary">
+        <span>当前依据</span>
+        <strong id="designSummary">等待添加设计素材</strong>
+      </div>
+    </footer>
   </aside>
 
   <section class="chat-workspace">
+    <div class="conversation-surface">
+    <header class="workspace-head">
+      <div>
+        <div class="workspace-kicker">AI garden studio</div>
+        <h1>庭院方案对话</h1>
+      </div>
+      <div class="workspace-state"><span aria-hidden="true"></span>设计服务已就绪</div>
+    </header>
     <section class="messages" id="messages" aria-live="polite">
       <div class="empty-state" id="emptyState">
-        <div class="empty-title">有什么可以帮您？</div>
-        <div class="empty-sub">Ask about garden design, materials, routes, places, or anything else.</div>
+        <div class="empty-state-inner">
+          <div class="empty-copy">
+            <div class="empty-kicker">从石材出发，构成一座庭院</div>
+            <div class="empty-title">让每一块石头<br>落在恰当的位置</div>
+            <div class="empty-sub">空间图决定尺度与边界，石材图决定质感与用途，庭院风格决定整体气质。三者准备好后，发送即可生成完整效果图。</div>
+            <div class="empty-flow" aria-label="生成效果图所需内容">
+              <span>空间图可选</span>
+              <i aria-hidden="true"></i>
+              <span>石材 1–6 张</span>
+              <i aria-hidden="true"></i>
+              <span>选择风格</span>
+            </div>
+          </div>
+          <div class="empty-visual" aria-hidden="true">
+            <svg viewBox="0 0 420 340" role="presentation">
+              <path class="landscape-line landscape-line-soft" d="M20 251c47-19 76-53 113-58 43-6 57 26 96 12 39-15 50-63 96-72 29-6 51 6 75 25"/>
+              <path class="landscape-line" d="M17 273c55-8 79-38 121-39 50-2 73 25 121 5 46-19 76-61 142-48"/>
+              <path class="landscape-line" d="M52 289c35-2 57-16 87-16 37 0 52 17 91 12 50-7 68-41 130-41"/>
+              <path class="stone-shape stone-one" d="M124 214c-11-37 11-84 52-98 38-13 76 12 82 55 5 38-20 67-64 73-34 5-62-4-70-30Z"/>
+              <path class="stone-shape stone-two" d="M261 189c-5-28 16-58 48-65 30-7 58 11 62 39 4 30-18 53-50 56-31 3-55-7-60-30Z"/>
+              <circle class="sun-mark" cx="330" cy="70" r="22"/>
+              <path class="tree-mark" d="M85 213c4-58-2-100-20-143m20 143c-3-54 8-88 35-112M76 122c-12-9-24-13-39-13m55 49c15-15 32-24 50-27"/>
+            </svg>
+            <span>空间 · 材质 · 风格</span>
+          </div>
+        </div>
       </div>
     </section>
     <form class="composer" id="composer">
@@ -999,21 +2185,6 @@ header {
           <button class="tool-action-btn" type="button" id="quoteButton">报价</button>
         </div>
         <textarea id="messageInput" rows="1" placeholder="选风格后点发送生成效果图；生成后可直接输入修改要求"></textarea>
-        <div class="attachment-row">
-          <button class="attach-btn" type="button" id="uploadButton" title="上传图片">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="5" width="18" height="14" rx="2"></rect>
-              <circle cx="8.5" cy="10.5" r="1.5"></circle>
-              <path d="m21 15-5-5L5 19"></path>
-            </svg>
-          </button>
-          <input id="imageInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-          <div class="image-preview" id="imagePreview">
-            <img id="imagePreviewImg" alt="已选择的图片">
-            <span class="image-name" id="imageName"></span>
-            <button class="remove-image" type="button" id="removeImageButton" title="移除图片">×</button>
-          </div>
-        </div>
       </div>
       <div class="actions">
         <button class="icon-btn stop-btn" type="button" id="stopButton" title="停止生成" hidden>
@@ -1029,9 +2200,39 @@ header {
         </button>
       </div>
     </form>
-    <div class="hint">Responses stream from the local FastAPI /chat endpoint.</div>
+    <div class="hint">由本地设计服务流式生成 · 结果可继续对话调整</div>
+    </div>
   </section>
 </main>
+
+<section class="auth-gate" id="authGate" aria-labelledby="authGateTitle">
+  <div class="auth-gate-card">
+    <div class="auth-gate-kicker">Private design workspace</div>
+    <h2 id="authGateTitle">登录后开始庭院设计</h2>
+    <p>你的聊天记录、设计素材和效果图将保存在账号中，并可在其他设备继续使用。</p>
+    <div class="auth-gate-actions">
+      <button class="auth-gate-primary" type="button" id="authGateLogin">登录</button>
+      <button class="auth-gate-secondary" type="button" id="authGateRegister">注册账号</button>
+    </div>
+  </div>
+</section>
+
+<div class="history-backdrop" id="historyBackdrop" hidden></div>
+<aside class="history-drawer" id="historyDrawer" aria-label="历史设计" aria-hidden="true" inert>
+  <header class="history-head">
+    <div>
+      <span>Design archive</span>
+      <h2>历史设计</h2>
+    </div>
+    <button class="history-close" type="button" id="historyCloseButton" aria-label="关闭历史设计">×</button>
+  </header>
+  <button class="history-new" type="button" id="historyNewButton">新建设计</button>
+  <div class="history-list" id="historyList"></div>
+  <div class="history-empty" id="historyEmpty" hidden>
+    <strong>还没有历史设计</strong>
+    <span>发送第一条消息后，会话会出现在这里。</span>
+  </div>
+</aside>
 
 <div class="image-lightbox" id="imageLightbox" aria-modal="true" role="dialog" hidden>
   <button class="lightbox-close" type="button" id="lightboxClose" title="关闭">×</button>
@@ -1042,7 +2243,7 @@ header {
   <form class="auth-card" id="authForm">
     <button class="auth-close" type="button" id="authCloseButton" title="关闭">×</button>
     <h2>账号登录</h2>
-    <p>不登录也可以正常对话；登录后可用于后续保存更完整的对话历史和个人功能。</p>
+    <p>登录后可保存聊天记录、设计素材与效果图，并在其他设备继续当前设计。</p>
     <div class="auth-tabs">
       <button class="auth-tab active" type="button" id="loginTab">登录</button>
       <button class="auth-tab" type="button" id="registerTab">注册</button>
@@ -1071,12 +2272,6 @@ const sendIcon = document.getElementById("sendIcon");
 const recognizeButton = document.getElementById("recognizeButton");
 const effectButton = document.getElementById("effectButton");
 const quoteButton = document.getElementById("quoteButton");
-const uploadButton = document.getElementById("uploadButton");
-const imageInput = document.getElementById("imageInput");
-const imagePreview = document.getElementById("imagePreview");
-const imagePreviewImg = document.getElementById("imagePreviewImg");
-const imageName = document.getElementById("imageName");
-const removeImageButton = document.getElementById("removeImageButton");
 const imageLightbox = document.getElementById("imageLightbox");
 const lightboxImage = document.getElementById("lightboxImage");
 const lightboxClose = document.getElementById("lightboxClose");
@@ -1105,16 +2300,36 @@ const materialImageInput = document.getElementById("materialImageInput");
 const materialImageList = document.getElementById("materialImageList");
 const clearMaterialsButton = document.getElementById("clearMaterialsButton");
 const designStatus = document.getElementById("designStatus");
+const designAssets = document.getElementById("designAssets");
+const configTabs = Array.from(document.querySelectorAll("[data-config-tab]"));
+const configPanels = Array.from(document.querySelectorAll("[data-config-panel]"));
+const configProgress = document.getElementById("configProgress");
+const assetTabMeta = document.getElementById("assetTabMeta");
+const styleTabMeta = document.getElementById("styleTabMeta");
+const designSummary = document.getElementById("designSummary");
+const historyButton = document.getElementById("historyButton");
+const historyBackdrop = document.getElementById("historyBackdrop");
+const historyDrawer = document.getElementById("historyDrawer");
+const historyCloseButton = document.getElementById("historyCloseButton");
+const historyNewButton = document.getElementById("historyNewButton");
+const historyList = document.getElementById("historyList");
+const historyEmpty = document.getElementById("historyEmpty");
+const authGate = document.getElementById("authGate");
+const authGateLogin = document.getElementById("authGateLogin");
+const authGateRegister = document.getElementById("authGateRegister");
 
 let abortController = null;
-let selectedImage = null;
 let selectedStyle = null;
 let styleGridExpanded = true;
 let pendingStyleGeneration = false;
 let authMode = "login";
 let gardenStyles = [];
 let designState = { space_image: null, materials: [], selected_style_id: null, expired: false };
+let activeConfigPanel = "assets";
+let conversations = [];
+let currentConversationExists = false;
 const SESSION_ID_KEY = "shijing_chat_session_id";
+const LAST_SESSION_KEY_PREFIX = "shijing_last_session_user_";
 const AUTH_TOKEN_KEY = "shijing_auth_token";
 const AUTH_USER_KEY = "shijing_auth_user";
 let sessionId = getOrCreateSessionId();
@@ -1143,11 +2358,27 @@ function clearAuthSession() {
   updateAuthUi(null);
 }
 
+function setWorkspaceLocked(locked) {
+  authGate.hidden = !locked;
+  input.disabled = locked;
+  sendButton.disabled = locked;
+  recognizeButton.disabled = locked;
+  effectButton.disabled = locked;
+  quoteButton.disabled = locked;
+  newDesignButton.disabled = locked;
+  document.querySelectorAll("[data-design-control]").forEach(control => {
+    control.disabled = locked;
+  });
+  styleGrid.querySelectorAll(".style-card").forEach(card => { card.disabled = locked; });
+}
+
 function updateAuthUi(user = getStoredUser()) {
   const loggedIn = Boolean(getAuthToken() && user);
   authUser.textContent = loggedIn ? `已登录：${user.username}` : "未登录";
+  historyButton.hidden = !loggedIn;
   authOpenButton.hidden = loggedIn;
   logoutButton.hidden = !loggedIn;
+  setWorkspaceLocked(!loggedIn);
 }
 
 function openAuthModal(mode = "login") {
@@ -1191,7 +2422,7 @@ async function submitAuth() {
       throw new Error(payload.detail || `HTTP ${response.status}`);
     }
     setAuthSession(payload.access_token, payload.user);
-    await loadDesignSession();
+    await initializeAuthenticatedWorkspace();
     authForm.reset();
     closeAuthModal();
     input.focus();
@@ -1206,7 +2437,7 @@ async function refreshCurrentUser() {
   const token = getAuthToken();
   if (!token) {
     updateAuthUi(null);
-    return;
+    return null;
   }
   try {
     const response = await fetch("/api/auth/me", {
@@ -1215,9 +2446,21 @@ async function refreshCurrentUser() {
     if (!response.ok) throw new Error("token invalid");
     const user = await response.json();
     setAuthSession(token, user);
+    return user;
   } catch {
     clearAuthSession();
+    return null;
   }
+}
+
+function lastSessionKey() {
+  const user = getStoredUser();
+  return user ? `${LAST_SESSION_KEY_PREFIX}${user.id}` : null;
+}
+
+function rememberLastSession() {
+  const key = lastSessionKey();
+  if (key) localStorage.setItem(key, sessionId);
 }
 
 function getOrCreateSessionId() {
@@ -1258,6 +2501,209 @@ async function designRequest(path, options = {}) {
   }
   if (response.status === 204) return null;
   return response.json();
+}
+
+async function authenticatedRequest(path, options = {}) {
+  const token = getAuthToken();
+  if (!token) throw new Error("请先登录");
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
+    },
+  });
+  if (response.status === 401) {
+    clearAuthSession();
+    throw new Error("登录已失效，请重新登录");
+  }
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.detail || `HTTP ${response.status}`);
+  }
+  if (response.status === 204) return null;
+  return response.json();
+}
+
+function openHistoryDrawer() {
+  historyBackdrop.hidden = false;
+  historyDrawer.inert = false;
+  historyDrawer.classList.add("show");
+  historyDrawer.setAttribute("aria-hidden", "false");
+}
+
+function closeHistoryDrawer() {
+  historyDrawer.classList.remove("show");
+  historyDrawer.setAttribute("aria-hidden", "true");
+  historyDrawer.inert = true;
+  historyBackdrop.hidden = true;
+}
+
+function formatConversationTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function renderConversationList() {
+  historyList.replaceChildren();
+  historyEmpty.hidden = conversations.length > 0;
+  for (const conversation of conversations) {
+    const item = document.createElement("article");
+    item.className = `history-item${conversation.session_id === sessionId ? " active" : ""}`;
+
+    const selectButton = document.createElement("button");
+    selectButton.type = "button";
+    selectButton.className = "history-select";
+    selectButton.innerHTML = `
+      <strong>${escapeHtml(conversation.title)}</strong>
+      <span>${escapeHtml(conversation.preview || "暂无消息")}</span>
+      <small>${escapeHtml(formatConversationTime(conversation.updated_at))}</small>
+    `;
+    selectButton.addEventListener("click", () => openConversation(conversation.session_id));
+
+    const actions = document.createElement("div");
+    actions.className = "history-item-actions";
+    const renameButton = document.createElement("button");
+    renameButton.type = "button";
+    renameButton.title = "重命名";
+    renameButton.textContent = "✎";
+    renameButton.addEventListener("click", () => renameHistoryConversation(conversation));
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.title = "删除";
+    deleteButton.textContent = "×";
+    deleteButton.addEventListener("click", () => deleteHistoryConversation(conversation));
+    actions.append(renameButton, deleteButton);
+    item.append(selectButton, actions);
+    historyList.appendChild(item);
+  }
+}
+
+async function loadConversations() {
+  conversations = await authenticatedRequest("/api/conversations");
+  currentConversationExists = conversations.some(item => item.session_id === sessionId);
+  renderConversationList();
+  return conversations;
+}
+
+function clearConversationMessages() {
+  messagesEl.querySelectorAll(".message-row").forEach(row => row.remove());
+  emptyState.hidden = false;
+}
+
+function markUserMessageIncomplete(bubble, message) {
+  bubble.classList.add("incomplete");
+  const status = document.createElement("div");
+  status.className = "message-status";
+  const label = document.createElement("span");
+  label.textContent = "未完成";
+  const retry = document.createElement("button");
+  retry.type = "button";
+  retry.className = "message-retry";
+  retry.textContent = "重新发送";
+  retry.addEventListener("click", () => sendMessage(message.message_type || "chat", message));
+  status.append(label, retry);
+  bubble.appendChild(status);
+}
+
+async function renderConversationMessages(messages) {
+  clearConversationMessages();
+  for (const message of messages) {
+    if (message.role === "user") {
+      const bubble = addUserMessage(message.content);
+      if (message.status === "failed") markUserMessageIncomplete(bubble, message);
+      continue;
+    }
+    if (message.role === "assistant" && message.status === "complete") {
+      const bubble = addMessage("assistant", "");
+      bubble.innerHTML = renderMarkdown(message.content);
+      await hydrateProtectedImages(bubble);
+    }
+  }
+  scrollToBottom();
+}
+
+async function openConversation(targetSessionId) {
+  if (abortController) return;
+  const payload = await authenticatedRequest(`/api/conversations/${encodeURIComponent(targetSessionId)}`);
+  sessionId = targetSessionId;
+  localStorage.setItem(SESSION_ID_KEY, sessionId);
+  rememberLastSession();
+  currentConversationExists = true;
+  await renderConversationMessages(payload.messages || []);
+  selectedStyle = null;
+  styleGridExpanded = true;
+  await loadDesignSession();
+  renderConversationList();
+  closeHistoryDrawer();
+}
+
+async function renameHistoryConversation(conversation) {
+  const title = window.prompt("新的会话标题", conversation.title);
+  if (!title?.trim() || title.trim() === conversation.title) return;
+  await authenticatedRequest(`/api/conversations/${encodeURIComponent(conversation.session_id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ title: title.trim() }),
+  });
+  await loadConversations();
+}
+
+async function deleteHistoryConversation(conversation) {
+  const confirmed = window.confirm(
+    `确认永久删除“${conversation.title}”？聊天记录、设计素材和效果图将无法恢复。`
+  );
+  if (!confirmed) return;
+  await authenticatedRequest(`/api/conversations/${encodeURIComponent(conversation.session_id)}`, {
+    method: "DELETE",
+  });
+  if (conversation.session_id === sessionId) {
+    sessionId = createNewSessionId();
+    rememberLastSession();
+    currentConversationExists = false;
+    resetDesignView();
+  }
+  await loadConversations();
+}
+
+function resetDesignView() {
+  designState = { space_image: null, materials: [], selected_style_id: null, expired: false };
+  selectedStyle = null;
+  pendingStyleGeneration = false;
+  styleGridExpanded = true;
+  styleSelection.textContent = "选择一种风格后可直接生成效果图";
+  styleGrid.querySelectorAll(".style-card").forEach(card => {
+    card.classList.remove("selected");
+    card.setAttribute("aria-pressed", "false");
+  });
+  updateStylePickerVisibility();
+  showConfigPanel("assets");
+  clearConversationMessages();
+  renderDesignState();
+  setDesignStatus("");
+}
+
+async function initializeAuthenticatedWorkspace() {
+  await loadConversations();
+  const key = lastSessionKey();
+  const preferred = key ? localStorage.getItem(key) : null;
+  const target = conversations.find(item => item.session_id === preferred)
+    || conversations[0]
+    || null;
+  if (target) {
+    await openConversation(target.session_id);
+  } else {
+    currentConversationExists = false;
+    resetDesignView();
+    await loadDesignSession();
+    rememberLastSession();
+  }
 }
 
 function setDesignStatus(message = "", isError = false) {
@@ -1301,7 +2747,49 @@ function renderSpaceImage() {
   spaceImageCard.appendChild(card);
 }
 
-const MATERIAL_USAGES = ["地面铺装", "墙面", "台阶", "围边", "景墙", "水景", "其他"];
+const MATERIAL_USAGES = ["地面铺装", "汀步", "台阶", "墙面", "景墙", "围边", "水景", "水景观", "驳岸", "其他"];
+const MAX_MATERIAL_USAGES = 7;
+
+function updateUsageSelectionState(usageList) {
+  const checkboxes = Array.from(usageList.querySelectorAll('input[type="checkbox"]'));
+  const selectedCount = checkboxes.filter(checkbox => checkbox.checked).length;
+  const atLimit = selectedCount >= MAX_MATERIAL_USAGES;
+  for (const checkbox of checkboxes) {
+    const disabled = Boolean(abortController) || (!checkbox.checked && atLimit);
+    checkbox.disabled = disabled;
+    checkbox.closest(".usage-option")?.classList.toggle("disabled", disabled);
+  }
+}
+
+function showConfigPanel(panelName) {
+  activeConfigPanel = panelName;
+  for (const panel of configPanels) {
+    panel.hidden = panel.dataset.configPanel !== panelName;
+  }
+  for (const tab of configTabs) {
+    const isActive = tab.dataset.configTab === panelName;
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+    tab.tabIndex = isActive ? 0 : -1;
+  }
+}
+
+function updateConfigProgress() {
+  const materialCount = designState.materials.length;
+  const hasSpaceImage = Boolean(designState.space_image);
+  const completedSteps = Number(materialCount > 0) + Number(Boolean(selectedStyle));
+  configProgress.textContent = `${completedSteps} / 2`;
+
+  const assetParts = [];
+  if (hasSpaceImage) assetParts.push("空间图");
+  if (materialCount) assetParts.push(`${materialCount} 种石材`);
+  assetTabMeta.textContent = assetParts.length ? assetParts.join(" · ") : "尚未添加";
+  styleTabMeta.textContent = selectedStyle?.name || "未选择";
+
+  const summaryParts = [...assetParts];
+  if (selectedStyle) summaryParts.push(selectedStyle.name);
+  designSummary.textContent = summaryParts.length ? summaryParts.join(" · ") : "等待添加设计素材";
+}
 
 function renderMaterialImages() {
   materialImageList.replaceChildren();
@@ -1340,8 +2828,15 @@ function renderMaterialImages() {
       checkbox.dataset.designControl = "";
       label.append(checkbox, document.createTextNode(usage));
       usageList.appendChild(label);
-      checkbox.addEventListener("change", () => saveMaterialMetadata(item, card));
+      checkbox.addEventListener("change", () => {
+        updateUsageSelectionState(usageList);
+        saveMaterialMetadata(item, card);
+      });
     }
+    updateUsageSelectionState(usageList);
+    const usageHint = document.createElement("div");
+    usageHint.className = "asset-help";
+    usageHint.textContent = `每种石材最多选择 ${MAX_MATERIAL_USAGES} 项用途`;
     name.addEventListener("change", () => saveMaterialMetadata(item, card));
     const remove = document.createElement("button");
     remove.type = "button";
@@ -1350,7 +2845,7 @@ function renderMaterialImages() {
     remove.title = "删除石材参考图";
     remove.textContent = "×";
     remove.addEventListener("click", () => removeMaterialImage(item.id));
-    card.append(img, name, usageList, remove);
+    card.append(img, name, usageList, usageHint, remove);
     materialImageList.appendChild(card);
   }
 }
@@ -1358,6 +2853,7 @@ function renderMaterialImages() {
 function renderDesignState() {
   renderSpaceImage();
   renderMaterialImages();
+  updateConfigProgress();
   if (designState.expired) {
     setDesignStatus("设计图片已过期，请重新上传。已选择的庭院风格仍可继续使用。", true);
   }
@@ -1372,13 +2868,14 @@ async function loadDesignSession() {
       selectStyle(restoredStyle, false);
       pendingStyleGeneration = !designState.generated_image_url;
     }
-    if (designState.generated_image_url) {
+    if (designState.generated_image_url && !currentConversationExists) {
       const existing = messagesEl.querySelector(`[data-generated-url="${CSS.escape(designState.generated_image_url)}"]`);
       if (!existing) {
         const bubble = addMessage("assistant", "");
         bubble.dataset.generatedUrl = designState.generated_image_url;
         const label = designState.effect_is_current ? "当前效果图" : "历史效果图（设计素材已变化）";
         bubble.innerHTML = renderMarkdown(`**${label}**\n\n![庭院效果图](${designState.generated_image_url})`);
+        await hydrateProtectedImages(bubble);
         scrollToBottom();
       }
     }
@@ -1506,24 +3003,21 @@ async function persistSelectedStyle(style) {
 }
 
 async function startNewDesign() {
-  if (!confirm("确认新建设计？当前会话中的空间图、石材图、效果图和消息将立即清除。")) return;
+  const message = currentConversationExists
+    ? "开始新的设计？当前会话会保留在历史设计中。"
+    : "开始新的设计？当前尚未发送消息，已上传的草稿素材将被永久清除。";
+  if (!confirm(message)) return;
   try {
-    await designRequest("/api/design/reset", { method: "POST" });
+    if (!currentConversationExists) {
+      await designRequest("/api/design/reset", { method: "POST" });
+    }
     sessionId = createNewSessionId();
-    designState = { space_image: null, materials: [], selected_style_id: null, expired: false };
-    selectedStyle = null;
-    pendingStyleGeneration = false;
-    styleGridExpanded = true;
-    styleSelection.textContent = "选择一种风格后可直接生成效果图";
-    styleGrid.querySelectorAll(".style-card").forEach(card => {
-      card.classList.remove("selected");
-      card.setAttribute("aria-pressed", "false");
-    });
-    updateStylePickerVisibility();
-    messagesEl.querySelectorAll(".message-row").forEach(row => row.remove());
-    emptyState.hidden = false;
-    renderDesignState();
+    rememberLastSession();
+    currentConversationExists = false;
+    resetDesignView();
     setDesignStatus("已创建新的设计会话");
+    renderConversationList();
+    closeHistoryDrawer();
   } catch (error) {
     setDesignStatus(error.message, true);
   }
@@ -1566,6 +3060,7 @@ function selectStyle(style, persist = true) {
     card.setAttribute("aria-pressed", String(selected));
   });
   updateStylePickerVisibility();
+  updateConfigProgress();
   if (persist) persistSelectedStyle(style);
   input.focus();
 }
@@ -1579,6 +3074,7 @@ function updateStylePickerVisibility() {
 }
 
 function showStyleOptions() {
+  showConfigPanel("styles");
   styleGridExpanded = true;
   updateStylePickerVisibility();
   stylePicker.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -1616,17 +3112,8 @@ function addMessage(role, text = "", extraClass = "") {
   return bubble;
 }
 
-function addUserMessage(text, images) {
-  const bubble = addMessage("user", text || "请分析这张图片");
-  const imageList = Array.isArray(images) ? images : (images ? [images] : []);
-  for (const image of imageList) {
-    const img = document.createElement("img");
-    img.src = image.dataUrl;
-    img.alt = image.name || "用户上传的图片";
-    img.title = "点击放大";
-    img.addEventListener("click", () => openImageLightbox(image.dataUrl, image.name));
-    bubble.appendChild(img);
-  }
+function addUserMessage(text) {
+  return addMessage("user", text || "请继续当前设计");
 }
 
 function openImageLightbox(src, alt = "放大的用户上传图片") {
@@ -1640,14 +3127,6 @@ function closeImageLightbox() {
   imageLightbox.classList.remove("show");
   imageLightbox.hidden = true;
   lightboxImage.removeAttribute("src");
-}
-
-function clearSelectedImage() {
-  selectedImage = null;
-  imageInput.value = "";
-  imagePreview.classList.remove("show");
-  imagePreviewImg.removeAttribute("src");
-  imageName.textContent = "";
 }
 
 function compressImage(file) {
@@ -1700,7 +3179,11 @@ function safeUrl(url) {
 function renderInlineMarkdown(text) {
   let html = escapeHtml(text);
   html = html.replace(/!\[([^\]]*)]\(([^)\s]+)\)/g, (_, alt, url) => {
-    return `<img class="generated-image" src="${escapeHtml(safeUrl(url))}" alt="${alt || 'AI 生成效果图'}">`;
+    const resolved = safeUrl(url);
+    if (resolved.startsWith("/api/conversations/")) {
+      return `<img class="generated-image protected-loading" data-protected-src="${escapeHtml(resolved)}" alt="${alt || 'AI 生成效果图'}">`;
+    }
+    return `<img class="generated-image" src="${escapeHtml(resolved)}" alt="${alt || 'AI 生成效果图'}">`;
   });
   html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
   html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
@@ -1830,6 +3313,27 @@ function renderMarkdown(markdown) {
   return blocks.join("");
 }
 
+async function hydrateProtectedImages(container) {
+  const token = getAuthToken();
+  if (!token) return;
+  const images = Array.from(container.querySelectorAll("img[data-protected-src]"));
+  await Promise.all(images.map(async image => {
+    const url = image.dataset.protectedSrc;
+    if (!url) return;
+    try {
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      image.src = URL.createObjectURL(blob);
+      image.classList.remove("protected-loading");
+      delete image.dataset.protectedSrc;
+    } catch {
+      image.classList.remove("protected-loading");
+      image.alt = "效果图暂时无法读取";
+    }
+  }));
+}
+
 function renderThinkingIndicator() {
   return `
     <span class="thinking-indicator" aria-live="polite">
@@ -1842,16 +3346,17 @@ function renderThinkingIndicator() {
 }
 
 function setLoading(isLoading) {
-  input.disabled = isLoading;
-  sendButton.disabled = isLoading;
-  recognizeButton.disabled = isLoading;
-  effectButton.disabled = isLoading;
-  quoteButton.disabled = isLoading;
-  newDesignButton.disabled = isLoading;
+  const locked = !getAuthToken();
+  input.disabled = isLoading || locked;
+  sendButton.disabled = isLoading || locked;
+  recognizeButton.disabled = isLoading || locked;
+  effectButton.disabled = isLoading || locked;
+  quoteButton.disabled = isLoading || locked;
+  newDesignButton.disabled = isLoading || locked;
   document.querySelectorAll("[data-design-control]").forEach(control => {
-    control.disabled = isLoading;
+    control.disabled = isLoading || locked;
   });
-  styleGrid.querySelectorAll(".style-card").forEach(card => { card.disabled = isLoading; });
+  styleGrid.querySelectorAll(".style-card").forEach(card => { card.disabled = isLoading || locked; });
   stopButton.hidden = !isLoading;
   sendIcon.hidden = isLoading;
   if (isLoading) {
@@ -1864,6 +3369,7 @@ function setLoading(isLoading) {
     sendIcon.hidden = false;
     abortController = null;
     renderMaterialImages();
+    if (locked) setWorkspaceLocked(true);
   }
 }
 
@@ -1900,7 +3406,7 @@ function buildActionRequest(mode, text) {
       shouldGenerateEffectImage: true,
     };
   }
-  if (!text && !selectedImage) return null;
+  if (!text) return null;
   return {
     requestText: text,
     displayText: text,
@@ -1908,28 +3414,31 @@ function buildActionRequest(mode, text) {
   };
 }
 
-async function sendMessage(mode = "chat") {
-  const text = input.value.trim();
+async function sendMessage(mode = "chat", retryMessage = null) {
+  if (!getAuthToken()) {
+    openAuthModal("login");
+    return;
+  }
+  const text = retryMessage ? (retryMessage.request_text || "") : input.value.trim();
   if (abortController) return;
 
-  const actionRequest = buildActionRequest(mode, text);
+  if (retryMessage?.style_id && mode === "effect" && selectedStyle?.id !== retryMessage.style_id) {
+    const retryStyle = gardenStyles.find(style => style.id === retryMessage.style_id);
+    if (retryStyle) selectStyle(retryStyle, false);
+  }
+  const actionRequest = retryMessage
+    ? {
+        requestText: retryMessage.request_text || "",
+        displayText: retryMessage.content,
+        shouldGenerateEffectImage: mode === "effect",
+      }
+    : buildActionRequest(mode, text);
   if (!actionRequest) return;
+  const persistedMode = actionRequest.shouldGenerateEffectImage ? "effect" : mode;
 
   const token = getAuthToken();
-
-  const imageForRequest = actionRequest.shouldGenerateEffectImage ? null : selectedImage;
-  const designThumbnails = actionRequest.shouldGenerateEffectImage
-    ? [
-        ...(designState.space_image ? [{ dataUrl: designState.space_image.image, name: "庭院空间图" }] : []),
-        ...designState.materials.map((item, index) => ({
-          dataUrl: item.image,
-          name: item.name || item.original_name || `石材 ${index + 1}`,
-        })),
-      ]
-    : imageForRequest;
-  addUserMessage(actionRequest.displayText, designThumbnails);
+  const userBubble = addUserMessage(actionRequest.displayText);
   input.value = "";
-  clearSelectedImage();
   resizeInput();
 
   const assistantBubble = addMessage("assistant", "");
@@ -1949,7 +3458,8 @@ async function sendMessage(mode = "chat") {
       headers,
       body: JSON.stringify({
         message: actionRequest.requestText,
-        image: imageForRequest?.dataUrl || null,
+        display_message: actionRequest.displayText,
+        message_type: persistedMode,
         session_id: sessionId,
         style_id: actionRequest.shouldGenerateEffectImage ? selectedStyle.id : null,
         generate_effect_image: actionRequest.shouldGenerateEffectImage,
@@ -1963,6 +3473,8 @@ async function sendMessage(mode = "chat") {
       }
       throw new Error(`HTTP ${response.status}`);
     }
+    currentConversationExists = true;
+    userBubble.dataset.messageId = response.headers.get("X-User-Message-Id") || "";
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -1975,32 +3487,48 @@ async function sendMessage(mode = "chat") {
       scrollToBottom();
     }
 
-    if (actionRequest.shouldGenerateEffectImage && assistantMarkdown.includes("/static/generated/")) {
+    if (!assistantMarkdown.trim()) throw new Error("模型没有返回内容");
+    await hydrateProtectedImages(assistantBubble);
+
+    if (actionRequest.shouldGenerateEffectImage && assistantMarkdown.includes("/api/conversations/")) {
       pendingStyleGeneration = false;
     }
   } catch (error) {
-    if (error.name === "AbortError") {
-      assistantMarkdown = assistantMarkdown || "";
-      assistantMarkdown += "\n\n[已停止生成]";
-      assistantBubble.innerHTML = renderMarkdown(assistantMarkdown);
-    } else {
-      assistantBubble.classList.add("error");
-      assistantBubble.textContent = `请求失败：${error.message || String(error)}`;
+    assistantBubble.closest(".message-row")?.remove();
+    markUserMessageIncomplete(userBubble, {
+      content: actionRequest.displayText,
+      request_text: actionRequest.requestText,
+      message_type: persistedMode,
+      style_id: selectedStyle?.id || null,
+    });
+    if (error.name !== "AbortError") {
+      setDesignStatus(`请求失败：${error.message || String(error)}`, true);
     }
   } finally {
     setLoading(false);
     input.disabled = false;
     input.focus();
+    if (getAuthToken()) {
+      loadConversations().catch(() => {});
+    }
   }
 }
 
 input.addEventListener("input", resizeInput);
 authOpenButton.addEventListener("click", () => openAuthModal("login"));
+authGateLogin.addEventListener("click", () => openAuthModal("login"));
+authGateRegister.addEventListener("click", () => openAuthModal("register"));
 authCloseButton.addEventListener("click", closeAuthModal);
 logoutButton.addEventListener("click", () => {
+  abortController?.abort();
+  const key = lastSessionKey();
+  if (key) localStorage.removeItem(key);
   clearAuthSession();
-  loadDesignSession();
-  input.focus();
+  sessionId = createNewSessionId();
+  conversations = [];
+  currentConversationExists = false;
+  resetDesignView();
+  closeHistoryDrawer();
 });
 loginTab.addEventListener("click", () => setAuthMode("login"));
 registerTab.addEventListener("click", () => setAuthMode("register"));
@@ -2013,27 +3541,6 @@ authModal.addEventListener("click", (event) => {
     closeAuthModal();
   }
 });
-uploadButton.addEventListener("click", () => imageInput.click());
-imageInput.addEventListener("change", async () => {
-  const file = imageInput.files?.[0];
-  if (!file) return;
-  try {
-    validateImageFile(file);
-  } catch (error) {
-    clearSelectedImage();
-    setDesignStatus(error.message, true);
-    return;
-  }
-
-  selectedImage = {
-    name: file.name,
-    dataUrl: await compressImage(file),
-  };
-  imagePreviewImg.src = selectedImage.dataUrl;
-  imageName.textContent = file.name;
-  imagePreview.classList.add("show");
-});
-removeImageButton.addEventListener("click", clearSelectedImage);
 lightboxClose.addEventListener("click", closeImageLightbox);
 messagesEl.addEventListener("click", (event) => {
   const image = event.target.closest(".generated-image");
@@ -2059,6 +3566,9 @@ form.addEventListener("submit", (event) => {
 recognizeButton.addEventListener("click", () => sendMessage("recognize"));
 effectButton.addEventListener("click", () => sendMessage("effect"));
 quoteButton.addEventListener("click", () => sendMessage("quote"));
+for (const configTab of configTabs) {
+  configTab.addEventListener("click", () => showConfigPanel(configTab.dataset.configTab));
+}
 styleToggleButton.addEventListener("click", () => {
   styleGridExpanded = !styleGridExpanded;
   updateStylePickerVisibility();
@@ -2075,6 +3585,13 @@ materialUploadButton.addEventListener("click", () => materialImageInput.click())
 materialImageInput.addEventListener("change", () => uploadMaterialImages(materialImageInput.files || []));
 clearMaterialsButton.addEventListener("click", clearMaterialImages);
 newDesignButton.addEventListener("click", startNewDesign);
+historyButton.addEventListener("click", async () => {
+  await loadConversations().catch(error => setDesignStatus(error.message, true));
+  openHistoryDrawer();
+});
+historyCloseButton.addEventListener("click", closeHistoryDrawer);
+historyBackdrop.addEventListener("click", closeHistoryDrawer);
+historyNewButton.addEventListener("click", startNewDesign);
 
 stopButton.addEventListener("click", () => {
   abortController?.abort();
@@ -2087,16 +3604,23 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !authModal.hidden) {
     closeAuthModal();
   }
+  if (event.key === "Escape" && historyDrawer.classList.contains("show")) {
+    closeHistoryDrawer();
+  }
 });
 
+showConfigPanel("assets");
 updateAuthUi();
 async function initializeDesignApp() {
-  await refreshCurrentUser();
+  const user = await refreshCurrentUser();
   await loadGardenStyles();
-  await loadDesignSession();
+  if (user) {
+    await initializeAuthenticatedWorkspace();
+  } else {
+    resetDesignView();
+  }
 }
 initializeDesignApp();
-input.focus();
 </script>
 </body>
 </html>
