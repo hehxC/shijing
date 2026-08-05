@@ -7,8 +7,10 @@
     evals/datasets/intent_routing_seed.jsonl
 
 设计说明：
-    - 每条数据包含：用户消息、会话状态（四个布尔值）、期望的路由结果（intent + use_image）；
+    - 每条数据包含：用户消息、会话状态（三个布尔值）、期望的路由结果（intent + use_image）；
     - 数据集混合了手写难例与模板组合样本，覆盖五个意图和关键状态组合；
+    - 估价与材料查询的边界约定：带面积或项目范围的费用估算（需按 面积 × 单价 计算）归 estimate_price；
+      只问材料单价、规格、颜色等属性（查数据库即可）归 query_material；
     - 脚本是确定性的，重复运行会覆盖同一份 JSONL，保证评测可复现。
 """
 
@@ -29,14 +31,12 @@ def state(
     uploaded: bool = False,
     reference: bool = False,
     generated: bool = False,
-    material_analysis: bool = False,
 ) -> dict:
     """构造会话状态字典，与 route_chat_intent 的参数一一对应。"""
     return {
         "has_uploaded_image": uploaded,
         "has_reference_image": reference,
         "has_generated_image": generated,
-        "has_material_analysis": material_analysis,
     }
 
 
@@ -87,19 +87,21 @@ HANDCRAFTED = [
     sample("效果图里的地面铺的是什么", state(generated=True), "analyze_image", "generated", "分析效果图"),
     sample("我上传的参考图里有什么", state(reference=True), "analyze_image", "reference", "分析参考图"),
     # ---- 估价 ----
+    # 边界约定：估价必须有面积或项目范围，需要按 面积 × 单价 计算
     sample("50平米院子铺莱姆石大概多少钱", state(), "estimate_price", "none", "面积 + 材料估价"),
-    sample("花岗岩铺装多少钱一平", state(), "estimate_price", "none", "问单价"),
     sample("帮我估一下80平庭院的材料预算", state(), "estimate_price", "none", "预算估算"),
-    sample("这个方案大概要花多少钱", state(material_analysis=True), "estimate_price", "none", "基于材料分析估价"),
-    sample("水洗石单价多少", state(), "estimate_price", "none", "问单价"),
+    sample("这个方案大概要花多少钱", state(), "estimate_price", "none", "方案级估价"),
     sample("报价大概多少", state(), "estimate_price", "none", "模糊报价"),
     # ---- 材料查询 ----
+    # 只问材料属性（含单价）属于查询，不需要工程量计算
     sample("莱姆石有什么规格", state(), "query_material", "none", "查规格"),
     sample("芝麻灰有哪些颜色", state(), "query_material", "none", "查颜色"),
     sample("花岗岩和莱姆石哪个更适合户外", state(), "query_material", "none", "材料对比咨询"),
     sample("材料库里有没有水洗石", state(), "query_material", "none", "查库存"),
     sample("黄砂岩的材质特点是什么", state(), "query_material", "none", "查材质描述"),
     sample("鹅卵石和砾石的区别", state(), "query_material", "none", "材料对比"),
+    sample("花岗岩铺装多少钱一平", state(), "query_material", "none", "问材料单价"),
+    sample("水洗石单价多少", state(), "query_material", "none", "问材料单价"),
     # ---- 普通闲聊 ----
     sample("你好", state(), "general_chat", "none", "打招呼"),
     sample("谢谢", state(), "general_chat", "none", "道谢"),
@@ -118,7 +120,7 @@ HANDCRAFTED = [
     sample("帮我看看这个方案", state(generated=False), "general_chat", "none", "无效果图时无法分析"),
     sample("生成效果图要收费吗", state(), "general_chat", "none", "问服务价格不是材料"),
     sample("铺地面的石材选什么好", state(), "query_material", "none", "选材咨询"),
-    sample("这石头多少钱一块", state(uploaded=True), "estimate_price", "none", "有图但问价格"),
+    sample("这石头多少钱一块", state(uploaded=True), "query_material", "none", "有图但问材料单价"),
     sample("这石头是什么品种", state(uploaded=True), "analyze_image", "uploaded", "有图问品种"),
 ]
 
@@ -139,16 +141,15 @@ def build_templates() -> list[dict]:
         generated.append(sample(f"再加一圈{usage}，重新生成", state(generated=True), "generate_effect_image", "generated"))
         generated.append(sample(f"把{usage}换成水洗石再出一版", state(generated=True), "generate_effect_image", "generated"))
 
-    # 估价类：面积 × 材料
+    # 估价类：带面积的费用估算（面积 × 材料）
     for area in AREAS:
         for material in MATERIALS[:4]:
             generated.append(sample(f"{area}院子铺{material}大概多少钱", state(), "estimate_price", "none"))
-    for material in MATERIALS:
-        generated.append(sample(f"{material}铺装多少钱一平", state(), "estimate_price", "none"))
 
-    # 查询类：材料 × 查询句式
+    # 查询类：材料 × 查询句式（含单价问句，按约定归 query_material）
     for material in MATERIALS:
         generated.append(sample(f"{material}有什么规格", state(), "query_material", "none"))
+        generated.append(sample(f"{material}铺装多少钱一平", state(), "query_material", "none"))
     for material in MATERIALS[:4]:
         generated.append(sample(f"{material}有哪些颜色", state(), "query_material", "none"))
         generated.append(sample(f"材料库里有没有{material}", state(), "query_material", "none"))

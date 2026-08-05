@@ -8,10 +8,8 @@ import re
 import time
 
 from dotenv import load_dotenv
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_deepseek import ChatDeepSeek
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.service.image_generation_service import (
     is_effect_image_edit_request,
@@ -21,6 +19,10 @@ from app.service.image_generation_service import (
 
 
 load_dotenv()
+
+# 路由模型固定使用 DeepSeek，与聊天主模型（TEXT_CHAT_MODEL）解耦；
+# 可通过 ROUTER_MODEL 环境变量单独指定，默认 deepseek-chat
+ROUTER_MODEL = os.getenv("ROUTER_MODEL", "deepseek-chat")
 
 # 路由决策采集日志路径：默认写入 data/ 目录（已加入 .gitignore），
 # 可用环境变量 ROUTER_DECISION_LOG_PATH 覆盖，便于测试时隔离日志文件。
@@ -56,6 +58,11 @@ VALID_IMAGE_SOURCES = {"uploaded", "reference", "generated", "none"}
 
 PRICE_PATTERN = re.compile(r"(?:价格|多少钱|报价|估价|预估|预算|费用|单价|平米|㎡|m2|平方)")
 MATERIAL_QUERY_PATTERN = re.compile(r"(?:石材|石头|材料|规格|颜色|色系|莱姆石|大理石|花岗岩|洞石)")
+# 估价范围信号：带面积或项目范围、需要按 面积 × 单价 计算才能回答的请求；
+# 裸"平"只认数字后缀（如 80平/120平），避免误吞"一平/每平"等单价表达
+_ESTIMATE_SCOPE_PATTERN = re.compile(r"(?:平米|㎡|m2|平方|面积|预算|报价|估价|估算|(?<=\d)平)")
+# 单价问句信号：问「一平/每平/单价/多少钱一块」等，属于查材料单价而非工程量估价
+_UNIT_PRICE_PATTERN = re.compile(r"(?:一平|每平|一平米|每平米|一平方|每平方|单价|多少钱一块|每块)")
 IMAGE_ANALYSIS_PATTERN = re.compile(
     r"(?:识图|识别.{0,8}(?:图|图片|照片|效果图)|分析.{0,8}(?:图|图片|照片|效果图)|"
     r"看(?:一下)?(?:这张|这幅|这个|上一张|上张|刚才).{0,8}(?:图|图片|照片|效果图)|"
@@ -71,26 +78,14 @@ class ChatIntent:
     reason: str = ""
 
 
-@lru_cache(maxsize=4)
-def _get_router_model(model_name: str):
-    """Router 只做文本分类，不绑定工具，也不写入 checkpoint。"""
-    if model_name.startswith("gemini"):
-        return ChatGoogleGenerativeAI(
-            model=model_name,
-            api_key=os.getenv("GEMINI_KEY") or os.getenv("GOOGLE_API_KEY"),
-        )
-
-    if model_name == "qwen3.7-max-2026-06-08":
-        return init_chat_model(
-            model=model_name,
-            model_provider="openai",
-            base_url=os.getenv("DASHSCOPE_BASE_URL"),
-            api_key=os.getenv("DASHSCOPE_API_KEY"),
-        )
-
+@lru_cache(maxsize=1)
+def _get_router_model() -> ChatDeepSeek:
+    """路由只做文本分类，固定走 DeepSeek，不绑定工具，也不写入 checkpoint。"""
+    # 路由是分类任务，temperature=0 让输出尽量稳定可复现，避免同一句话两次判出不同结果
     return ChatDeepSeek(
-        model=model_name,
+        model=ROUTER_MODEL,
         api_key=os.getenv("DEEPSEEK_API_KEY"),
+        temperature=0,
     )
 
 
@@ -145,7 +140,6 @@ def _fallback_route(
     has_uploaded_image: bool,
     has_reference_image: bool,
     has_generated_image: bool,
-    has_material_analysis: bool,
 ) -> ChatIntent:
     """LLM Router 不可用时的安全降级，覆盖明确场景。"""
     text = message.strip()
@@ -177,11 +171,22 @@ def _fallback_route(
         image_source = "uploaded" if has_uploaded_image else "generated" if has_generated_image else "none"
         return ChatIntent("analyze_image", image_source, 0.65, "rule fallback: image reference")
 
+    # 带面积/项目范围的估价请求（如「50平米院子铺X大概多少钱」）优先归 estimate_price，
+    # 否则会被下面的材料词误判成 query_material
+    if _ESTIMATE_SCOPE_PATTERN.search(text):
+        return ChatIntent("estimate_price", "none", 0.6, "rule fallback: estimate scope")
+
+    # 单价问句（如「X铺装多少钱一平」「X单价多少」）归材料查询：查的是材料单价，不需要工程量计算
+    if _UNIT_PRICE_PATTERN.search(text):
+        return ChatIntent("query_material", "none", 0.55, "rule fallback: unit price query")
+
+    # 材料属性查询（含单价问句，如「X铺装多少钱一平」）优先于纯价格词，归 query_material
+    if MATERIAL_QUERY_PATTERN.search(text):
+        return ChatIntent("query_material", "none", 0.55, "rule fallback: material intent")
+
+    # 剩下的纯价格/费用问句（无材料词）才归估价
     if PRICE_PATTERN.search(text):
         return ChatIntent("estimate_price", "none", 0.6, "rule fallback: price intent")
-
-    if MATERIAL_QUERY_PATTERN.search(text) or has_material_analysis:
-        return ChatIntent("query_material", "none", 0.55, "rule fallback: material intent")
 
     if has_uploaded_image:
         return ChatIntent("analyze_image", "uploaded", 0.55, "rule fallback: uploaded image")
@@ -195,8 +200,6 @@ def route_chat_intent(
     has_uploaded_image: bool,
     has_reference_image: bool,
     has_generated_image: bool,
-    has_material_analysis: bool,
-    text_chat_model: str,
 ) -> ChatIntent:
     """根据用户输入和应用层会话状态选择本轮处理流程。"""
     fallback = _fallback_route(
@@ -204,7 +207,6 @@ def route_chat_intent(
         has_uploaded_image=has_uploaded_image,
         has_reference_image=has_reference_image,
         has_generated_image=has_generated_image,
-        has_material_analysis=has_material_analysis,
     )
     # 生成/分析类意图对"用哪张图"非常敏感，直接信任规则判断，不调用模型
     if fallback.intent in {"generate_effect_image", "analyze_image"}:
@@ -224,8 +226,8 @@ def route_chat_intent(
         "规则：\n"
         "1. 用户要生成、再来一版、换风格、改成某种装修风格、按图改造，或在已有效果图上增加、添加、去掉、调整、替换画面元素/材料/局部设计，intent=generate_effect_image。\n"
         "2. 用户问图片/效果图里有什么石头、材料、地面、墙面、视觉内容，intent=analyze_image。\n"
-        "3. 用户问面积、价格、预算、多少钱、费用估算，intent=analyze_image。\n"
-        "4. 用户问某种石材的价格、规格、颜色、描述、数据库信息，intent=query_material。\n"
+        "3. 用户提供面积或项目范围、或指代当前方案/报价并询问费用、预算、多少钱、估算（需要按 面积 × 单价 计算），intent=estimate_price，例如「50平米院子铺莱姆石大概多少钱」「这个方案大概要花多少钱」「报价大概多少」。\n"
+        "4. 用户询问某种石材的属性信息（价格、单价、规格、颜色、描述），intent=query_material，例如「莱姆石铺装多少钱一平」「水洗石单价多少」。\n"
         "5. 普通闲聊或无法归类，intent=general_chat。\n"
         "图片选择：本轮上传图优先 use_image=uploaded；生成全新效果图且无上传图但有参考图时 use_image=reference；"
         "追改上一张效果图时 use_image=generated，例如“增加瓦片围边”；分析上一张效果图时 use_image=generated；文本查询 use_image=none。"
@@ -236,7 +238,6 @@ def route_chat_intent(
             "has_uploaded_image": has_uploaded_image,
             "has_reference_image": has_reference_image,
             "has_generated_image": has_generated_image,
-            "has_material_analysis": has_material_analysis,
         },
         "required_output": {
             "intent": "generate_effect_image | analyze_image | estimate_price | query_material | general_chat",
@@ -250,7 +251,7 @@ def route_chat_intent(
     if source != "rule_priority":
         started = time.perf_counter()
         try:
-            model = _get_router_model(text_chat_model)
+            model = _get_router_model()
             response = model.invoke(
                 [
                     SystemMessage(content=system_prompt),
@@ -275,9 +276,8 @@ def route_chat_intent(
                 "has_uploaded_image": has_uploaded_image,
                 "has_reference_image": has_reference_image,
                 "has_generated_image": has_generated_image,
-                "has_material_analysis": has_material_analysis,
             },
-            "model": text_chat_model,
+            "model": ROUTER_MODEL,
             "intent": result.intent,
             "use_image": result.use_image,
             "confidence": result.confidence,

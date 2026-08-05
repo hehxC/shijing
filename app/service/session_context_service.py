@@ -14,7 +14,6 @@ class SessionContext:
     reference_image_request: str | None
     generated_image_url: str | None
     generation_request: str | None
-    material_analysis: dict | None
     selected_style_id: str | None = None
     context_revision: int = 0
     effect_revision: int | None = None
@@ -28,7 +27,6 @@ def _snapshot(row: ChatSessionContext) -> SessionContext:
         reference_image_request=row.reference_image_request,
         generated_image_url=row.generated_image_url,
         generation_request=row.generation_request,
-        material_analysis=row.material_analysis,
         selected_style_id=row.selected_style_id,
         context_revision=row.context_revision or 0,
         effect_revision=row.effect_revision,
@@ -52,26 +50,5 @@ def remember_reference_image(session_id: str, image: str, request: str) -> None:
 
 
 def remember_generated_image(session_id: str, image_url: str, request: str) -> None:
-    """新效果图会替换旧效果图，并清空旧图的材料分析。"""
+    """新效果图会替换旧效果图，旧的生成记录随之作废。"""
     mark_effect_generated(session_id, image_url, request)
-
-
-def remember_material_analysis(
-    session_id: str,
-    analysis: str,
-    source_model: str,
-) -> None:
-    """将视觉模型最终结论结构化后写入同一应用会话。"""
-    cleaned_analysis = analysis.strip()
-    if not cleaned_analysis:
-        return
-
-    with SessionLocal.begin() as db:
-        row = db.get(ChatSessionContext, session_id)
-        if row is None:
-            return
-        row.material_analysis = {
-            "kind": "effect_image_material_analysis",
-            "source_model": source_model,
-            "analysis_text": cleaned_analysis[:8000],
-        }

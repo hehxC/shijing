@@ -1,6 +1,5 @@
 from collections.abc import Iterator
 from functools import lru_cache
-import json
 import os
 from pathlib import Path
 from typing import TypedDict
@@ -31,7 +30,6 @@ from app.service.design_session_service import (
 from app.service.session_context_service import (
     get_session_context,
     remember_generated_image,
-    remember_material_analysis,
     remember_reference_image,
 )
 from app.service.conversation_service import (
@@ -156,7 +154,6 @@ class ChatAgentState(TypedDict):
     force_generate_effect_image: bool
     generated_context: object | None
     intent: object | None
-    analyzing_generated_image: bool
     history: list[dict]
 
 
@@ -208,7 +205,6 @@ def _build_agent_state(
         "force_generate_effect_image": force_generate_effect_image,
         "generated_context": generated_context,
         "intent": None,
-        "analyzing_generated_image": False,
         "history": history,
     }
 
@@ -224,8 +220,6 @@ def _router_agent(state: ChatAgentState) -> ChatAgentState:
         has_uploaded_image=bool(state["image"]),
         has_reference_image=bool(generated_context and generated_context.reference_image_data_url),
         has_generated_image=bool(generated_context and generated_context.generated_image_url),
-        has_material_analysis=bool(generated_context and generated_context.material_analysis),
-        text_chat_model=TEXT_CHAT_MODEL,
     )
     return state
 
@@ -316,13 +310,12 @@ def _effect_image_agent(state: ChatAgentState) -> Iterator[str]:
 
 
 def _vision_analysis_agent(state: ChatAgentState) -> Iterator[str]:
-    """图片分析 Agent：只负责选择要看的图片，并把视觉分析结果写入应用层上下文。"""
+    """图片分析 Agent：只负责选择要看的图片，并流式返回视觉分析结果。"""
     message = state["message"]
     image = state["image"]
     current_session_id = state["session_id"]
     generated_context = state["generated_context"]
     intent = state["intent"]
-    analyzing_generated_image = False
 
     if not image and intent and intent.use_image == "reference" and generated_context and generated_context.reference_image_data_url:
         image = generated_context.reference_image_data_url
@@ -333,7 +326,6 @@ def _vision_analysis_agent(state: ChatAgentState) -> Iterator[str]:
     elif not image and generated_context and generated_context.generated_image_url:
         try:
             image = generated_image_as_data_url(generated_context.generated_image_url)
-            analyzing_generated_image = True
             message = (
                 f"用户正在追问上一轮生成的效果图。原始生成需求：{generated_context.generation_request or '未提供'}。\n"
                 f"当前问题：{message}"
@@ -352,31 +344,10 @@ def _vision_analysis_agent(state: ChatAgentState) -> Iterator[str]:
         final_response_parts.append(text)
         yield text
 
-    if analyzing_generated_image and final_response_parts:
-        remember_material_analysis(
-            current_session_id,
-            "".join(final_response_parts),
-            IMAGE_CHAT_MODEL,
-        )
-
 
 def _text_agent(state: ChatAgentState) -> Iterator[str]:
     """文本/查库/估价 Agent：只接收文本上下文，不接收图片消息。"""
     message = state["message"]
-    generated_context = state["generated_context"]
-
-    if generated_context and generated_context.material_analysis:
-        shared_context = {
-            "effect_image_request": generated_context.generation_request,
-            "material_analysis": generated_context.material_analysis,
-        }
-        message = (
-            "以下 JSON 是同一会话中上一张效果图的应用层共享上下文。"
-            "仅在与当前问题相关时使用；涉及材料价格时，必须根据其中的材料名称调用 SQL 工具查询，"
-            "不要编造单价。不要向用户提及上下文注入或模型切换。\n"
-            f"{json.dumps(shared_context, ensure_ascii=False)}\n"
-            f"用户当前问题：{message}"
-        )
 
     yield from _stream_model_agent(
         TEXT_CHAT_MODEL, message, None, state["session_id"], state["history"]
@@ -458,7 +429,6 @@ def stream_chat_legacy(
         force_generate_effect_image: bool = False,
 ) -> Iterator[str]:
     current_session_id = session_id or DEFAULT_SESSION_ID
-    analyzing_generated_image = False
 
     # 记住用户最近一次主动上传的原始图片。
     # 这张图作为后续“再生成一个中式/现代/欧式效果图”的参考图使用，
@@ -491,8 +461,6 @@ def stream_chat_legacy(
         has_uploaded_image=bool(image),
         has_reference_image=bool(generated_context and generated_context.reference_image_data_url),
         has_generated_image=bool(generated_context and generated_context.generated_image_url),
-        has_material_analysis=bool(generated_context and generated_context.material_analysis),
-        text_chat_model=TEXT_CHAT_MODEL,
     )
 
     # 效果图生成意图优先级最高：无论是否有参考图，都直接调用图片生成模型。
@@ -520,7 +488,6 @@ def stream_chat_legacy(
         elif not image and generated_context and generated_context.generated_image_url:
             try:
                 image = generated_image_as_data_url(generated_context.generated_image_url)
-                analyzing_generated_image = True
                 message = (
                     f"用户正在追问上一轮生成的效果图。原始生成需求：{generated_context.generation_request or '未提供'}。\n"
                     f"当前问题：{message}"
@@ -536,22 +503,6 @@ def stream_chat_legacy(
         image = None
 
     model = IMAGE_CHAT_MODEL if image else TEXT_CHAT_MODEL
-
-    if model == TEXT_CHAT_MODEL:
-        if generated_context and generated_context.material_analysis:
-            # DeepSeek 与 Qwen 是两个独立 Agent，不能依赖各自的 checkpointer
-            # 自动共享历史。这里显式传递同一 session_id 下的视觉分析结果。
-            shared_context = {
-                "effect_image_request": generated_context.generation_request,
-                "qwen_material_analysis": generated_context.material_analysis,
-            }
-            message = (
-                "以下 JSON 是同一会话中上一张效果图的已确认上下文。"
-                "仅在与当前问题相关时使用；涉及材料价格时，必须根据其中的材料名称调用 SQL 工具查询，"
-                "不要编造单价。不要向用户提及上下文注入或模型切换。\n"
-                f"{json.dumps(shared_context, ensure_ascii=False)}\n"
-                f"用户当前问题：{message}"
-            )
 
     agent = get_chat_agent(model)
 
@@ -577,11 +528,3 @@ def stream_chat_legacy(
             if text:
                 final_response_parts.append(text)
                 yield text
-
-    # 视觉模型完成分析后，将最终回答保存为跨模型共享上下文。
-    if analyzing_generated_image and final_response_parts:
-        remember_material_analysis(
-            current_session_id,
-            "".join(final_response_parts),
-            IMAGE_CHAT_MODEL,
-        )

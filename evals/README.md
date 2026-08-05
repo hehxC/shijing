@@ -48,7 +48,12 @@ uv run python evals/run_intent_router_eval.py --mode hybrid --limit 30
 }
 ```
 
-`state` 的四个布尔值和 `route_chat_intent` 的参数一一对应；`expected.intent` 只能是五个意图之一。
+`state` 的三个布尔值和 `route_chat_intent` 的参数一一对应；`expected.intent` 只能是五个意图之一。
+
+### 估价与材料查询的边界约定
+
+- `estimate_price`：带面积或项目范围的费用估算，需要按 面积 × 单价 计算，如「50平米院子铺莱姆石大概多少钱」；
+- `query_material`：只问材料属性（含单价、规格、颜色），查数据库即可，如「水洗石铺装多少钱一平」。
 
 ## 后续计划
 
