@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 from app.service.design_session_service import (
     DesignSessionError,
+    MAX_MATERIAL_IMAGES,
     MaterialReference,
     material_scheme_summary,
     normalize_material_metadata,
@@ -35,6 +36,9 @@ class DesignGenerationTests(unittest.TestCase):
             validate_image_data_url(image_data_url("image/gif"))
         with self.assertRaises(DesignSessionError):
             validate_image_data_url("data:image/jpeg;base64,not-base64!")
+
+    def test_material_image_limit_is_twenty(self):
+        self.assertEqual(20, MAX_MATERIAL_IMAGES)
 
     def test_material_metadata_deduplicates_and_validates_usages(self):
         name, usages = normalize_material_metadata("  青石  ", ["台阶", "台阶", "景墙"])

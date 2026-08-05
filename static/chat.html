@@ -2689,6 +2689,996 @@ header {
   .conversation-surface { min-height: 760px; }
   .auth-gate { inset: 60px 0 0; }
 }
+
+/* Soft garden atelier: mist, mineral greens and tactile quiet. */
+:root {
+  --ink: #3f4842;
+  --stone: #717c74;
+  --sand: #d8ded8;
+  --rice: #e8ede8;
+  --moss: #566d5e;
+  --clay: #566d5e;
+  --ash: #9aa49c;
+  --deep: #3f4842;
+  --ivory: #f8f9f5;
+  --border: rgba(67, 84, 72, 0.13);
+  --surface: #f8f9f5;
+  --surface-muted: #eef2ed;
+  --focus: rgba(86, 109, 94, 0.2);
+  --shadow-soft: 0 24px 70px rgba(63, 79, 68, 0.1);
+  --accent: #566d5e;
+  --accent-bright: #6f8877;
+  --graphite: #3f4842;
+  --canvas: #e8ede8;
+  --panel: #f8f9f5;
+}
+
+html,
+body {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(255, 255, 255, 0.68), transparent 30%),
+    radial-gradient(circle at 88% 84%, rgba(199, 213, 202, 0.38), transparent 34%),
+    var(--canvas);
+}
+
+body { color: var(--ink); }
+
+header {
+  border-bottom-color: rgba(67, 84, 72, 0.1);
+  background: rgba(241, 244, 239, 0.82);
+  box-shadow: 0 1px 18px rgba(72, 90, 77, 0.04);
+}
+
+.logo {
+  color: #445147;
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+}
+
+.logo-sep {
+  width: 22px;
+  height: 1px;
+  border-radius: 999px;
+  background: #839589;
+  transform: none;
+}
+
+.logo-sub,
+.auth-user { color: #78827b; }
+
+.auth-btn,
+.new-design-btn {
+  border-color: rgba(67, 84, 72, 0.14);
+  border-radius: 999px;
+  background: rgba(249, 250, 247, 0.7);
+  color: #4b584f;
+  font-weight: 500;
+}
+
+.new-design-btn {
+  border-color: #667c6d;
+  background: #667c6d;
+  color: #fff;
+}
+
+.auth-btn:hover,
+.new-design-btn:hover {
+  border-color: #566d5e;
+  background: #566d5e;
+  color: #fff;
+}
+
+.chat-shell {
+  grid-template-columns: minmax(350px, 410px) clamp(88px, 7vw, 112px) minmax(0, 1fr);
+  padding: clamp(0.9rem, 1.6vw, 1.35rem) clamp(0.9rem, 2vw, 1.75rem);
+}
+
+.design-sidebar {
+  border-color: rgba(67, 84, 72, 0.11);
+  border-radius: 26px;
+  background: rgba(247, 249, 245, 0.88);
+  color: var(--ink);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.sidebar-intro {
+  padding: 1.55rem 1.5rem 1.2rem;
+  border-bottom-color: rgba(67, 84, 72, 0.1);
+}
+
+.sidebar-kicker,
+.workspace-kicker {
+  color: #718477;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+.sidebar-title-row h2 {
+  color: #455248;
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sidebar-intro p {
+  color: #5f6e64;
+  font-size: 0.72rem;
+  line-height: 1.8;
+}
+
+.config-progress { color: #56675c; font-weight: 600; }
+.config-tabs { border-bottom-color: rgba(67, 84, 72, 0.1); }
+.config-tab { color: #64736a; }
+.config-tab::after { height: 2px; background: #718a79; }
+.config-tab.active { color: #46544a; }
+.config-tab:hover { color: #405047; }
+.config-tab:focus-visible {
+  border-radius: 12px;
+  outline: 2px solid #718a79;
+  outline-offset: -2px;
+  background: rgba(223, 232, 224, 0.62);
+}
+.config-tab-index { color: #5f7165; }
+
+.design-sidebar .section-index { color: #617267; }
+.design-sidebar .section-index::before { background: #8fa194; }
+.design-sidebar .design-assets-title,
+.design-sidebar .style-picker-title {
+  color: #46544a;
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-weight: 600;
+}
+
+.design-sidebar .design-assets-sub,
+.design-sidebar .asset-help,
+.design-sidebar .style-selection { color: #59685f; }
+
+.design-sidebar .asset-section,
+.design-sidebar .style-card {
+  border-color: rgba(67, 84, 72, 0.11);
+  border-radius: 18px;
+  background: rgba(236, 241, 235, 0.64);
+}
+
+.design-sidebar .asset-btn,
+.design-sidebar .asset-clear-btn,
+.design-sidebar .style-toggle-btn {
+  border-color: rgba(67, 84, 72, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #46584d;
+  font-weight: 600;
+}
+
+.design-sidebar .asset-btn:hover,
+.design-sidebar .asset-clear-btn:hover,
+.design-sidebar .style-toggle-btn:hover {
+  border-color: #718a79;
+  background: #dfe8e0;
+  color: #405047;
+}
+
+.design-sidebar .asset-btn:focus-visible,
+.design-sidebar .asset-clear-btn:focus-visible,
+.design-sidebar .style-toggle-btn:focus-visible,
+.design-sidebar .asset-remove:focus-visible,
+.design-sidebar .asset-card-name:focus-visible,
+.design-sidebar .usage-option:focus-within {
+  outline: 2px solid #718a79;
+  outline-offset: 2px;
+}
+
+.design-sidebar .asset-btn:disabled,
+.design-sidebar .asset-clear-btn:disabled,
+.design-sidebar .style-toggle-btn:disabled {
+  border-color: #d1d9d2;
+  background: #e9eee9;
+  color: #59685f;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.design-sidebar .asset-section-title,
+.design-sidebar .asset-section > .asset-section-head .asset-section-title {
+  color: #46534a;
+  font-weight: 600;
+}
+
+.design-sidebar .empty-asset {
+  border-color: rgba(67, 84, 72, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #59685f;
+}
+
+.design-sidebar .asset-card {
+  border-color: rgba(67, 84, 72, 0.14);
+  border-radius: 15px;
+  background: #fff;
+  color: #46534a;
+}
+.design-sidebar .asset-card .asset-section-title { color: #46534a; }
+.design-sidebar .asset-card .asset-help { color: #59685f; }
+.design-sidebar .asset-card-name {
+  border-color: #c9d3ca;
+  background: #fbfcfa;
+  color: #3f4d44;
+}
+.design-sidebar .asset-card-name::placeholder { color: #6b786f; opacity: 1; }
+.design-sidebar .asset-remove {
+  background: #566d5e;
+  color: #fff;
+}
+.design-sidebar .asset-remove:hover { background: #934f40; }
+
+.design-sidebar .usage-option {
+  border-color: #c6d1c8;
+  background: #fff;
+  color: #46584d;
+  opacity: 1;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+.design-sidebar .usage-option:hover:not(.disabled) {
+  border-color: #718a79;
+  background: #e6ede7;
+}
+.design-sidebar .usage-option:has(input:checked) {
+  border-color: #5b7161;
+  background: #5b7161;
+  color: #fff;
+}
+.design-sidebar .usage-option input { accent-color: #4f6656; }
+.design-sidebar .usage-option.disabled {
+  border-color: #d7ded8;
+  background: #edf1ed;
+  color: #68766d;
+  opacity: 1;
+  cursor: not-allowed;
+}
+.design-sidebar .style-card { color: #46534a; }
+.design-sidebar .style-card-name { color: inherit; }
+.design-sidebar .style-card-category { color: #59685f; }
+.design-sidebar .style-card:hover {
+  border-color: rgba(86, 109, 94, 0.42);
+  background: #e6ede7;
+  color: #405047;
+}
+
+.design-sidebar .style-card.selected {
+  border-color: #5b7161;
+  background: #5b7161;
+  color: #fff;
+}
+.design-sidebar .style-card.selected .style-card-category { color: #fff; }
+
+.sidebar-status {
+  border-top-color: rgba(67, 84, 72, 0.1);
+  background: rgba(230, 236, 229, 0.72);
+}
+
+.sidebar-status .design-status { color: #52695a; }
+.sidebar-status .design-status.error { color: #934f40; }
+.design-summary span { color: #5f6f65; }
+.design-summary strong { color: #47544b; }
+
+.design-transfer::before {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(86, 109, 94, 0.1), rgba(86, 109, 94, 0.55) 50%, rgba(86, 109, 94, 0.1));
+}
+
+.effect-transfer-btn,
+.effect-transfer-btn.is-ready,
+.effect-transfer-btn:hover {
+  width: 104px;
+  height: 52px;
+  min-width: 104px;
+  min-height: 52px;
+  gap: 0.48rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(86, 109, 94, 0.22);
+  border-radius: 999px;
+  background: rgba(247, 249, 245, 0.92);
+  color: #52675a;
+  box-shadow: 0 12px 34px rgba(66, 87, 72, 0.12);
+  filter: none;
+}
+
+.effect-transfer-btn.is-ready,
+.effect-transfer-btn:hover {
+  border-color: #647c6b;
+  background: #647c6b;
+  color: #fff;
+  box-shadow: 0 16px 38px rgba(66, 87, 72, 0.18);
+}
+
+.effect-transfer-btn:not(.is-ready) { filter: none; }
+.effect-transfer-arrow { font-size: 0.95rem; }
+.effect-transfer-btn:focus-visible { outline-color: rgba(86, 109, 94, 0.26); }
+
+.conversation-surface {
+  border-color: rgba(67, 84, 72, 0.11);
+  border-radius: 26px;
+  background: rgba(248, 249, 245, 0.92);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.workspace-head {
+  min-height: 78px;
+  padding: 1rem 1.4rem;
+  border-bottom-color: rgba(67, 84, 72, 0.1);
+}
+
+.workspace-head h1 {
+  color: #445147;
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.workspace-state { color: #7b867e; font-weight: 400; }
+.workspace-state span {
+  border-radius: 50%;
+  background: #839b89;
+  box-shadow: 0 0 0 5px rgba(131, 155, 137, 0.12);
+  transform: none;
+}
+
+.conversation-surface .messages {
+  background: rgba(239, 243, 238, 0.72);
+}
+
+.empty-state-inner {
+  gap: clamp(1.6rem, 3vw, 3rem);
+  width: min(1120px, 100%);
+}
+
+.empty-kicker { color: #73887a; letter-spacing: 0.08em; }
+.empty-kicker::before { height: 1px; background: #8ca091; }
+.empty-title {
+  color: #46534a;
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: clamp(2.15rem, 4.1vw, 4.35rem);
+  font-weight: 500;
+  line-height: 1.18;
+  letter-spacing: 0.02em;
+}
+
+.empty-sub { color: #758178; font-size: 0.8rem; line-height: 1.95; }
+.empty-flow { color: #738078; font-weight: 500; }
+.empty-flow i { height: 1px; background: rgba(86, 109, 94, 0.2); }
+.empty-visual {
+  min-height: 390px;
+  border-color: rgba(67, 84, 72, 0.1);
+  border-radius: 26px;
+  background: #d9e0da;
+  box-shadow: 0 22px 54px rgba(60, 79, 66, 0.12);
+}
+
+.empty-visual::before {
+  display: block;
+  background: linear-gradient(140deg, rgba(241, 245, 240, 0.12), transparent 48%, rgba(70, 88, 75, 0.08));
+}
+
+.empty-visual img { filter: saturate(0.74) contrast(0.92) brightness(1.04); }
+.message { border-radius: 18px; }
+.message.user {
+  border-color: #637a6a;
+  border-radius: 18px 18px 5px 18px;
+  background: #637a6a;
+}
+
+.message.assistant {
+  border-color: rgba(67, 84, 72, 0.1);
+  border-radius: 18px 18px 18px 5px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.conversation-surface .composer {
+  padding: 0.95rem 1.05rem;
+  border-top-color: rgba(67, 84, 72, 0.1);
+  background: rgba(248, 249, 245, 0.94);
+}
+
+.conversation-surface .composer:focus-within {
+  border-color: rgba(67, 84, 72, 0.1);
+  box-shadow: inset 3px 0 0 #8ca091;
+}
+
+.conversation-surface .tool-action-btn {
+  border-color: rgba(67, 84, 72, 0.11);
+  border-radius: 999px;
+  background: #edf2ed;
+  color: #5c6d62;
+}
+
+.conversation-surface .tool-action-btn:hover {
+  border-color: #718a79;
+  background: #dfe8e0;
+  color: #405047;
+}
+
+.icon-btn { border-radius: 999px; font-weight: 600; }
+.icon-btn[hidden] { display: none !important; }
+.icon-btn:not(.stop-btn) { background: #5b7161; }
+.icon-btn:not(.stop-btn):hover { background: #465c4d; }
+.conversation-surface .hint {
+  border-top-color: rgba(67, 84, 72, 0.08);
+  color: #879189;
+  background: rgba(248, 249, 245, 0.94);
+}
+
+.auth-gate { background: rgba(226, 233, 226, 0.74); }
+.auth-gate-card,
+.auth-card {
+  border-color: rgba(67, 84, 72, 0.13);
+  border-radius: 24px;
+  background: #f8f9f5;
+  box-shadow: 0 28px 74px rgba(63, 79, 68, 0.16);
+}
+
+.auth-gate h2,
+.auth-card h2 { font-family: "Noto Serif SC", "Songti SC", serif; font-weight: 600; }
+.auth-gate-primary,
+.auth-tab.active,
+.auth-submit { border-color: #607666; background: #607666; }
+.auth-gate-secondary { border-color: rgba(67, 84, 72, 0.2); }
+.auth-modal { background: rgba(66, 78, 69, 0.38); }
+.auth-close,
+.auth-tab,
+.auth-field input { border-radius: 12px; }
+.auth-field input:focus { border-color: #718a79; box-shadow: 0 0 0 3px rgba(86, 109, 94, 0.11); }
+
+.history-backdrop { background: rgba(63, 76, 67, 0.32); }
+.history-drawer {
+  border-right-color: rgba(67, 84, 72, 0.1);
+  background: #f2f5f0;
+  color: #46534a;
+  box-shadow: 26px 0 72px rgba(63, 79, 68, 0.16);
+}
+
+.history-head { border-bottom-color: rgba(67, 84, 72, 0.1); }
+.history-head span { color: #7a8d80; }
+.history-new { border-color: #607666; border-radius: 999px; background: #607666; }
+.history-close { border-color: rgba(67, 84, 72, 0.14); color: #5b6a60; }
+.history-list { scrollbar-color: rgba(86, 109, 94, 0.28) transparent; }
+.history-item {
+  margin-bottom: 0.25rem;
+  padding-inline: 0.7rem;
+  border-bottom-color: rgba(67, 84, 72, 0.1);
+  border-radius: 14px;
+}
+.history-select { color: #46534a; }
+.history-select strong { color: #46534a; }
+.history-select span { color: #59685f; }
+.history-select small { color: #607066; }
+.history-item.active {
+  border-bottom-color: transparent;
+  background: #dfe8e0;
+  box-shadow: inset 3px 0 0 #607666;
+}
+.history-item.active .history-select strong { color: #405d4b; }
+.history-current {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  margin-left: 0.5rem;
+  padding: 0.08rem 0.48rem;
+  border-radius: 999px;
+  background: #607666;
+  color: #fff;
+  font-size: 0.56rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  vertical-align: 0.08rem;
+}
+.history-item-actions button {
+  border-color: rgba(67, 84, 72, 0.14);
+  background: rgba(255, 255, 255, 0.5);
+  color: #607066;
+}
+.history-item-actions button:hover {
+  border-color: #718a79;
+  background: #e1e9e2;
+  color: #405047;
+}
+.history-empty { color: #59685f; }
+.history-empty strong { color: #46534a; }
+.history-empty span { color: #59685f; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .design-sidebar { animation: workbench-soft-enter 0.7s cubic-bezier(.2, .75, .25, 1) both; }
+  .conversation-surface { animation: canvas-soft-enter 0.76s 0.08s cubic-bezier(.2, .75, .25, 1) both; }
+  .effect-transfer-btn { animation: transfer-soft-enter 0.6s 0.18s cubic-bezier(.2, .75, .25, 1) both; }
+}
+
+@keyframes workbench-soft-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes canvas-soft-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes transfer-soft-enter {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 1180px) {
+  .effect-transfer-btn,
+  .effect-transfer-btn.is-ready,
+  .effect-transfer-btn:hover {
+    width: 84px;
+    height: 48px;
+    min-width: 84px;
+    min-height: 48px;
+    padding-inline: 0.7rem;
+  }
+}
+
+@media (max-width: 860px) {
+  .chat-shell { grid-template-columns: minmax(0, 1fr); }
+
+  .design-transfer::before {
+    width: 1px;
+    background: linear-gradient(180deg, rgba(86, 109, 94, 0.1), rgba(86, 109, 94, 0.55) 50%, rgba(86, 109, 94, 0.1));
+  }
+
+  .effect-transfer-btn,
+  .effect-transfer-btn.is-ready,
+  .effect-transfer-btn:hover {
+    width: 126px;
+    height: 48px;
+    min-width: 126px;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 620px) {
+  .design-sidebar,
+  .conversation-surface { border-radius: 20px; }
+  .empty-title { font-size: clamp(2.15rem, 11vw, 2.9rem); }
+  .empty-visual { border-radius: 20px; }
+}
+
+/* Mobile step flow. Desktop keeps the existing workbench composition. */
+.mobile-stepper,
+.mobile-step-actions,
+.mobile-chat-back,
+.mobile-effect-slot,
+.mobile-step-announcement,
+.material-card-mobile-summary { display: none; }
+
+.mobile-step-announcement {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.material-card-details { display: contents; }
+
+@media (max-width: 860px) {
+  :root { --mobile-header-height: 64px; }
+
+  .chat-shell {
+    min-height: calc(100dvh - var(--mobile-header-height));
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 0.7rem;
+    align-content: start;
+  }
+
+  .mobile-stepper {
+    position: sticky;
+    z-index: 20;
+    top: 0.55rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.3rem;
+    padding: 0.35rem;
+    border: 1px solid rgba(67, 84, 72, 0.12);
+    border-radius: 18px;
+    background: rgba(247, 249, 245, 0.94);
+    box-shadow: 0 14px 38px rgba(63, 79, 68, 0.1);
+    backdrop-filter: blur(16px);
+  }
+
+  .mobile-step-button {
+    min-width: 0;
+    min-height: 54px;
+    padding: 0.55rem 0.45rem;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    background: transparent;
+    color: #66756b;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .mobile-step-button strong,
+  .mobile-step-button small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-step-button strong { color: inherit; font-size: 0.7rem; font-weight: 650; }
+  .mobile-step-button small { margin-top: 0.24rem; color: #748178; font-size: 0.57rem; }
+  .mobile-step-button[aria-current="step"] {
+    border-color: rgba(86, 109, 94, 0.2);
+    background: #dfe8e0;
+    color: #405247;
+    box-shadow: inset 0 -2px 0 #607666;
+  }
+  .mobile-step-button[aria-current="step"] small { color: #53675a; }
+  .mobile-step-button:focus-visible {
+    outline: 2px solid #607666;
+    outline-offset: 2px;
+  }
+  .mobile-step-button:disabled { color: #7a857d; opacity: 0.72; cursor: not-allowed; }
+
+  .chat-shell.mobile-step-assets .chat-workspace,
+  .chat-shell.mobile-step-styles .chat-workspace,
+  .chat-shell.mobile-step-chat .design-sidebar { display: none; }
+
+  .chat-shell.mobile-step-assets > .design-transfer,
+  .chat-shell.mobile-step-styles > .design-transfer,
+  .chat-shell.mobile-step-chat > .design-transfer { display: none; }
+
+  .design-sidebar {
+    height: calc(100dvh - var(--mobile-header-height) - 88px);
+    min-height: 560px;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+  }
+
+  .config-tabs { display: none; }
+  .config-panel-stack { padding-bottom: 1rem; }
+  .sidebar-status { min-height: 58px; }
+
+  .mobile-step-actions {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.75rem 0.9rem 0.9rem;
+    border-top: 1px solid rgba(67, 84, 72, 0.1);
+    background: rgba(247, 249, 245, 0.96);
+  }
+
+  .mobile-step-actions button {
+    min-height: 46px;
+    padding: 0.65rem 1rem;
+    border-radius: 999px;
+    font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    font-size: 0.72rem;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .mobile-step-actions button[hidden] { display: none; }
+  .mobile-step-secondary {
+    flex: 0 0 auto;
+    border: 1px solid rgba(67, 84, 72, 0.18);
+    background: #f7f9f5;
+    color: #526258;
+  }
+  .mobile-step-primary {
+    flex: 1;
+    border: 1px solid #5b7161;
+    background: #5b7161;
+    color: #fff;
+  }
+  .mobile-step-actions button:focus-visible,
+  .mobile-chat-back:focus-visible {
+    outline: 2px solid #607666;
+    outline-offset: 2px;
+  }
+  .mobile-step-actions button:disabled { opacity: 0.62; cursor: not-allowed; }
+
+  .chat-workspace {
+    height: calc(100dvh - var(--mobile-header-height) - 88px);
+    min-height: 620px;
+  }
+
+  .workspace-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.65rem;
+  }
+
+  .mobile-chat-back {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    min-height: 42px;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid rgba(67, 84, 72, 0.16);
+    border-radius: 999px;
+    background: #edf2ed;
+    color: #4f6155;
+    font-size: 0.66rem;
+    font-weight: 600;
+  }
+
+  .empty-state .empty-visual { display: none; }
+  .empty-state-inner { grid-template-columns: minmax(0, 1fr); }
+
+  .mobile-effect-slot {
+    display: flex;
+    flex: 0 0 auto;
+    margin-left: auto;
+    border: 0;
+    background: transparent;
+  }
+
+  .mobile-effect-slot .design-transfer { display: flex; min-height: 0; padding: 0; }
+  .mobile-effect-slot .design-transfer::before { display: none; }
+  .mobile-effect-slot .effect-transfer-btn,
+  .mobile-effect-slot .effect-transfer-btn.is-ready,
+  .mobile-effect-slot .effect-transfer-btn:hover {
+    width: auto;
+    min-width: 76px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 0.72rem;
+    border-radius: 999px;
+    box-shadow: none;
+    font-size: 0.7rem;
+  }
+  .mobile-effect-slot .effect-transfer-arrow { display: none; }
+
+  .design-sidebar .asset-list { grid-template-columns: 1fr; }
+  .design-sidebar .material-card {
+    display: block;
+    padding: 0;
+    overflow: hidden;
+  }
+  .design-sidebar .material-card > .asset-thumb { display: none; }
+  .material-card-mobile-summary {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    gap: 0.7rem;
+    align-items: center;
+    width: 100%;
+    min-height: 78px;
+    padding: 0.65rem 2.55rem 0.65rem 0.65rem;
+    border: 0;
+    background: #fff;
+    color: #46534a;
+    text-align: left;
+  }
+  .material-card-mobile-summary .asset-thumb {
+    width: 72px;
+    height: 54px;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+  }
+  .material-card-summary-copy { min-width: 0; }
+  .material-card-summary-copy strong,
+  .material-card-summary-copy small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .material-card-summary-copy strong { font-size: 0.74rem; }
+  .material-card-summary-copy small { margin-top: 0.3rem; color: #59685f; font-size: 0.62rem; }
+  .material-card-summary-action { color: #52675a; font-size: 0.64rem; font-weight: 650; }
+  .material-card.expanded .material-card-mobile-summary { background: #edf2ed; }
+  .material-card-details { display: none; padding: 0.75rem; border-top: 1px solid rgba(67, 84, 72, 0.1); }
+  .material-card.expanded .material-card-details { display: block; }
+  .material-card-details .asset-card-name { margin-top: 0; }
+  .material-card .asset-remove { top: 0.72rem; right: 0.65rem; }
+
+  .mobile-step-enter-forward .design-sidebar,
+  .mobile-step-enter-forward .chat-workspace,
+  .mobile-step-enter-back .design-sidebar,
+  .mobile-step-enter-back .chat-workspace { will-change: transform, opacity; }
+}
+
+@media (max-width: 860px) and (prefers-reduced-motion: no-preference) {
+  .mobile-step-enter-forward .design-sidebar,
+  .mobile-step-enter-forward .chat-workspace { animation: mobile-step-forward 0.2s cubic-bezier(.2, .75, .25, 1) both; }
+  .mobile-step-enter-back .design-sidebar,
+  .mobile-step-enter-back .chat-workspace { animation: mobile-step-back 0.2s cubic-bezier(.2, .75, .25, 1) both; }
+}
+
+@keyframes mobile-step-forward {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes mobile-step-back {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 620px) {
+  :root { --mobile-header-height: 60px; }
+  .chat-shell { padding-top: 0.45rem; }
+  .mobile-stepper { top: 0.4rem; border-radius: 16px; }
+  .mobile-step-button { min-height: 52px; padding-inline: 0.38rem; }
+  .mobile-step-button strong { font-size: 0.66rem; }
+  .mobile-step-button small { font-size: 0.54rem; }
+  .design-sidebar,
+  .chat-workspace { height: calc(100dvh - var(--mobile-header-height) - 82px); }
+  .workspace-head { grid-template-columns: auto minmax(0, 1fr); }
+  .workspace-state { grid-column: 2; }
+}
+
+/* Mobile app shell: the viewport stays fixed while each step owns its scroll area. */
+@media (max-width: 860px) {
+  :root { --mobile-header-height: 56px; }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body { min-height: 100dvh; }
+
+  header {
+    height: var(--mobile-header-height);
+    min-height: var(--mobile-header-height);
+    padding-inline: 0.7rem;
+  }
+
+  .auth-actions { gap: 0.24rem; }
+  .auth-btn,
+  .new-design-btn {
+    min-height: 29px;
+    padding: 0.28rem 0.5rem;
+    font-size: 0.61rem;
+  }
+
+  .chat-shell {
+    height: calc(100dvh - var(--mobile-header-height));
+    min-height: 0;
+    overflow: hidden;
+    gap: 0.5rem;
+    padding: 0.45rem 0.55rem 0.55rem;
+    align-content: stretch;
+  }
+
+  .mobile-stepper {
+    position: relative;
+    top: auto;
+    gap: 0.2rem;
+    padding: 0.25rem;
+    border-radius: 15px;
+  }
+
+  .mobile-step-button {
+    min-height: 44px;
+    padding: 0.38rem 0.4rem;
+    border-radius: 12px;
+  }
+
+  .mobile-step-button small { margin-top: 0.15rem; }
+
+  .mobile-step-actions {
+    gap: 0.42rem;
+    padding: 0.42rem 0.65rem 0.5rem;
+  }
+
+  .mobile-step-actions button {
+    min-height: 40px;
+    padding: 0.48rem 0.78rem;
+    font-size: 0.66rem;
+  }
+
+  .mobile-chat-back {
+    min-height: 36px;
+    padding: 0.42rem 0.62rem;
+    font-size: 0.62rem;
+  }
+
+  .sidebar-intro {
+    padding: 0.58rem 0.85rem 0.52rem;
+  }
+
+  .sidebar-kicker,
+  .workspace-kicker {
+    font-size: 0.57rem;
+    line-height: 1.2;
+  }
+
+  .sidebar-title-row {
+    margin-top: 0.12rem;
+  }
+
+  .sidebar-title-row h2 {
+    font-size: 1.08rem;
+    line-height: 1.25;
+  }
+
+  .sidebar-intro p,
+  .workspace-state {
+    display: none;
+  }
+
+  .workspace-head {
+    min-height: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.45rem;
+    padding: 0.48rem 0.65rem;
+  }
+
+  .workspace-head h1 {
+    margin-top: 0.06rem;
+    font-size: 1rem;
+    line-height: 1.25;
+  }
+
+  .design-sidebar,
+  .chat-workspace,
+  .conversation-surface {
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    overflow: hidden;
+  }
+
+  .config-panel-stack,
+  .conversation-surface .messages {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .config-panel-stack {
+    max-width: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
+  }
+
+  .config-panel,
+  .design-assets,
+  .style-picker,
+  .asset-columns,
+  .asset-section,
+  .asset-list,
+  .style-grid {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .design-sidebar .style-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    overflow-x: hidden;
+    overscroll-behavior-inline: none;
+    scroll-snap-type: none;
+    padding-bottom: 0;
+  }
+
+  .design-sidebar .style-card { scroll-snap-align: none; }
+  .auth-gate { inset: var(--mobile-header-height) 0 0; }
+}
+
+@media (max-width: 620px) {
+  :root { --mobile-header-height: 52px; }
+  .logo { font-size: 1.02rem; }
+  .mobile-step-button strong { font-size: 0.64rem; }
+  .mobile-step-button small { font-size: 0.52rem; }
+}
 </style>
 </head>
 <body>
@@ -2707,6 +3697,21 @@ header {
 </header>
 
 <main class="chat-shell">
+  <nav class="mobile-stepper" id="mobileStepper" aria-label="移动端设计流程">
+    <button class="mobile-step-button" type="button" data-mobile-step="assets" aria-controls="designAssets">
+      <strong>设计素材</strong>
+      <small id="mobileAssetSummary">未添加</small>
+    </button>
+    <button class="mobile-step-button" type="button" data-mobile-step="styles" aria-controls="stylePicker">
+      <strong>庭院风格</strong>
+      <small id="mobileStyleSummary">未选择</small>
+    </button>
+    <button class="mobile-step-button" type="button" data-mobile-step="chat" aria-controls="messages">
+      <strong>生成与聊天</strong>
+      <small id="mobileChatSummary">未开始</small>
+    </button>
+  </nav>
+
   <aside class="design-sidebar" aria-label="设计配置">
     <div class="sidebar-intro">
       <div class="sidebar-kicker">庭院设计输入</div>
@@ -2714,7 +3719,7 @@ header {
         <h2>方案配置</h2>
         <span class="config-progress" id="configProgress">0 / 2</span>
       </div>
-      <p>组织空间、石材与风格，再通过中间入口生成方案。</p>
+      <p>收集空间、石材与风格，让庭院构想在对话中自然展开。</p>
     </div>
 
     <nav class="config-tabs" aria-label="方案配置步骤" role="tablist">
@@ -2739,7 +3744,7 @@ header {
       <div class="design-assets-head">
         <div>
           <div class="section-index">空间与材料</div>
-          <div class="design-assets-title">准备空间与石材</div>
+          <div class="design-assets-title" id="mobileAssetsTitle" tabindex="-1">准备空间与石材</div>
           <div class="design-assets-sub">生成时同时使用空间图与全部石材图；没有空间图时按所选风格自行布局。</div>
         </div>
       </div>
@@ -2755,7 +3760,7 @@ header {
         </div>
         <div class="asset-section">
           <div class="asset-section-head">
-            <div class="asset-section-title">石材方案 · 1-6 张</div>
+            <div class="asset-section-title">石材方案 · 1-20 张</div>
             <div>
               <button class="asset-clear-btn" type="button" id="clearMaterialsButton" data-design-control>清空</button>
               <button class="asset-btn" type="button" id="materialUploadButton" data-design-control>添加石材图</button>
@@ -2771,7 +3776,7 @@ header {
       <div class="style-picker-header">
         <div>
           <div class="section-index">风格方向</div>
-          <div class="style-picker-title">选择庭院风格</div>
+          <div class="style-picker-title" id="mobileStylesTitle" tabindex="-1">选择庭院风格</div>
         </div>
         <div class="style-picker-actions">
           <div class="style-selection" id="styleSelection">选择一种风格后可直接生成效果图</div>
@@ -2789,6 +3794,10 @@ header {
         <strong id="designSummary">等待添加设计素材</strong>
       </div>
     </footer>
+    <nav class="mobile-step-actions" aria-label="移动端步骤操作">
+      <button class="mobile-step-secondary" type="button" id="mobilePreviousButton">返回素材</button>
+      <button class="mobile-step-primary" type="button" id="mobileNextButton">继续选择风格</button>
+    </nav>
   </aside>
 
   <div class="design-transfer" aria-label="从方案配置生成效果图">
@@ -2801,9 +3810,10 @@ header {
   <section class="chat-workspace">
     <div class="conversation-surface">
     <header class="workspace-head">
+      <button class="mobile-chat-back" type="button" id="mobileChatBackButton">返回风格</button>
       <div>
         <div class="workspace-kicker">AI 庭院协作</div>
-        <h1>方案生成与调整</h1>
+        <h1 id="mobileChatTitle" tabindex="-1">方案生成与调整</h1>
       </div>
       <div class="workspace-state"><span aria-hidden="true"></span>设计服务已就绪</div>
     </header>
@@ -2811,19 +3821,19 @@ header {
       <div class="empty-state" id="emptyState">
         <div class="empty-state-inner">
           <div class="empty-copy">
-            <div class="empty-kicker">从石材出发，构成一座庭院</div>
-            <div class="empty-title">以石造园<br>庭院成形</div>
-            <div class="empty-sub">上传空间图和石材，选择风格后生成方案；后续修改直接在对话中完成。</div>
+            <div class="empty-kicker">从石材出发，慢慢构成庭院</div>
+            <div class="empty-title">石与庭院<br>自然相遇</div>
+            <div class="empty-sub">上传空间图和石材，选择风格后生成方案；每一次调整，都可以在右侧对话中继续完成。</div>
             <div class="empty-flow" aria-label="生成效果图所需内容">
               <span>空间图可选</span>
               <i aria-hidden="true"></i>
-              <span>石材 1-6 张</span>
+              <span>石材 1-20 张</span>
               <i aria-hidden="true"></i>
               <span>选择风格</span>
             </div>
           </div>
           <div class="empty-visual">
-            <img src="/static/assets/garden-workbench-empty.webp" width="1448" height="1086" alt="玄武岩、混凝土与朱橙构筑物组成的现代庭院" fetchpriority="high">
+            <img src="/static/assets/garden-workbench-soft.webp" width="1448" height="1086" alt="薄雾中由自然石、水岸与柔软植物构成的庭院" fetchpriority="high">
           </div>
         </div>
       </div>
@@ -2833,6 +3843,7 @@ header {
         <div class="tool-actions" aria-label="快捷功能">
           <button class="tool-action-btn" type="button" id="recognizeButton">识图</button>
           <button class="tool-action-btn" type="button" id="quoteButton">报价</button>
+          <div class="mobile-effect-slot" id="mobileEffectSlot"></div>
         </div>
         <textarea id="messageInput" rows="1" placeholder="选风格后点发送生成效果图；生成后可直接输入修改要求"></textarea>
       </div>
@@ -2848,6 +3859,7 @@ header {
     <div class="hint">由本地设计服务流式生成 · 结果可继续对话调整</div>
     </div>
   </section>
+  <div class="mobile-step-announcement" id="mobileStepAnnouncement" aria-live="polite" aria-atomic="true"></div>
 </main>
 
 <section class="auth-gate" id="authGate" aria-labelledby="authGateTitle">
@@ -2962,6 +3974,25 @@ const historyEmpty = document.getElementById("historyEmpty");
 const authGate = document.getElementById("authGate");
 const authGateLogin = document.getElementById("authGateLogin");
 const authGateRegister = document.getElementById("authGateRegister");
+const chatShell = document.querySelector(".chat-shell");
+const chatWorkspace = document.querySelector(".chat-workspace");
+const designSidebar = document.querySelector(".design-sidebar");
+const designTransfer = document.querySelector(".design-transfer");
+const mobileEffectSlot = document.getElementById("mobileEffectSlot");
+const mobileStepper = document.getElementById("mobileStepper");
+const mobileStepButtons = Array.from(document.querySelectorAll("[data-mobile-step]"));
+const mobileAssetSummary = document.getElementById("mobileAssetSummary");
+const mobileStyleSummary = document.getElementById("mobileStyleSummary");
+const mobileChatSummary = document.getElementById("mobileChatSummary");
+const mobilePreviousButton = document.getElementById("mobilePreviousButton");
+const mobileNextButton = document.getElementById("mobileNextButton");
+const mobileChatBackButton = document.getElementById("mobileChatBackButton");
+const mobileStepAnnouncement = document.getElementById("mobileStepAnnouncement");
+const mobileStepHeadings = {
+  assets: document.getElementById("mobileAssetsTitle"),
+  styles: document.getElementById("mobileStylesTitle"),
+  chat: document.getElementById("mobileChatTitle"),
+};
 
 let abortController = null;
 let selectedStyle = null;
@@ -2973,11 +4004,188 @@ let designState = { space_image: null, materials: [], selected_style_id: null, e
 let activeConfigPanel = "assets";
 let conversations = [];
 let currentConversationExists = false;
+let assetUploadDepth = 0;
+let expandedMaterialId = null;
+let mobileStep = "assets";
+let mobileFlowInitialized = false;
+let mobileStepAnimationTimer = null;
+let chatLoading = false;
 const SESSION_ID_KEY = "shijing_chat_session_id";
 const LAST_SESSION_KEY_PREFIX = "shijing_last_session_user_";
 const AUTH_TOKEN_KEY = "shijing_auth_token";
 const AUTH_USER_KEY = "shijing_auth_user";
+const MOBILE_BREAKPOINT = 860;
+const MOBILE_STEPS = ["assets", "styles", "chat"];
+const MOBILE_STEP_LABELS = { assets: "设计素材", styles: "庭院风格", chat: "生成与聊天" };
+const mobileMedia = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
 let sessionId = getOrCreateSessionId();
+
+function isMobileLayout() {
+  return mobileMedia.matches;
+}
+
+function mobileStepStorageKey() {
+  return `shijing_mobile_step_${sessionId}`;
+}
+
+function isMobileNavigationLocked() {
+  return assetUploadDepth > 0;
+}
+
+function updateEffectButtonAvailability() {
+  effectButton.disabled = !getAuthToken() || chatLoading || !selectedStyle;
+}
+
+function syncEffectButtonPlacement() {
+  if (isMobileLayout()) {
+    if (designTransfer.parentElement !== mobileEffectSlot) {
+      mobileEffectSlot.appendChild(designTransfer);
+    }
+    return;
+  }
+  if (designTransfer.parentElement !== chatShell) {
+    chatShell.insertBefore(designTransfer, chatWorkspace);
+  }
+}
+
+function updateMobileStepSummaries() {
+  const assetParts = [];
+  if (designState.space_image) assetParts.push("空间图");
+  if (designState.materials.length) assetParts.push(`${designState.materials.length} 种石材`);
+  mobileAssetSummary.textContent = assetParts.length ? assetParts.join(" · ") : "未添加";
+  mobileStyleSummary.textContent = selectedStyle?.name || "未选择";
+  mobileChatSummary.textContent = chatLoading
+    ? "处理中"
+    : designState.generated_image_url
+      ? "已有结果"
+      : currentConversationExists
+        ? "已有对话"
+        : "未开始";
+}
+
+function syncMobileNavigation() {
+  syncEffectButtonPlacement();
+  updateMobileStepSummaries();
+  updateEffectButtonAvailability();
+  const locked = isMobileNavigationLocked();
+
+  if (!isMobileLayout()) {
+    chatShell.classList.remove("mobile-step-assets", "mobile-step-styles", "mobile-step-chat");
+    designSidebar.removeAttribute("aria-hidden");
+    chatWorkspace.removeAttribute("aria-hidden");
+    return;
+  }
+
+  chatShell.classList.remove("mobile-step-assets", "mobile-step-styles", "mobile-step-chat");
+  chatShell.classList.add(`mobile-step-${mobileStep}`);
+  designSidebar.setAttribute("aria-hidden", String(mobileStep === "chat"));
+  chatWorkspace.setAttribute("aria-hidden", String(mobileStep !== "chat"));
+
+  for (const button of mobileStepButtons) {
+    const current = button.dataset.mobileStep === mobileStep;
+    if (current) button.setAttribute("aria-current", "step");
+    else button.removeAttribute("aria-current");
+    button.disabled = locked || !getAuthToken();
+  }
+
+  mobilePreviousButton.hidden = mobileStep === "assets";
+  mobilePreviousButton.disabled = locked || !getAuthToken();
+  mobileNextButton.disabled = locked || !getAuthToken();
+  mobileNextButton.textContent = mobileStep === "assets" ? "继续选择风格" : "进入聊天";
+  mobileChatBackButton.disabled = locked || !getAuthToken();
+}
+
+function announceMobileStep(step) {
+  const position = MOBILE_STEPS.indexOf(step) + 1;
+  mobileStepAnnouncement.textContent = `第 ${position} 步，共 3 步：${MOBILE_STEP_LABELS[step]}`;
+}
+
+function focusMobileStepHeading(step) {
+  window.requestAnimationFrame(() => {
+    mobileStepHeadings[step]?.focus({ preventScroll: true });
+  });
+}
+
+function rememberMobileStep(step) {
+  try {
+    sessionStorage.setItem(mobileStepStorageKey(), step);
+  } catch {
+    // 浏览器禁用会话存储时，仍可在当前页面内完成流程。
+  }
+}
+
+function readRememberedMobileStep() {
+  try {
+    const remembered = sessionStorage.getItem(mobileStepStorageKey());
+    return MOBILE_STEPS.includes(remembered) ? remembered : null;
+  } catch {
+    return null;
+  }
+}
+
+function setMobileStep(step, options = {}) {
+  if (!MOBILE_STEPS.includes(step)) return false;
+  if (!isMobileLayout()) {
+    if (step !== "chat") showConfigPanel(step);
+    return true;
+  }
+  const {
+    historyMode = "push",
+    focus = true,
+    announce = true,
+    force = false,
+  } = options;
+  if (!force && isMobileNavigationLocked()) {
+    if (assetUploadDepth > 0) setDesignStatus("图片正在处理中，请稍候");
+    return false;
+  }
+
+  const previousIndex = MOBILE_STEPS.indexOf(mobileStep);
+  const nextIndex = MOBILE_STEPS.indexOf(step);
+  mobileStep = step;
+  if (step !== "chat") showConfigPanel(step);
+
+  window.clearTimeout(mobileStepAnimationTimer);
+  chatShell.classList.remove("mobile-step-enter-forward", "mobile-step-enter-back");
+  if (previousIndex !== nextIndex) {
+    chatShell.classList.add(nextIndex > previousIndex ? "mobile-step-enter-forward" : "mobile-step-enter-back");
+    mobileStepAnimationTimer = window.setTimeout(() => {
+      chatShell.classList.remove("mobile-step-enter-forward", "mobile-step-enter-back");
+    }, 220);
+  }
+
+  syncMobileNavigation();
+  rememberMobileStep(step);
+  const currentState = history.state && typeof history.state === "object" ? history.state : {};
+  const nextState = { ...currentState, shijingMobileStep: step, shijingMobileSession: sessionId };
+  if (historyMode === "replace") history.replaceState(nextState, "", window.location.href);
+  if (historyMode === "push" && previousIndex !== nextIndex) history.pushState(nextState, "", window.location.href);
+  if (focus) focusMobileStepHeading(step);
+  if (announce) announceMobileStep(step);
+  return true;
+}
+
+function initializeMobileFlow() {
+  mobileFlowInitialized = true;
+  if (!isMobileLayout()) {
+    syncMobileNavigation();
+    return;
+  }
+  const restoredStep = readRememberedMobileStep() || (currentConversationExists ? "chat" : "assets");
+  setMobileStep(restoredStep, { historyMode: "replace", focus: false, announce: false, force: true });
+}
+
+function setAssetUploadBusy(isBusy) {
+  assetUploadDepth = Math.max(0, assetUploadDepth + (isBusy ? 1 : -1));
+  const locked = assetUploadDepth > 0 || chatLoading || !getAuthToken();
+  document.querySelectorAll("[data-design-control]").forEach(control => {
+    control.disabled = locked;
+  });
+  styleGrid.querySelectorAll(".style-card").forEach(card => { card.disabled = locked; });
+  clearMaterialsButton.disabled = locked || designState.materials.length === 0;
+  materialUploadButton.disabled = locked || designState.materials.length >= MAX_MATERIAL_IMAGES;
+  syncMobileNavigation();
+}
 
 function getAuthToken() {
   return localStorage.getItem(AUTH_TOKEN_KEY);
@@ -3008,13 +4216,14 @@ function setWorkspaceLocked(locked) {
   input.disabled = locked;
   sendButton.disabled = locked;
   recognizeButton.disabled = locked;
-  effectButton.disabled = locked;
+  effectButton.disabled = locked || !selectedStyle;
   quoteButton.disabled = locked;
   newDesignButton.disabled = locked;
   document.querySelectorAll("[data-design-control]").forEach(control => {
     control.disabled = locked;
   });
   styleGrid.querySelectorAll(".style-card").forEach(card => { card.disabled = locked; });
+  syncMobileNavigation();
 }
 
 function updateAuthUi(user = getStoredUser()) {
@@ -3200,14 +4409,16 @@ function renderConversationList() {
   historyList.replaceChildren();
   historyEmpty.hidden = conversations.length > 0;
   for (const conversation of conversations) {
+    const isCurrentConversation = conversation.session_id === sessionId;
     const item = document.createElement("article");
-    item.className = `history-item${conversation.session_id === sessionId ? " active" : ""}`;
+    item.className = `history-item${isCurrentConversation ? " active" : ""}`;
 
     const selectButton = document.createElement("button");
     selectButton.type = "button";
     selectButton.className = "history-select";
+    if (isCurrentConversation) selectButton.setAttribute("aria-current", "page");
     selectButton.innerHTML = `
-      <strong>${escapeHtml(conversation.title)}</strong>
+      <strong>${escapeHtml(conversation.title)}${isCurrentConversation ? '<em class="history-current">当前</em>' : ""}</strong>
       <span>${escapeHtml(conversation.preview || "暂无消息")}</span>
       <small>${escapeHtml(formatConversationTime(conversation.updated_at))}</small>
     `;
@@ -3235,6 +4446,7 @@ async function loadConversations() {
   conversations = await authenticatedRequest("/api/conversations");
   currentConversationExists = conversations.some(item => item.session_id === sessionId);
   renderConversationList();
+  updateMobileStepSummaries();
   return conversations;
 }
 
@@ -3287,6 +4499,9 @@ async function openConversation(targetSessionId) {
   styleGridExpanded = true;
   await loadDesignSession();
   renderConversationList();
+  if (mobileFlowInitialized && isMobileLayout()) {
+    setMobileStep("chat", { historyMode: "replace", focus: false, force: true });
+  }
   closeHistoryDrawer();
 }
 
@@ -3320,6 +4535,7 @@ async function deleteHistoryConversation(conversation) {
 function resetDesignView() {
   designState = { space_image: null, materials: [], selected_style_id: null, expired: false };
   selectedStyle = null;
+  expandedMaterialId = null;
   pendingStyleGeneration = false;
   styleGridExpanded = true;
   styleSelection.textContent = "选择一种风格后可直接生成效果图";
@@ -3332,6 +4548,9 @@ function resetDesignView() {
   clearConversationMessages();
   renderDesignState();
   setDesignStatus("");
+  if (mobileFlowInitialized && isMobileLayout()) {
+    setMobileStep("assets", { historyMode: "replace", focus: false, announce: false, force: true });
+  }
 }
 
 async function initializeAuthenticatedWorkspace() {
@@ -3393,6 +4612,7 @@ function renderSpaceImage() {
 }
 
 const MATERIAL_USAGES = ["地面铺装", "汀步", "台阶", "墙面", "景墙", "围边", "水景", "水景观", "驳岸", "其他"];
+const MAX_MATERIAL_IMAGES = 20;
 const MAX_MATERIAL_USAGES = 7;
 
 function updateUsageSelectionState(usageList) {
@@ -3438,12 +4658,47 @@ function updateConfigProgress() {
   effectButton.title = selectedStyle
     ? `生成「${selectedStyle.name}」效果图`
     : "请先在左侧选择庭院风格";
+  updateMobileStepSummaries();
+  updateEffectButtonAvailability();
+}
+
+function updateMaterialCardSummary(card, item) {
+  const summaryName = card.querySelector(".material-card-summary-name");
+  const summaryMeta = card.querySelector(".material-card-summary-meta");
+  const nameInput = card.querySelector(".asset-card-name");
+  if (summaryName) summaryName.textContent = nameInput?.value.trim() || item.name || item.original_name || "未命名石材";
+  if (summaryMeta) {
+    const selectedCount = card.querySelectorAll('.usage-option input:checked').length;
+    summaryMeta.textContent = selectedCount ? `${selectedCount} 项用途` : "未选择用途";
+  }
+}
+
+function setExpandedMaterialCard(card, item) {
+  if (!isMobileLayout() || isMobileNavigationLocked()) return;
+  const willExpand = !card.classList.contains("expanded");
+  for (const otherCard of materialImageList.querySelectorAll(".material-card")) {
+    otherCard.classList.remove("expanded");
+    const otherSummary = otherCard.querySelector(".material-card-mobile-summary");
+    otherSummary?.setAttribute("aria-expanded", "false");
+    const otherAction = otherCard.querySelector(".material-card-summary-action");
+    if (otherAction) otherAction.textContent = "编辑";
+  }
+  if (willExpand) {
+    expandedMaterialId = item.id;
+    card.classList.add("expanded");
+    card.querySelector(".material-card-mobile-summary")?.setAttribute("aria-expanded", "true");
+    const action = card.querySelector(".material-card-summary-action");
+    if (action) action.textContent = "收起";
+  } else {
+    expandedMaterialId = null;
+  }
 }
 
 function renderMaterialImages() {
   materialImageList.replaceChildren();
-  clearMaterialsButton.disabled = designState.materials.length === 0 || Boolean(abortController);
-  materialUploadButton.disabled = designState.materials.length >= 6 || Boolean(abortController);
+  const controlsLocked = Boolean(abortController) || assetUploadDepth > 0 || chatLoading || !getAuthToken();
+  clearMaterialsButton.disabled = designState.materials.length === 0 || controlsLocked;
+  materialUploadButton.disabled = designState.materials.length >= MAX_MATERIAL_IMAGES || controlsLocked;
   if (!designState.materials.length) {
     const empty = document.createElement("div");
     empty.className = "empty-asset";
@@ -3453,7 +4708,9 @@ function renderMaterialImages() {
   }
   for (const item of designState.materials) {
     const card = document.createElement("div");
-    card.className = "asset-card";
+    card.className = "asset-card material-card";
+    card.dataset.materialId = String(item.id);
+    card.classList.toggle("expanded", expandedMaterialId === item.id);
     const img = document.createElement("img");
     img.className = "asset-thumb";
     img.src = item.image;
@@ -3465,6 +4722,7 @@ function renderMaterialImages() {
     name.maxLength = 100;
     name.value = item.name || "";
     name.dataset.designControl = "";
+    name.addEventListener("input", () => updateMaterialCardSummary(card, item));
     const usageList = document.createElement("div");
     usageList.className = "usage-list";
     for (const usage of MATERIAL_USAGES) {
@@ -3479,6 +4737,7 @@ function renderMaterialImages() {
       usageList.appendChild(label);
       checkbox.addEventListener("change", () => {
         updateUsageSelectionState(usageList);
+        updateMaterialCardSummary(card, item);
         saveMaterialMetadata(item, card);
       });
     }
@@ -3494,7 +4753,34 @@ function renderMaterialImages() {
     remove.title = "删除石材参考图";
     remove.textContent = "×";
     remove.addEventListener("click", () => removeMaterialImage(item.id));
-    card.append(img, name, usageList, usageHint, remove);
+
+    const summaryButton = document.createElement("button");
+    summaryButton.type = "button";
+    summaryButton.className = "material-card-mobile-summary";
+    summaryButton.setAttribute("aria-expanded", String(expandedMaterialId === item.id));
+    const summaryImage = document.createElement("img");
+    summaryImage.className = "asset-thumb";
+    summaryImage.src = item.image;
+    summaryImage.alt = "";
+    summaryImage.loading = "lazy";
+    const summaryCopy = document.createElement("span");
+    summaryCopy.className = "material-card-summary-copy";
+    const summaryName = document.createElement("strong");
+    summaryName.className = "material-card-summary-name";
+    const summaryMeta = document.createElement("small");
+    summaryMeta.className = "material-card-summary-meta";
+    summaryCopy.append(summaryName, summaryMeta);
+    const summaryAction = document.createElement("span");
+    summaryAction.className = "material-card-summary-action";
+    summaryAction.textContent = expandedMaterialId === item.id ? "收起" : "编辑";
+    summaryButton.append(summaryImage, summaryCopy, summaryAction);
+    summaryButton.addEventListener("click", () => setExpandedMaterialCard(card, item));
+
+    const details = document.createElement("div");
+    details.className = "material-card-details";
+    details.append(name, usageList, usageHint);
+    card.append(img, summaryButton, details, remove);
+    updateMaterialCardSummary(card, item);
     materialImageList.appendChild(card);
   }
 }
@@ -3543,6 +4829,7 @@ function validateImageFile(file) {
 }
 
 async function uploadSpaceImage(file) {
+  setAssetUploadBusy(true);
   try {
     validateImageFile(file);
     setDesignStatus(`正在上传 ${file.name}…`);
@@ -3558,6 +4845,7 @@ async function uploadSpaceImage(file) {
     setDesignStatus(error.message, true);
   } finally {
     spaceImageInput.value = "";
+    setAssetUploadBusy(false);
   }
 }
 
@@ -3573,31 +4861,39 @@ async function removeSpaceImage() {
 }
 
 async function uploadMaterialImages(files) {
-  const available = Math.max(0, 6 - designState.materials.length);
+  if (!files.length) return;
+  setAssetUploadBusy(true);
+  const available = Math.max(0, MAX_MATERIAL_IMAGES - designState.materials.length);
   const selected = Array.from(files).slice(0, available);
   const errors = [];
-  for (const file of selected) {
-    try {
-      validateImageFile(file);
-      setDesignStatus(`正在上传 ${file.name}…`);
-      const image = await compressImage(file);
-      const saved = await designRequest("/api/design/material-images", {
-        method: "POST",
-        body: JSON.stringify({ image, original_name: file.name, name: null, usages: [] }),
-      });
-      designState.materials.push(saved);
-      renderMaterialImages();
-    } catch (error) {
-      errors.push(`${file.name}：${error.message}`);
+  try {
+    for (const file of selected) {
+      try {
+        validateImageFile(file);
+        setDesignStatus(`正在上传 ${file.name}…`);
+        const image = await compressImage(file);
+        const saved = await designRequest("/api/design/material-images", {
+          method: "POST",
+          body: JSON.stringify({ image, original_name: file.name, name: null, usages: [] }),
+        });
+        designState.materials.push(saved);
+        expandedMaterialId = saved.id;
+        renderMaterialImages();
+        updateConfigProgress();
+      } catch (error) {
+        errors.push(`${file.name}：${error.message}`);
+      }
     }
+    if (Array.from(files).length > available) errors.push(`最多保留 ${MAX_MATERIAL_IMAGES} 张，超出的图片未上传`);
+    designState.expired = false;
+    setDesignStatus(
+      errors.length ? `部分图片上传失败：${errors.join("；")}` : `已保存 ${selected.length} 张石材参考图`,
+      errors.length > 0,
+    );
+  } finally {
+    materialImageInput.value = "";
+    setAssetUploadBusy(false);
   }
-  if (Array.from(files).length > available) errors.push(`最多保留 6 张，超出的图片未上传`);
-  materialImageInput.value = "";
-  designState.expired = false;
-  setDesignStatus(
-    errors.length ? `部分图片上传失败：${errors.join("；")}` : `已保存 ${selected.length} 张石材参考图`,
-    errors.length > 0,
-  );
 }
 
 async function saveMaterialMetadata(item, card) {
@@ -3609,6 +4905,7 @@ async function saveMaterialMetadata(item, card) {
       body: JSON.stringify({ name: name || null, usages }),
     });
     Object.assign(item, saved);
+    updateMaterialCardSummary(card, item);
     setDesignStatus("石材名称与用途已保存");
   } catch (error) {
     setDesignStatus(error.message, true);
@@ -3619,7 +4916,9 @@ async function removeMaterialImage(imageId) {
   try {
     await designRequest(`/api/design/material-images/${imageId}`, { method: "DELETE" });
     designState.materials = designState.materials.filter(item => item.id !== imageId);
+    if (expandedMaterialId === imageId) expandedMaterialId = null;
     renderMaterialImages();
+    updateConfigProgress();
     setDesignStatus("石材参考图已删除");
   } catch (error) {
     setDesignStatus(error.message, true);
@@ -3632,7 +4931,9 @@ async function clearMaterialImages() {
   try {
     await designRequest("/api/design/material-images", { method: "DELETE" });
     designState.materials = [];
+    expandedMaterialId = null;
     renderMaterialImages();
+    updateConfigProgress();
     setDesignStatus("石材方案已清空");
   } catch (error) {
     setDesignStatus(error.message, true);
@@ -3711,7 +5012,7 @@ function selectStyle(style, persist = true) {
   updateStylePickerVisibility();
   updateConfigProgress();
   if (persist) persistSelectedStyle(style);
-  input.focus();
+  if (!isMobileLayout()) input.focus();
 }
 
 function updateStylePickerVisibility() {
@@ -3723,10 +5024,14 @@ function updateStylePickerVisibility() {
 }
 
 function showStyleOptions() {
-  showConfigPanel("styles");
+  if (isMobileLayout()) {
+    if (!setMobileStep("styles")) return;
+  } else {
+    showConfigPanel("styles");
+  }
   styleGridExpanded = true;
   updateStylePickerVisibility();
-  stylePicker.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  if (!isMobileLayout()) stylePicker.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 async function loadGardenStyles() {
@@ -3995,11 +5300,12 @@ function renderThinkingIndicator() {
 }
 
 function setLoading(isLoading) {
+  chatLoading = isLoading;
   const locked = !getAuthToken();
   input.disabled = isLoading || locked;
   sendButton.disabled = isLoading || locked;
   recognizeButton.disabled = isLoading || locked;
-  effectButton.disabled = isLoading || locked;
+  effectButton.disabled = isLoading || locked || !selectedStyle;
   quoteButton.disabled = isLoading || locked;
   newDesignButton.disabled = isLoading || locked;
   document.querySelectorAll("[data-design-control]").forEach(control => {
@@ -4020,6 +5326,7 @@ function setLoading(isLoading) {
     renderMaterialImages();
     if (locked) setWorkspaceLocked(true);
   }
+  syncMobileNavigation();
 }
 
 function buildActionRequest(mode, text) {
@@ -4216,8 +5523,19 @@ recognizeButton.addEventListener("click", () => sendMessage("recognize"));
 effectButton.addEventListener("click", () => sendMessage("effect"));
 quoteButton.addEventListener("click", () => sendMessage("quote"));
 for (const configTab of configTabs) {
-  configTab.addEventListener("click", () => showConfigPanel(configTab.dataset.configTab));
+  configTab.addEventListener("click", () => {
+    if (isMobileLayout()) setMobileStep(configTab.dataset.configTab);
+    else showConfigPanel(configTab.dataset.configTab);
+  });
 }
+for (const stepButton of mobileStepButtons) {
+  stepButton.addEventListener("click", () => setMobileStep(stepButton.dataset.mobileStep));
+}
+mobilePreviousButton.addEventListener("click", () => setMobileStep("assets"));
+mobileNextButton.addEventListener("click", () => {
+  setMobileStep(mobileStep === "assets" ? "styles" : "chat");
+});
+mobileChatBackButton.addEventListener("click", () => setMobileStep("styles"));
 styleToggleButton.addEventListener("click", () => {
   styleGridExpanded = !styleGridExpanded;
   updateStylePickerVisibility();
@@ -4258,6 +5576,34 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+window.addEventListener("popstate", (event) => {
+  if (!isMobileLayout()) return;
+  if (isMobileNavigationLocked()) {
+    const currentState = history.state && typeof history.state === "object" ? history.state : {};
+    history.pushState(
+      { ...currentState, shijingMobileStep: mobileStep, shijingMobileSession: sessionId },
+      "",
+      window.location.href,
+    );
+    setDesignStatus("图片正在处理中，请稍候");
+    return;
+  }
+  const stateStep = event.state?.shijingMobileStep;
+  const stateSession = event.state?.shijingMobileSession;
+  if (MOBILE_STEPS.includes(stateStep) && stateSession === sessionId) {
+    setMobileStep(stateStep, { historyMode: "none", force: true });
+  }
+});
+
+mobileMedia.addEventListener("change", () => {
+  if (isMobileLayout()) {
+    const targetStep = readRememberedMobileStep() || (currentConversationExists ? "chat" : "assets");
+    setMobileStep(targetStep, { historyMode: "replace", focus: false, announce: false, force: true });
+  } else {
+    syncMobileNavigation();
+  }
+});
+
 showConfigPanel("assets");
 updateAuthUi();
 async function initializeDesignApp() {
@@ -4268,6 +5614,7 @@ async function initializeDesignApp() {
   } else {
     resetDesignView();
   }
+  initializeMobileFlow();
 }
 initializeDesignApp();
 </script>
