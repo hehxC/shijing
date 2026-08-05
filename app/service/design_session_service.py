@@ -332,7 +332,6 @@ def mark_effect_generated(session_id: str, image_url: str, request: str) -> None
         context = _get_or_create_context(db, session_id)
         context.generated_image_url = image_url
         context.generation_request = request.strip()
-        context.material_analysis = None
         context.effect_revision = context.context_revision or 0
         context.updated_at = utcnow()
 
@@ -379,7 +378,6 @@ def cleanup_expired_design_assets(now: datetime | None = None) -> int:
             context.reference_image_request = None
             context.generated_image_url = None
             context.generation_request = None
-            context.material_analysis = None
             context.effect_revision = None
             context.assets_expired_at = now or utcnow()
             cleaned += 1

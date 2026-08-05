@@ -35,8 +35,6 @@ class GardenStyleTests(unittest.TestCase):
             has_uploaded_image=False,
             has_reference_image=True,
             has_generated_image=True,
-            has_material_analysis=False,
-            text_chat_model="unused",
         )
 
         self.assertEqual("generate_effect_image", intent.intent)
@@ -48,8 +46,6 @@ class GardenStyleTests(unittest.TestCase):
             has_uploaded_image=False,
             has_reference_image=True,
             has_generated_image=True,
-            has_material_analysis=False,
-            text_chat_model="unused",
         )
 
         self.assertEqual("analyze_image", intent.intent)
@@ -61,20 +57,17 @@ class GardenStyleTests(unittest.TestCase):
             has_uploaded_image=False,
             has_reference_image=True,
             has_generated_image=True,
-            has_material_analysis=False,
-            text_chat_model="unused",
         )
 
         self.assertEqual("analyze_image", intent.intent)
         self.assertEqual("generated", intent.use_image)
 
-    @patch("app.service.chat_service.remember_material_analysis")
     @patch("app.service.chat_service._stream_model_agent", return_value=iter(["识图结果"]))
     @patch("app.service.chat_service.generate_effect_image")
     @patch("app.service.chat_service.generated_image_as_data_url", return_value="data:image/png;base64,old")
     @patch("app.service.chat_service.get_session_context")
     def test_recognize_image_uses_previous_generated_image_without_generating(
-        self, mock_context, mock_data_url, mock_generate, mock_stream, mock_remember_analysis
+        self, mock_context, mock_data_url, mock_generate, mock_stream
     ):
         mock_context.return_value = SessionContext(
             session_id="recognize-test",
@@ -82,7 +75,6 @@ class GardenStyleTests(unittest.TestCase):
             reference_image_request="原始庭院照片",
             generated_image_url="/static/generated/old.png",
             generation_request="原始效果图需求",
-            material_analysis=None,
         )
 
         response = "".join(
@@ -111,7 +103,6 @@ class GardenStyleTests(unittest.TestCase):
             reference_image_request="原始庭院照片",
             generated_image_url="/static/generated/old.png",
             generation_request="原始效果图需求",
-            material_analysis=None,
         )
 
         response = "".join(stream_chat("增加瓦片围边", session_id="edit-test"))

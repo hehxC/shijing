@@ -156,7 +156,6 @@ def _state_summary(st: dict) -> str:
         ("上传图", st.get("has_uploaded_image", False)),
         ("参考图", st.get("has_reference_image", False)),
         ("效果图", st.get("has_generated_image", False)),
-        ("材料分析", st.get("has_material_analysis", False)),
     ]
     return " ".join(f"{label}={('是' if value else '否')}" for label, value in flags)
 

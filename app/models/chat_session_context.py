@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, String, Text, func
+from sqlalchemy import DateTime, String, Text, func
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,7 +21,6 @@ class ChatSessionContext(Base):
     reference_image_request: Mapped[str | None] = mapped_column(Text)
     generated_image_url: Mapped[str | None] = mapped_column(String(512))
     generation_request: Mapped[str | None] = mapped_column(Text)
-    material_analysis: Mapped[dict | None] = mapped_column(JSON)
     selected_style_id: Mapped[str | None] = mapped_column(String(64))
     context_revision: Mapped[int] = mapped_column(nullable=False, default=0)
     effect_revision: Mapped[int | None] = mapped_column()
