@@ -1,8 +1,11 @@
 from dataclasses import dataclass
+from datetime import datetime
 from functools import lru_cache
 import json
 import os
+from pathlib import Path
 import re
+import time
 
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
@@ -18,6 +21,29 @@ from app.service.image_generation_service import (
 
 
 load_dotenv()
+
+# 路由决策采集日志路径：默认写入 data/ 目录（已加入 .gitignore），
+# 可用环境变量 ROUTER_DECISION_LOG_PATH 覆盖，便于测试时隔离日志文件。
+ROUTER_DECISION_LOG_PATH = Path(
+    os.getenv("ROUTER_DECISION_LOG_PATH")
+    or (Path(__file__).resolve().parents[2] / "data" / "router_decisions.jsonl")
+)
+
+
+def _log_router_decision(record: dict) -> None:
+    """把一次路由决策以 JSON 行追加到采集日志。
+
+    日志只用于攒评测数据，任何失败都不能影响聊天主流程，因此全程兜底。
+    """
+    try:
+        # JSONL 格式：每行一条决策记录，追加写入
+        path = ROUTER_DECISION_LOG_PATH
+        path.parent.mkdir(parents=True, exist_ok=True)
+        line = json.dumps(record, ensure_ascii=False)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(line + "\n")
+    except Exception:
+        pass
 
 VALID_INTENTS = {
     "generate_effect_image",
@@ -180,8 +206,15 @@ def route_chat_intent(
         has_generated_image=has_generated_image,
         has_material_analysis=has_material_analysis,
     )
+    # 生成/分析类意图对"用哪张图"非常敏感，直接信任规则判断，不调用模型
     if fallback.intent in {"generate_effect_image", "analyze_image"}:
-        return fallback
+        result = fallback
+        source = "rule_priority"
+        latency_ms = 0.0
+    else:
+        # 其余意图交给模型判断；source 先记为 rule_fallback，模型成功后会覆盖
+        source = "rule_fallback"
+        latency_ms = None
 
     system_prompt = (
         "你是聊天请求路由器，只判断用户这一轮请求应该走哪个处理流程。"
@@ -213,15 +246,44 @@ def route_chat_intent(
         },
     }
 
-    try:
-        model = _get_router_model(text_chat_model)
-        response = model.invoke(
-            [
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=json.dumps(user_payload, ensure_ascii=False)),
-            ]
-        )
-        content = response.content if isinstance(response.content, str) else json.dumps(response.content, ensure_ascii=False)
-        return _normalize_intent(_extract_json(content), fallback)
-    except Exception:
-        return fallback
+    # 只有非规则直返路径才真正调用模型，并记录模型决策耗时
+    if source != "rule_priority":
+        started = time.perf_counter()
+        try:
+            model = _get_router_model(text_chat_model)
+            response = model.invoke(
+                [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=json.dumps(user_payload, ensure_ascii=False)),
+                ]
+            )
+            content = response.content if isinstance(response.content, str) else json.dumps(response.content, ensure_ascii=False)
+            parsed = _normalize_intent(_extract_json(content), fallback)
+            result = parsed
+            # 模型返回了结果但解析/校验失败时，回退规则结果并标记来源
+            source = "llm" if parsed is not fallback else "llm_normalize_fallback"
+        except Exception:
+            result = fallback
+        latency_ms = round((time.perf_counter() - started) * 1000, 1)
+
+    # 把本次决策写入采集日志（消息、状态、决策、来源、耗时），供后续评测使用
+    _log_router_decision(
+        {
+            "timestamp": datetime.now().isoformat(timespec="milliseconds"),
+            "message": message,
+            "state": {
+                "has_uploaded_image": has_uploaded_image,
+                "has_reference_image": has_reference_image,
+                "has_generated_image": has_generated_image,
+                "has_material_analysis": has_material_analysis,
+            },
+            "model": text_chat_model,
+            "intent": result.intent,
+            "use_image": result.use_image,
+            "confidence": result.confidence,
+            "reason": result.reason,
+            "source": source,
+            "latency_ms": latency_ms,
+        }
+    )
+    return result

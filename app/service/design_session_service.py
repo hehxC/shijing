@@ -15,7 +15,7 @@ from app.models.design_reference_image import DesignReferenceImage
 
 SPACE_IMAGE = "space"
 MATERIAL_IMAGE = "material"
-MAX_MATERIAL_IMAGES = 6
+MAX_MATERIAL_IMAGES = 20
 MAX_MATERIAL_USAGES = 7
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 RETENTION_DAYS = 30
@@ -247,7 +247,7 @@ def add_material_reference(
             )
         )
         if int(count or 0) >= MAX_MATERIAL_IMAGES:
-            raise DesignSessionError("石材参考图最多上传 6 张")
+            raise DesignSessionError(f"石材参考图最多上传 {MAX_MATERIAL_IMAGES} 张")
         max_position = db.scalar(
             select(func.max(DesignReferenceImage.position)).where(
                 DesignReferenceImage.session_id == session_id,
