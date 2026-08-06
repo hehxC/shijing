@@ -43,6 +43,7 @@ dist/
 # Runtime files and generated artifacts
 *.log
 data/
+evals/data/
 tmp/
 temp/
 output/

@@ -36,6 +36,7 @@ from app.service.conversation_service import (
     load_recent_model_history,
     protected_generated_url,
 )
+from app.service.sql_tool_guard import guard_sql_tools
 
 load_dotenv()
 
@@ -85,7 +86,8 @@ def get_chat_agent(model_name: str):
         db=SQL_DB,
         llm=model
     )
-    tools = toolkit.get_tools()
+    # 包一层工具防护：拦截 img 列、SELECT * 和写操作，防止图片数据进入上下文
+    tools = guard_sql_tools(toolkit.get_tools())
 
     return create_agent(
         model,
