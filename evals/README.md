@@ -80,19 +80,20 @@ uv run python evals/run_sql_eval.py --limit 3     # 冒烟
 uv run python evals/run_sql_eval.py --show-misses # 全量
 ```
 
-### 当前基线（50 条，修复提示词与工具防护后，含 LLM-as-judge）
+### 当前基线（50 条，提示词压缩 + 工具防护后，含 LLM-as-judge）
 
 | 指标 | 结果 |
 | --- | --- |
 | SQL 执行匹配率 | 100.0%（查询结果都包含了正确价格/单位） |
-| 答案事实匹配率 | 96.0% |
+| 答案事实匹配率 | 100.0% |
 | 必须查库合规率 | 100.0% |
 | 无匹配诚实率 | 100.0%（全部如实说明未收录） |
-| 无匹配价格表述率 | 12.5%（严格口径，仅剩 1/8 偶发） |
+| 无匹配价格表述率 | 0.0% |
 | 防护通过率 | 100.0% |
-| LLM-judge 通过率 | 92.0%（平均分 0.934） |
-| judge 各维度平均分 | correctness 0.98 / no_hallucination 0.96 / completeness 0.98 / conciseness 0.77 / compliance 0.98 |
-| 平均工具调用 / 延迟 / token | 2.4 次 / 3.5s / 约 4.0k |
+| LLM-judge 通过率 | 98.0%（平均分 0.981） |
+| judge 各维度平均分 | correctness 0.99 / no_hallucination 0.99 / completeness 0.98 / conciseness 0.95 / compliance 0.98 |
+| 平均回答长度 | 79 字符（一句结论） |
+| 平均工具调用 / 延迟 / token | 2.7 次 / 2.9s / 约 4.4k |
 
 ### 修复效果对比（同一数据集，修复前后）
 
@@ -115,7 +116,7 @@ uv run python evals/run_sql_eval.py --show-misses # 全量
 
 `run_sql_eval.py --judge` 会在每条回答生成后，让评审模型（DeepSeek，temperature=0）按五个维度打分（1-5 分，归一化到 0-1）：correctness（数据正确性）、no_hallucination（无编造）、completeness（覆盖期望事实）、conciseness（简洁）、compliance（合规）。评审以数据集里的 `expected_facts` 为基准，输出通过率、平均分和各维度均分。
 
-当前 conciseness 得分最低（0.77），说明回答仍然偏长，可继续压提示词篇幅。
+conciseness 已通过提示词"硬约束 + 正反例 + 估价规则收紧"从 0.77 提升到 0.95，平均回答长度约 79 字符（一句结论）；规则指标同步变好（答案匹配率 100%、无匹配价格表述率 0%）。
 
 ## CI 回归门禁
 
