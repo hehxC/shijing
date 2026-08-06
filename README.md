@@ -40,7 +40,7 @@
 │   └── garden_styles.py        # 内置庭院风格目录
 ├── static/                     # 聊天页、设计页、管理后台及静态资源
 ├── tests/                      # 单元测试
-├── evals/                      # 意图路由评测：合成数据集、评测 runner、基线
+├── evals/                      # 评测体系：路由/SQL 数据集、runner、基线、CI 门禁
 ├── data/                       # 运行期数据（路由决策日志等，已被 gitignore）
 ├── main.py                     # FastAPI 应用入口
 ├── pyproject.toml              # 项目与依赖配置
@@ -148,46 +148,63 @@ uv run uvicorn main:app --reload
 uv run python -m unittest discover -s tests -v
 ```
 
-## 意图路由评测
+## 评测体系
 
-路由（`route_chat_intent`）负责判断每轮用户请求该走哪个处理流程。为了把“路由判得准不准”变成可量化指标，项目内置了一套轻量评测体系，由四部分组成：
+项目内置一套轻量评测体系，把"路由判得准不准、SQL 查得对不对、回答质量好不好"变成可量化指标，并接进 CI 做回归门禁。
+
+### 组成
 
 | 组成 | 作用 | 位置 |
 | --- | --- | --- |
 | 决策日志 | 记录每次真实路由决策（消息、状态、意图、来源、耗时），用于攒真实样本 | `data/router_decisions.jsonl`（已 gitignore） |
-| 合成数据集 | “试卷”：用户消息 + 会话状态 + 期望路由结果，当前 115 条 | `evals/datasets/intent_routing_seed.jsonl` |
-| 评测 runner | “阅卷机”：逐条跑路由、比对答案、算准确率与混淆矩阵，并保存基线 | `evals/run_intent_router_eval.py` |
-| 基线 | “成绩单”：每次评测的指标快照，用于对比改动前后 | `evals/baselines/*.json` |
+| 路由数据集 | “试卷”：用户消息 + 会话状态 + 期望路由结果，115 条 | `evals/datasets/intent_routing_seed.jsonl` |
+| 路由评测 runner | 逐条跑路由，算准确率/逐意图 F1/混淆矩阵，保存基线 | `evals/run_intent_router_eval.py` |
+| SQL 测试库 | 23 条固定材料（SQLite，与线上 MySQL 隔离，img 哨兵防泄露） | `evals/seed_sql_fixture.py` |
+| SQL 数据集 | 50 条六类样本（精确/模糊/多条件/估价/无匹配/防护） | `evals/datasets/sql_query_seed.jsonl` |
+| SQL 评测 runner | 三层匹配（文本/执行/答案事实）+ 行为断言 + LLM-as-judge | `evals/run_sql_eval.py` |
+| 基线 | 每次评测的指标快照，供 CI 对比 | `evals/baselines/*.json` |
 
 ### 使用方式
 
 ```bash
-# 1. 生成（或重新生成）合成数据集
+# 路由：纯规则（确定性）/ 混合（走真实 LLM）
 uv run python evals/build_seed_dataset.py
-
-# 2. 跑纯规则基线（确定性、不调用模型）
-uv run python evals/run_intent_router_eval.py --mode rule
-
-# 3. 跑混合模式基线（走真实 route_chat_intent，部分样本调用 LLM）
+uv run python evals/run_intent_router_eval.py --mode rule --show-misses
 uv run python evals/run_intent_router_eval.py --mode hybrid
 
-# 4. 查看具体哪些句子被误判
-uv run python evals/run_intent_router_eval.py --mode rule --show-misses
+# SQL：重建测试库 → 全量评测 + LLM-as-judge
+uv run python evals/seed_sql_fixture.py
+uv run python evals/run_sql_eval.py --judge --show-misses
 ```
 
-- `--limit N` 可只评测前 N 条用于快速冒烟；`--out-dir` 可修改基线输出目录。
-- 评测期间的路由决策日志会重定向到 `evals/logs/`，不会污染真实流量日志。
-- 真实流量日志（`data/router_decisions.jsonl`）会在后续清洗后并入合成数据集。
+`--limit N` 冒烟运行不会覆盖 `latest` 参考基线；评测期间的决策日志重定向到 `evals/logs/`，真实流量日志（`data/router_decisions.jsonl`）后续会并入数据集。
 
-### 当前基线成绩（115 条样本）
+### 当前基线
+
+路由（115 条样本）：
 
 | 指标 | 纯规则 | 混合（规则 + LLM） |
 | --- | --- | --- |
 | 意图准确率 | 81.7% | 96.5% |
 | use_image 准确率 | 86.1% | 98.3% |
-| 主要弱点 | 生成类口语变体漏判；鹅卵石/黄砂岩等词表外材料名 | 「把台阶改高一点」（无效果图时）「生成效果图要收费吗」等边界句 |
+| 主要弱点 | 生成类口语变体漏判；词表外材料名 | 「把台阶改高一点」（无效果图时）等边界句 |
 
-结论：LLM 明显优于纯规则（96.5% vs 81.7%）。评测驱动修复了：路由提示词中价格问题被错误映射到 `analyze_image` 的 bug；正则中价格词优先于材料词导致单价问句被误判成估价（新增估价范围与单价问句判别）；「80平」等面积表达未覆盖；`has_material_analysis` 字段对估价的干扰（已全删）；路由模型未设 `temperature` 导致输出不稳定（已设为 0）；估价提示词未覆盖"指代当前方案/报价"的表达（已补规则与示例）。剩余弱点集中在生成类自然语言变体和边界句。每次改动路由提示词或正则后，都应重跑评测，并与 `evals/baselines/*_latest.json` 对比。
+SQL 查询 + LLM-as-judge（50 条样本）：
+
+| 指标 | 结果 |
+| --- | --- |
+| SQL 执行匹配率 | 100% |
+| 答案事实匹配率 | 100% |
+| 无匹配价格表述率 | 0% |
+| 防护通过率（img 泄露） | 100% |
+| LLM-judge 通过率 / 平均分 | 98% / 0.981 |
+| judge conciseness | 0.95（平均回答 79 字符） |
+
+### CI 回归门禁
+
+`.github/workflows/eval.yml` 在改动 `app/`、`evals/`、`tests/` 时自动运行：单元测试 → 路由纯规则门禁（免密钥，每次提交跑）→ SQL + judge 门禁（需 `DEEPSEEK_API_KEY` secret，PR/主干跑）。门禁通过 `--fail-below`（绝对阈值）和 `--compare`/`--max-regression`（基线对比）实现，指标退化即拦截。详见 `evals/README.md`。
+
+评测驱动修复了：路由提示词的 `analyze_image` bug、正则价格/材料判定顺序、`has_material_analysis` 干扰、路由模型 `temperature` 未设置；SQL 链路的英文列名猜测（表结构预置进提示词）、无匹配编价、img 泄露（工具层防护）。剩余弱点集中在生成类自然语言变体和边界句。每次改动路由提示词或正则后，都应重跑评测，并与 `evals/baselines/*_latest.json` 对比。
 
 ## 使用提示
 

@@ -1,24 +1,25 @@
 {
   "domain": "sql",
-  "created_at": "2026-08-06T15:02:49",
+  "created_at": "2026-08-06T17:08:20",
   "total": 50,
-  "query_text_match_rate": 0.0,
-  "query_exec_match_rate": 0.9762,
-  "answer_ok_rate": 0.96,
+  "query_text_match_rate": 0.0952,
+  "query_exec_match_rate": 1.0,
+  "answer_ok_rate": 1.0,
   "must_query_rate": 1.0,
-  "avg_tool_calls": 2.44,
-  "avg_latency_ms": 3459.0,
-  "total_tokens": 200920,
+  "avg_tool_calls": 2.68,
+  "avg_latency_ms": 2916.4,
+  "total_tokens": 220159,
+  "avg_answer_chars": 78.8,
   "no_match_honest_rate": 1.0,
-  "no_match_hallucination_rate": 0.125,
+  "no_match_hallucination_rate": 0.0,
   "guardrail_pass_rate": 1.0,
-  "judge_pass_rate": 0.92,
-  "judge_avg_score": 0.9344,
+  "judge_pass_rate": 0.98,
+  "judge_avg_score": 0.9808,
   "judge_dimensions": {
-    "correctness": 0.98,
-    "no_hallucination": 0.964,
-    "completeness": 0.976,
-    "conciseness": 0.768,
+    "correctness": 0.992,
+    "no_hallucination": 0.992,
+    "completeness": 0.984,
+    "conciseness": 0.952,
     "compliance": 0.984
   },
   "per_category": {
@@ -29,8 +30,8 @@
     },
     "fuzzy_match": {
       "total": 7,
-      "answer_ok_rate": 0.8571,
-      "exec_match_rate": 0.8571
+      "answer_ok_rate": 1.0,
+      "exec_match_rate": 1.0
     },
     "multi_condition": {
       "total": 6,
@@ -44,7 +45,7 @@
     },
     "no_match": {
       "total": 8,
-      "answer_ok_rate": 0.875,
+      "answer_ok_rate": 1.0,
       "exec_match_rate": 1.0
     },
     "guardrail": {
