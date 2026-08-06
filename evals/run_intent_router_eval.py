@@ -24,6 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.service.chat_intent_router import _fallback_route, route_chat_intent  # noqa: E402
+from evals.ci_gate import apply_gate  # noqa: E402
 
 # 五个意图的固定顺序，用于报表和混淆矩阵的列排序
 INTENT_ORDER = [
@@ -184,8 +185,8 @@ def print_misses(records: list[dict], predictions: list) -> None:
         print()
 
 
-def save_baseline(metrics: dict, mode: str, dataset_path: Path, out_dir: Path) -> Path:
-    """把指标保存为基线 JSON：一份带时间戳、一份固定 latest 便于对比。"""
+def save_baseline(metrics: dict, mode: str, dataset_path: Path, out_dir: Path, latest: bool = True) -> Path:
+    """把指标保存为基线 JSON：一份带时间戳；latest=True 时再写固定 latest 便于对比（冒烟不覆盖）。"""
     out_dir.mkdir(parents=True, exist_ok=True)
     report = {
         "mode": mode,
@@ -194,12 +195,13 @@ def save_baseline(metrics: dict, mode: str, dataset_path: Path, out_dir: Path) -
         **metrics,
     }
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    timestamped = out_dir / f"{mode}_{timestamp}.json"
-    latest = out_dir / f"{mode}_latest.json"
-    for path in (timestamped, latest):
+    paths = [out_dir / f"{mode}_{timestamp}.json"]
+    if latest:
+        paths.append(out_dir / f"{mode}_latest.json")
+    for path in paths:
         with path.open("w", encoding="utf-8") as handle:
             json.dump(report, handle, ensure_ascii=False, indent=2)
-    return latest
+    return paths[0]
 
 
 def main() -> None:
@@ -210,6 +212,9 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=0, help="只评测前 N 条（0 表示全部），用于快速冒烟")
     parser.add_argument("--out-dir", type=Path, default=Path("evals/baselines"), help="基线文件输出目录")
     parser.add_argument("--show-misses", action="store_true", help="逐条列出意图误判的样本")
+    parser.add_argument("--fail-below", type=float, default=None, help="意图准确率低于该阈值时门禁失败")
+    parser.add_argument("--compare", type=Path, default=None, help="与指定基线 JSON 对比（用于 CI 回归）")
+    parser.add_argument("--max-regression", type=float, default=None, help="相对基线允许的最大下降幅度（如 0.02 表示 2 个百分点）")
     args = parser.parse_args()
 
     # 数据集不存在时给出明确提示，而不是神秘报错
@@ -251,7 +256,21 @@ def main() -> None:
         if args.show_misses:
             print()
             print_misses(records, predictions)
-        saved = save_baseline(metrics, mode, args.dataset, args.out_dir)
+
+        # CI 门禁：按阈值和基线对比决定退出码，供 workflow 拦截回归
+        # 必须先于 save_baseline 执行，否则对比的是刚覆盖的基线文件（等于和自己比）
+        passed = apply_gate(
+            metrics,
+            primary="intent_accuracy",
+            fail_below=args.fail_below,
+            compare=args.compare,
+            max_regression=args.max_regression,
+        )
+        if not passed:
+            raise SystemExit(1)
+
+        # 冒烟（--limit）只写时间戳存档，避免污染 CI 对比用的 latest 参考基线
+        saved = save_baseline(metrics, mode, args.dataset, args.out_dir, latest=(args.limit == 0))
         print()
         print(f"基线已保存: {saved}")
         print()

@@ -80,17 +80,19 @@ uv run python evals/run_sql_eval.py --limit 3     # 冒烟
 uv run python evals/run_sql_eval.py --show-misses # 全量
 ```
 
-### 当前基线（50 条，修复提示词与工具防护后）
+### 当前基线（50 条，修复提示词与工具防护后，含 LLM-as-judge）
 
 | 指标 | 结果 |
 | --- | --- |
 | SQL 执行匹配率 | 100.0%（查询结果都包含了正确价格/单位） |
-| 答案事实匹配率 | 98.0% |
+| 答案事实匹配率 | 96.0% |
 | 必须查库合规率 | 100.0% |
 | 无匹配诚实率 | 100.0%（全部如实说明未收录） |
 | 无匹配价格表述率 | 12.5%（严格口径，仅剩 1/8 偶发） |
 | 防护通过率 | 100.0% |
-| 平均工具调用 / 延迟 / token | 2.6 次 / 4.3s / 约 4.2k |
+| LLM-judge 通过率 | 92.0%（平均分 0.934） |
+| judge 各维度平均分 | correctness 0.98 / no_hallucination 0.96 / completeness 0.98 / conciseness 0.77 / compliance 0.98 |
+| 平均工具调用 / 延迟 / token | 2.4 次 / 3.5s / 约 4.0k |
 
 ### 修复效果对比（同一数据集，修复前后）
 
@@ -108,3 +110,30 @@ uv run python evals/run_sql_eval.py --show-misses # 全量
 
 1. 无匹配样本仍有 1/8 偶发出现价格表述（严格口径），来自 LLM 非确定性，可接受或继续压；
 2. 评测使用 ChatDeepSeek 默认温度 1.0，单次结果存在波动，多次对比看趋势而非单点。
+
+## LLM-as-judge 回答质量评测
+
+`run_sql_eval.py --judge` 会在每条回答生成后，让评审模型（DeepSeek，temperature=0）按五个维度打分（1-5 分，归一化到 0-1）：correctness（数据正确性）、no_hallucination（无编造）、completeness（覆盖期望事实）、conciseness（简洁）、compliance（合规）。评审以数据集里的 `expected_facts` 为基准，输出通过率、平均分和各维度均分。
+
+当前 conciseness 得分最低（0.77），说明回答仍然偏长，可继续压提示词篇幅。
+
+## CI 回归门禁
+
+评测 runner 支持三个门禁参数，配合 [.github/workflows/eval.yml](.github/workflows/eval.yml) 在每次改动时自动拦截指标退化：
+
+```bash
+# 路由：纯规则模式（确定性、不调模型），每提交都跑
+uv run python evals/run_intent_router_eval.py --mode rule \
+  --fail-below 0.80 --compare evals/baselines/rule_latest.json --max-regression 0.02
+
+# SQL：LLM-as-judge 全量评测（需要 DEEPSEEK_API_KEY），PR/主干跑
+uv run python evals/run_sql_eval.py --judge \
+  --fail-below 0.85 --compare evals/baselines/sql_latest.json --max-regression 0.05
+```
+
+门禁逻辑在 `evals/ci_gate.py`：主指标低于绝对阈值、或相对基线下降超过允许幅度时退出码非 0。注意：
+
+- 门禁在保存基线**之前**执行，对比的是仓库里提交的旧基线，不会和自己比；
+- `--limit` 冒烟运行只写时间戳存档，不覆盖 `*_latest.json` 参考基线；
+- 要让 CI 生效，需要把 `evals/baselines/*_latest.json` 提交进仓库，并在 GitHub 仓库配置 `DEEPSEEK_API_KEY` secret；
+- 纯规则门禁无需任何密钥，适合作为每次提交的硬门槛；SQL/judge 门禁需要真实 LLM 调用，只在 PR 和主干跑。
