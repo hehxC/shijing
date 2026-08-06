@@ -60,3 +60,51 @@ uv run python evals/run_intent_router_eval.py --mode hybrid --limit 30
 - 把真实流量日志（`data/router_decisions.jsonl`）清洗后并入数据集；
 - 用 LLM 扩写句式变体，扩大覆盖面；
 - 加入 SQL 查询评测和回答质量评测。
+
+## SQL 查询评测（进行中）
+
+量化"材料查询/估价"这条链路（文本 Agent + SQLDatabaseToolkit + materials 表）干得对不对。
+
+当前已完成：
+
+- **固定测试材料表**：`evals/fixture_materials.py` 定义 23 条写死价格/单位的材料，`evals/seed_sql_fixture.py` 生成独立的 SQLite 测试库 `evals/data/sql_eval.db`（与线上 MySQL 隔离、可复现；img 字段写入哨兵值用于检测泄露）；
+- **第一批数据集**：`evals/build_sql_seed_dataset.py` 生成 `evals/datasets/sql_query_seed.jsonl`，共 50 条，覆盖六类：精确匹配 / 模糊匹配 / 多条件 / 估价计算 / 无匹配 / 防护。
+- **评测 runner**：`evals/run_sql_eval.py` 逐条运行生产同款 SQL Agent（同一提示词 + SQLDatabaseToolkit + DeepSeek，但连测试库），做三层判定（SQL 文本匹配 / 执行结果匹配 / 答案事实匹配）和工具行为断言（必须查库、img 泄露、无匹配编价），输出报告并保存基线 `evals/baselines/sql_latest.json`。
+
+使用方法：
+
+```bash
+uv run python evals/seed_sql_fixture.py
+uv run python evals/build_sql_seed_dataset.py
+uv run python evals/run_sql_eval.py --limit 3     # 冒烟
+uv run python evals/run_sql_eval.py --show-misses # 全量
+```
+
+### 当前基线（50 条，修复提示词与工具防护后）
+
+| 指标 | 结果 |
+| --- | --- |
+| SQL 执行匹配率 | 100.0%（查询结果都包含了正确价格/单位） |
+| 答案事实匹配率 | 98.0% |
+| 必须查库合规率 | 100.0% |
+| 无匹配诚实率 | 100.0%（全部如实说明未收录） |
+| 无匹配价格表述率 | 12.5%（严格口径，仅剩 1/8 偶发） |
+| 防护通过率 | 100.0% |
+| 平均工具调用 / 延迟 / token | 2.6 次 / 4.3s / 约 4.2k |
+
+### 修复效果对比（同一数据集，修复前后）
+
+| 指标 | 修改前 | 修改后 |
+| --- | --- | --- |
+| 答案事实匹配率 | 88.0% | 98.0% |
+| 防护通过率（img 泄露） | 87.5% | 100.0% |
+| 平均工具调用次数 | 8.7 次 | 2.6 次 |
+| 平均延迟 / 总 token | 9.8s / 470k | 4.3s / 208k |
+| 无匹配价格表述率 | 62.5% | 12.5% |
+
+对应修复：提示词预置 `materials` 表结构（省掉查 schema 步骤）、明确禁止无匹配时补充市场参考价、工具层拦截 img 列 / SELECT * / 写操作（`app/service/sql_tool_guard.py`）。
+
+### 剩余已知问题
+
+1. 无匹配样本仍有 1/8 偶发出现价格表述（严格口径），来自 LLM 非确定性，可接受或继续压；
+2. 评测使用 ChatDeepSeek 默认温度 1.0，单次结果存在波动，多次对比看趋势而非单点。
