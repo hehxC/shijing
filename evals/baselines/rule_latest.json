@@ -1,0 +1,65 @@
+{
+  "mode": "rule",
+  "dataset": "evals\\datasets\\intent_routing_seed.jsonl",
+  "created_at": "2026-08-06T15:03:25",
+  "total": 115,
+  "intent_accuracy": 0.8174,
+  "use_image_accuracy": 0.8609,
+  "intent_hits": 94,
+  "image_hits": 99,
+  "per_intent": {
+    "generate_effect_image": {
+      "precision": 0.9697,
+      "recall": 0.6667,
+      "f1": 0.7901,
+      "samples": 48
+    },
+    "analyze_image": {
+      "precision": 0.8,
+      "recall": 0.8,
+      "f1": 0.8,
+      "samples": 10
+    },
+    "estimate_price": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "samples": 15
+    },
+    "query_material": {
+      "precision": 0.9615,
+      "recall": 0.9259,
+      "f1": 0.9434,
+      "samples": 27
+    },
+    "general_chat": {
+      "precision": 0.4516,
+      "recall": 0.9333,
+      "f1": 0.6087,
+      "samples": 15
+    }
+  },
+  "confusion": {
+    "generate_effect_image": {
+      "generate_effect_image": 32,
+      "general_chat": 14,
+      "analyze_image": 2
+    },
+    "analyze_image": {
+      "analyze_image": 8,
+      "general_chat": 1,
+      "query_material": 1
+    },
+    "estimate_price": {
+      "estimate_price": 15
+    },
+    "query_material": {
+      "query_material": 25,
+      "general_chat": 2
+    },
+    "general_chat": {
+      "general_chat": 14,
+      "generate_effect_image": 1
+    }
+  }
+}
