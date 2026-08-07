@@ -1,8 +1,10 @@
 from collections.abc import Iterator
+from collections import deque
 from functools import lru_cache
+from operator import add
 import os
 from pathlib import Path
-from typing import TypedDict
+from typing import Annotated, TypedDict
 
 from dotenv import load_dotenv
 from langchain.agents import create_agent
@@ -11,7 +13,8 @@ from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from langchain_community.utilities import SQLDatabase
 from langchain_deepseek import ChatDeepSeek
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import AIMessage, AIMessageChunk
+from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
+from langgraph.config import get_stream_writer
 from langgraph.graph import END, StateGraph
 
 from app.database import engine
@@ -157,6 +160,8 @@ class ChatAgentState(TypedDict):
     generated_context: object | None
     intent: object | None
     history: list[dict]
+    # 各节点追加输出的流式片段：挂 add reducer，保证多节点接力时追加而不是覆盖
+    response_chunks: Annotated[list[str], add]
 
 
 def _stream_model_agent(
@@ -171,17 +176,35 @@ def _stream_model_agent(
     messages = list(history or [])
     messages.append({"role": "user", "content": _build_user_content(message, image)})
 
-    for update in agent.stream(
-            {"messages": messages},
-            stream_mode="updates",
+    # stream_mode="messages" 提供 token 级流式，但工具调用前的"思考"文本（如"我先查询一下"）
+    # 也混在流里。用滑动窗口缓冲：窗口内出现工具调用就把缓冲整段丢弃（那是思考），
+    # 否则窗口填满后边收边发。窗口大小是取舍：越大越能吞掉思考，越小流式越即时。
+    HELD_WINDOW = 12
+    held: deque[str] = deque()
+    for chunk, _metadata in agent.stream(
+        {"messages": messages},
+        stream_mode="messages",
     ):
-        # 工具调用前的模型草稿可能包含 SQL，只发送没有工具调用的最终模型回复。
-        for msg in update.get("model", {}).get("messages", []):
-            if not isinstance(msg, (AIMessage, AIMessageChunk)) or msg.tool_calls:
+        if isinstance(chunk, AIMessageChunk):
+            if chunk.tool_call_chunks:
+                # 该轮在构造工具调用：窗口内缓冲的文本是思考过程，整段丢弃
+                held.clear()
                 continue
-            text = _extract_text_content(msg.content)
+            text = _extract_text_content(chunk.content)
             if text:
-                yield text
+                held.append(text)
+                if len(held) > HELD_WINDOW:
+                    yield held.popleft()
+        elif isinstance(chunk, AIMessage):
+            # 兼容：个别实现可能一次性给出完整消息
+            text = _extract_text_content(chunk.content)
+            if text and not chunk.tool_calls:
+                held.append(text)
+        elif isinstance(chunk, ToolMessage):
+            # 工具结果到来：窗口内缓冲的是思考文本，丢弃
+            held.clear()
+    while held:
+        yield held.popleft()
 
 
 def _build_agent_state(
@@ -208,6 +231,7 @@ def _build_agent_state(
         "generated_context": generated_context,
         "intent": None,
         "history": history,
+        "response_chunks": [],
     }
 
 
@@ -224,6 +248,35 @@ def _router_agent(state: ChatAgentState) -> ChatAgentState:
         has_generated_image=bool(generated_context and generated_context.generated_image_url),
     )
     return state
+
+
+def _stream_into_node(stream: Iterator[str]) -> dict:
+    """把现有的生成器 Agent 包装成图节点：
+
+    逐块通过 get_stream_writer 实时发出（stream_mode="custom" 消费），
+    同时把块追加进 response_chunks，供图结束时拼出完整回复。
+    """
+    writer = get_stream_writer()
+    chunks: list[str] = []
+    for chunk in stream:
+        writer({"type": "chunk", "content": chunk})
+        chunks.append(chunk)
+    return {"response_chunks": chunks}
+
+
+def _effect_image_node(state: ChatAgentState) -> dict:
+    """效果图生成节点：复用原生成逻辑，只做流式包装。"""
+    return _stream_into_node(_effect_image_agent(state))
+
+
+def _vision_analysis_node(state: ChatAgentState) -> dict:
+    """图片分析节点：复用原分析逻辑，只做流式包装。"""
+    return _stream_into_node(_vision_analysis_agent(state))
+
+
+def _text_node(state: ChatAgentState) -> dict:
+    """文本/查库/估价节点：复用原逻辑，只做流式包装。"""
+    return _stream_into_node(_text_agent(state))
 
 
 def _effect_image_agent(state: ChatAgentState) -> Iterator[str]:
@@ -364,7 +417,7 @@ def _stream_multi_agent_chat(
         selected_style: GardenStyle | None = None,
         force_generate_effect_image: bool = False,
 ) -> Iterator[str]:
-    """主控 Agent：Router 负责分发，专业 Agent 负责各自能力。"""
+    """主控 Agent：整张图在 LangGraph 内执行，节点通过 custom 流实时输出。"""
     state = _build_agent_state(
         message,
         image,
@@ -372,32 +425,44 @@ def _stream_multi_agent_chat(
         selected_style,
         force_generate_effect_image,
     )
-    state = get_chat_orchestrator_graph().invoke(state)
+    for event in get_chat_orchestrator_graph().stream(state, stream_mode="custom"):
+        # 各节点通过 get_stream_writer 发出 {"type": "chunk", "content": ...}
+        if event.get("type") == "chunk":
+            yield event["content"]
 
-    if force_generate_effect_image or state["intent"].intent == "generate_effect_image":
-        yield from _effect_image_agent(state)
-        return
 
+def _route_after_router(state: ChatAgentState) -> str:
+    """条件边：根据意图把流程分发给对应的专业 Agent 节点。"""
+    if state["force_generate_effect_image"] or state["intent"].intent == "generate_effect_image":
+        return "effect_image_agent"
     if state["intent"].intent == "analyze_image":
-        yield from _vision_analysis_agent(state)
-        return
-
-    # query_material / estimate_price / general_chat 都交给文本 Agent；
-    # SQL 工具仍挂在文本模型 Agent 上，图片内容只通过应用层 JSON 显式注入。
-    yield from _text_agent(state)
+        return "vision_analysis_agent"
+    # query_material / estimate_price / general_chat 都交给文本 Agent
+    return "text_agent"
 
 
 @lru_cache(maxsize=1)
 def get_chat_orchestrator_graph():
-    """LangGraph 主控图。
-
-    当前只把 Router Agent 放入图中，专业 Agent 继续使用生成器流式输出。
-    这样既能形成清晰的多 Agent 编排入口，也不会破坏前端现有的流式响应。
-    """
+    """LangGraph 主控图：Router 分发 + 三个专业 Agent 节点 + 条件边。"""
     graph = StateGraph(ChatAgentState)
     graph.add_node("router_agent", _router_agent)
+    graph.add_node("effect_image_agent", _effect_image_node)
+    graph.add_node("vision_analysis_agent", _vision_analysis_node)
+    graph.add_node("text_agent", _text_node)
     graph.set_entry_point("router_agent")
-    graph.add_edge("router_agent", END)
+    # router_agent给state赋值，_route_after_router做转发
+    graph.add_conditional_edges(
+        "router_agent",
+        _route_after_router,
+        {
+            "effect_image_agent": "effect_image_agent",
+            "vision_analysis_agent": "vision_analysis_agent",
+            "text_agent": "text_agent",
+        },
+    )
+    graph.add_edge("effect_image_agent", END)
+    graph.add_edge("vision_analysis_agent", END)
+    graph.add_edge("text_agent", END)
     return graph.compile()
 
 
