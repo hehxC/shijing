@@ -16,6 +16,7 @@ dependencies = [
     "xhs>=0.2.13",
     "langchain-community>=0.4.2",
     "langchain-google-genai>=4.2.5",
+    "alembic>=1.19.0",
 ]
 
 [[tool.uv.index]]

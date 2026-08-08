@@ -1,7 +1,7 @@
 import re
+import mimetypes
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from fastapi.responses import FileResponse
 
 from app.models.schemas import ConversationRename
 from app.models.user import User
@@ -9,7 +9,7 @@ from app.service.auth_service import get_current_user
 from app.service.conversation_service import (
     conversation_owns_generated_file,
     delete_conversation,
-    generated_file_path,
+    generated_file_bytes,
     get_conversation,
     list_conversations,
     rename_conversation,
@@ -67,7 +67,8 @@ def read_generated_image(
         raise HTTPException(status_code=404, detail="图片不存在")
     if not conversation_owns_generated_file(current_user.id, client_session_id, filename):
         raise HTTPException(status_code=404, detail="图片不存在")
-    path = generated_file_path(filename)
-    if path is None:
+    data = generated_file_bytes(filename)
+    if data is None:
         raise HTTPException(status_code=404, detail="图片不存在")
-    return FileResponse(path)
+    mime_type = mimetypes.guess_type(filename)[0] or "image/png"
+    return Response(content=data, media_type=mime_type)

@@ -10,7 +10,7 @@ from app.models.chat_conversation import ChatConversation
 from app.models.chat_message import ChatMessage
 from app.models.chat_session_context import ChatSessionContext
 from app.models.design_reference_image import DesignReferenceImage
-from app.service.image_generation_service import GENERATED_DIR
+from app.service.image_store import get_image_store
 
 
 MESSAGE_PENDING = "pending"
@@ -171,24 +171,36 @@ def fail_turn(user_message_id: int) -> None:
 
 
 def list_conversations(user_id: int) -> list[dict]:
+    """返回用户全部会话及各自最新消息预览（单查询，避免逐条查预览的 N+1）。"""
     with SessionLocal() as db:
-        rows = list(
-            db.scalars(
-                select(ChatConversation)
-                .where(ChatConversation.user_id == user_id)
-                .order_by(ChatConversation.updated_at.desc(), ChatConversation.id.desc())
+        # 窗口函数：按会话分区、sequence 倒序给消息编号，rn=1 即该会话最新一条
+        preview_subquery = (
+            select(
+                ChatMessage.conversation_id,
+                ChatMessage.content,
+                func.row_number()
+                .over(
+                    partition_by=ChatMessage.conversation_id,
+                    order_by=ChatMessage.sequence.desc(),
+                )
+                .label("rn"),
             )
+            .subquery()
         )
-        result = []
-        for row in rows:
-            preview = db.scalar(
-                select(ChatMessage.content)
-                .where(ChatMessage.conversation_id == row.id)
-                .order_by(ChatMessage.sequence.desc())
-                .limit(1)
+        rows = db.execute(
+            select(
+                ChatConversation,
+                preview_subquery.c.content.label("preview"),
             )
-            result.append(_serialize_conversation(row, preview))
-        return result
+            .outerjoin(
+                preview_subquery,
+                (preview_subquery.c.conversation_id == ChatConversation.id)
+                & (preview_subquery.c.rn == 1),
+            )
+            .where(ChatConversation.user_id == user_id)
+            .order_by(ChatConversation.updated_at.desc(), ChatConversation.id.desc())
+        ).all()
+        return [_serialize_conversation(row[0], row[1]) for row in rows]
 
 
 def get_conversation(user_id: int, client_session_id: str) -> dict | None:
@@ -295,10 +307,12 @@ def conversation_owns_generated_file(
         ) > 0
 
 
-def generated_file_path(filename: str) -> Path | None:
-    path = (GENERATED_DIR / filename).resolve()
-    root = GENERATED_DIR.resolve()
-    return path if path.parent == root and path.is_file() else None
+def generated_file_bytes(filename: str) -> bytes | None:
+    """按文件名从图片存储读取生成图字节；不存在返回 None。"""
+    try:
+        return get_image_store().get(f"generated/{filename}")
+    except (OSError, ValueError):
+        return None
 
 
 def delete_conversation(user_id: int, client_session_id: str) -> bool:
@@ -340,7 +354,5 @@ def delete_conversation(user_id: int, client_session_id: str) -> bool:
     if generated_image_url and generated_image_url.startswith("/static/generated/"):
         filenames.add(generated_image_url.removeprefix("/static/generated/"))
     for filename in filenames:
-        path = generated_file_path(filename)
-        if path is not None:
-            path.unlink(missing_ok=True)
+        get_image_store().delete(f"generated/{filename}")
     return True

@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from sqlalchemy import DateTime, Integer, JSON, String, func
-from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -15,7 +14,7 @@ class DesignReferenceImage(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     session_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     kind: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
-    data_url: Mapped[str] = mapped_column(LONGTEXT, nullable=False)
+    object_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     original_name: Mapped[str | None] = mapped_column(String(255))
     material_name: Mapped[str | None] = mapped_column(String(100))
     usages: Mapped[list[str] | None] = mapped_column(JSON)

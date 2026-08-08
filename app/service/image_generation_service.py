@@ -14,6 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import SessionLocal
 from app.models.material import Material
+from app.service.image_store import get_image_store
 
 
 load_dotenv()
@@ -108,13 +109,12 @@ def generated_image_as_data_url(image_url: str) -> str:
         raise ImageGenerationError("会话中的效果图地址无效")
 
     filename = image_url.removeprefix(prefix)
-    path = (GENERATED_DIR / filename).resolve()
-    generated_root = GENERATED_DIR.resolve()
-    if path.parent != generated_root or not path.is_file():
+    try:
+        data = get_image_store().get(f"generated/{filename}")
+    except (OSError, ValueError) as exc:
         raise ImageGenerationError("上一张效果图文件已不存在")
-
-    mime_type = mimetypes.guess_type(path.name)[0] or "image/png"
-    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    mime_type = mimetypes.guess_type(filename)[0] or "image/png"
+    encoded = base64.b64encode(data).decode("ascii")
     return f"data:{mime_type};base64,{encoded}"
 
 def _build_prompt(message: str, has_reference_image: bool) -> str:
@@ -210,13 +210,12 @@ def _save_generated_image_data(mime_type: str, data: str) -> str:
     if extension in {".jpe", ".jpeg"}:
         extension = ".jpg"
 
-    GENERATED_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid4().hex}{extension}"
-    target = GENERATED_DIR / filename
+    key = f"generated/{filename}"
     try:
-        target.write_bytes(image_bytes)
+        get_image_store().save(key, image_bytes, content_type=mime_type)
     except OSError as exc:
-        target.unlink(missing_ok=True)
+        get_image_store().delete(key)
         raise ImageGenerationError(f"生成图片保存失败：{exc}") from exc
 
     return f"/static/generated/{filename}"

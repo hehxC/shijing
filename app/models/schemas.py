@@ -60,7 +60,9 @@ class AuthResponse(BaseModel):
     user: UserResponse
 
 
-class MaterialCreate(BaseModel):
+class MaterialBase(BaseModel):
+    """材料公共字段：创建时 img 是 data URL，响应时 img 是图片 URL。"""
+
     material: str = Field(min_length=1, max_length=40)
     color: str | None = Field(default=None, max_length=30)
     spec: str | None = Field(default=None, max_length=50)
@@ -75,6 +77,8 @@ class MaterialCreate(BaseModel):
     def strip_text(cls, value):
         return value.strip() if isinstance(value, str) else value
 
+
+class MaterialCreate(MaterialBase):
     @field_validator("img")
     @classmethod
     def validate_image(cls, value: str) -> str:
@@ -83,7 +87,7 @@ class MaterialCreate(BaseModel):
         return value
 
 
-class MaterialResponse(MaterialCreate):
+class MaterialResponse(MaterialBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
