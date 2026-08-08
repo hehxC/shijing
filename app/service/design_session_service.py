@@ -1,9 +1,11 @@
 import base64
 import binascii
+import mimetypes
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from uuid import uuid4
 
 from sqlalchemy import delete, func, select
 
@@ -11,6 +13,11 @@ from app.database import SessionLocal
 from app.models.chat_session_context import ChatSessionContext
 from app.models.chat_conversation import ChatConversation
 from app.models.design_reference_image import DesignReferenceImage
+from app.service.image_store import (
+    bytes_to_data_url,
+    data_url_to_bytes,
+    get_image_store,
+)
 
 
 SPACE_IMAGE = "space"
@@ -120,15 +127,34 @@ def _delete_generated_file(image_url: str | None) -> None:
     if not image_url or not image_url.startswith(prefix):
         return
     filename = image_url.removeprefix(prefix)
-    path = (GENERATED_DIR / filename).resolve()
-    if path.parent == GENERATED_DIR.resolve():
-        path.unlink(missing_ok=True)
+    get_image_store().delete(f"generated/{filename}")
+
+
+def _save_image_to_store(kind: str, data_url: str) -> str:
+    """把 data URL 解码后写入图片存储，返回对象 key（按 类型/日期/uuid 组织）。"""
+    data, mime_type = data_url_to_bytes(data_url)
+    extension = mimetypes.guess_extension(mime_type) or ".jpg"
+    if extension in {".jpe", ".jpeg"}:
+        extension = ".jpg"
+    key = f"{kind}/{datetime.now().strftime('%Y%m%d')}/{uuid4().hex}{extension}"
+    return get_image_store().save(key, data, content_type=mime_type)
+
+
+def _resolve_image_data_url(row: DesignReferenceImage) -> str:
+    """优先从对象存储读文件还原 data URL；旧数据回退到 data_url 列。"""
+    if row.object_key:
+        try:
+            return bytes_to_data_url(row.object_key, get_image_store().get(row.object_key))
+        except (OSError, ValueError):
+            pass
+    legacy = getattr(row, "data_url", None)
+    return legacy or ""
 
 
 def _serialize_image(row: DesignReferenceImage) -> dict:
     return {
         "id": row.id,
-        "image": row.data_url,
+        "image": _resolve_image_data_url(row),
         "original_name": row.original_name,
         "name": row.material_name,
         "usages": list(row.usages or []),
@@ -192,6 +218,7 @@ def save_space_image(
     session_id: str, image: str, original_name: str | None = None, request: str = ""
 ) -> dict:
     cleaned = validate_image_data_url(image)
+    object_key = _save_image_to_store(SPACE_IMAGE, cleaned)
     with SessionLocal.begin() as db:
         context = _get_or_create_context(db, session_id)
         previous = db.scalar(
@@ -202,12 +229,20 @@ def save_space_image(
         )
         if previous is None:
             previous = DesignReferenceImage(
-                session_id=session_id, kind=SPACE_IMAGE, position=0, data_url=cleaned
+                session_id=session_id,
+                kind=SPACE_IMAGE,
+                position=0,
+                object_key=object_key,
             )
             db.add(previous)
-        previous.data_url = cleaned
+        else:
+            # 替换旧图：先删旧文件（尽力而为），再写新 key
+            if previous.object_key:
+                get_image_store().delete(previous.object_key)
+            previous.object_key = object_key
         previous.original_name = original_name.strip() if original_name else None
-        context.reference_image_data_url = cleaned
+        # 上下文表不再冗余存 base64，只保留请求文本；图片从 design_reference_images 解析
+        context.reference_image_data_url = None
         context.reference_image_request = request.strip()
         _mark_changed(context)
         db.flush()
@@ -215,8 +250,16 @@ def save_space_image(
 
 
 def delete_space_image(session_id: str) -> None:
+    object_key: str | None = None
     with SessionLocal.begin() as db:
         context = _get_or_create_context(db, session_id)
+        row = db.scalar(
+            select(DesignReferenceImage).where(
+                DesignReferenceImage.session_id == session_id,
+                DesignReferenceImage.kind == SPACE_IMAGE,
+            )
+        )
+        object_key = row.object_key if row else None
         deleted = db.execute(
             delete(DesignReferenceImage).where(
                 DesignReferenceImage.session_id == session_id,
@@ -227,6 +270,8 @@ def delete_space_image(session_id: str) -> None:
             context.reference_image_data_url = None
             context.reference_image_request = None
             _mark_changed(context)
+    if object_key:
+        get_image_store().delete(object_key)
 
 
 def add_material_reference(
@@ -237,6 +282,7 @@ def add_material_reference(
     usages: list[str] | None = None,
 ) -> dict:
     cleaned = validate_image_data_url(image)
+    object_key = _save_image_to_store(MATERIAL_IMAGE, cleaned)
     material_name, material_usages = normalize_material_metadata(name, usages)
     with SessionLocal.begin() as db:
         context = _get_or_create_context(db, session_id)
@@ -257,7 +303,7 @@ def add_material_reference(
         row = DesignReferenceImage(
             session_id=session_id,
             kind=MATERIAL_IMAGE,
-            data_url=cleaned,
+            object_key=object_key,
             original_name=original_name.strip() if original_name else None,
             material_name=material_name,
             usages=material_usages,
@@ -293,6 +339,7 @@ def update_material_reference(
 
 
 def delete_material_reference(session_id: str, image_id: int) -> None:
+    object_key: str | None = None
     with SessionLocal.begin() as db:
         row = db.scalar(
             select(DesignReferenceImage).where(
@@ -303,12 +350,24 @@ def delete_material_reference(session_id: str, image_id: int) -> None:
         )
         if row is None:
             raise DesignSessionError("石材参考图不存在")
+        object_key = row.object_key
         db.delete(row)
         _mark_changed(_get_or_create_context(db, session_id))
+    if object_key:
+        get_image_store().delete(object_key)
 
 
 def clear_material_references(session_id: str) -> None:
+    object_keys: list[str] = []
     with SessionLocal.begin() as db:
+        object_keys = list(
+            db.scalars(
+                select(DesignReferenceImage.object_key).where(
+                    DesignReferenceImage.session_id == session_id,
+                    DesignReferenceImage.kind == MATERIAL_IMAGE,
+                )
+            )
+        )
         deleted = db.execute(
             delete(DesignReferenceImage).where(
                 DesignReferenceImage.session_id == session_id,
@@ -317,6 +376,9 @@ def clear_material_references(session_id: str) -> None:
         ).rowcount
         if deleted:
             _mark_changed(_get_or_create_context(db, session_id))
+    for object_key in object_keys:
+        if object_key:
+            get_image_store().delete(object_key)
 
 
 def save_selected_style(session_id: str, style_id: str) -> None:
@@ -337,9 +399,17 @@ def mark_effect_generated(session_id: str, image_url: str, request: str) -> None
 
 
 def reset_design_session(session_id: str) -> None:
+    object_keys: list[str] = []
     with SessionLocal.begin() as db:
         context = db.get(ChatSessionContext, session_id)
         generated_image_url = context.generated_image_url if context else None
+        object_keys = list(
+            db.scalars(
+                select(DesignReferenceImage.object_key).where(
+                    DesignReferenceImage.session_id == session_id
+                )
+            )
+        )
         db.execute(
             delete(DesignReferenceImage).where(
                 DesignReferenceImage.session_id == session_id
@@ -348,6 +418,9 @@ def reset_design_session(session_id: str) -> None:
         if context is not None:
             db.delete(context)
     _delete_generated_file(generated_image_url)
+    for object_key in object_keys:
+        if object_key:
+            get_image_store().delete(object_key)
 
 
 def cleanup_expired_design_assets(now: datetime | None = None) -> int:
@@ -369,11 +442,21 @@ def cleanup_expired_design_assets(now: datetime | None = None) -> int:
         for context in contexts:
             if context.generated_image_url:
                 expired_urls.append(context.generated_image_url)
+            expired_keys = list(
+                db.scalars(
+                    select(DesignReferenceImage.object_key).where(
+                        DesignReferenceImage.session_id == context.session_id
+                    )
+                )
+            )
             db.execute(
                 delete(DesignReferenceImage).where(
                     DesignReferenceImage.session_id == context.session_id
                 )
             )
+            for object_key in expired_keys:
+                if object_key:
+                    get_image_store().delete(object_key)
             context.reference_image_data_url = None
             context.reference_image_request = None
             context.generated_image_url = None

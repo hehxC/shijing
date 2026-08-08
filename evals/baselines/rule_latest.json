@@ -1,7 +1,7 @@
 {
   "mode": "rule",
   "dataset": "evals\\datasets\\intent_routing_seed.jsonl",
-  "created_at": "2026-08-06T15:03:25",
+  "created_at": "2026-08-07T17:10:17",
   "total": 115,
   "intent_accuracy": 0.8174,
   "use_image_accuracy": 0.8609,

@@ -1,7 +1,10 @@
+import mimetypes
 import re
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from sqlalchemy import select
 
+from app.database import SessionLocal
 from app.garden_styles import get_garden_style
 from app.models.schemas import (
     DesignImageCreate,
@@ -9,6 +12,7 @@ from app.models.schemas import (
     MaterialReferenceCreate,
     MaterialReferenceUpdate,
 )
+from app.models.design_reference_image import DesignReferenceImage
 from app.models.user import User
 from app.service.auth_service import get_current_user
 from app.service.conversation_service import protected_generated_url
@@ -25,6 +29,7 @@ from app.service.design_session_service import (
     save_space_image,
     update_material_reference,
 )
+from app.service.image_store import data_url_to_bytes, get_image_store
 
 
 router = APIRouter(prefix="/api/design", tags=["design"])
@@ -49,14 +54,68 @@ def _raise_bad_request(exc: DesignSessionError):
 
 
 @router.get("/session")
-def read_design_session(session_id: str = Depends(design_session_id)):
+def read_design_session(
+    session_id: str = Depends(design_session_id),
+    raw_session_id: str = Header(alias="X-Design-Session"),
+):
     cleanup_expired_design_assets()
     state = get_design_state(session_id)
+    # 传输优化：图片字段返回受保护 URL 而不是 data URL，前端按需加载
+    # URL 带会话令牌：浏览器 <img> 无法带自定义头，用能力令牌校验归属
+    if state["space_image"]:
+        state["space_image"]["image"] = (
+            f"/api/design/images/{state['space_image']['id']}?session_token={raw_session_id}"
+        )
+    for material in state["materials"]:
+        material["image"] = f"/api/design/images/{material['id']}?session_token={raw_session_id}"
     if state["generated_image_url"]:
         state["generated_image_url"] = protected_generated_url(
             session_id, state["generated_image_url"]
         )
     return state
+
+
+@router.get("/images/{image_id}")
+def read_design_image(
+    image_id: int,
+    session_token: str = Query(default=""),
+):
+    """读取设计会话里的参考图：用 URL 里的会话令牌校验归属后从存储返回字节。
+
+    采用能力令牌（capability URL）：知道令牌即可读图，适合 <img> 场景；
+    令牌是前端生成的 32-64 位随机字符串，随 URL 传递。
+    """
+    if not _SESSION_TOKEN_PATTERN.fullmatch(session_token):
+        raise HTTPException(status_code=404, detail="图片不存在")
+    with SessionLocal() as db:
+        row = db.scalar(
+            select(DesignReferenceImage).where(
+                DesignReferenceImage.id == image_id,
+            )
+        )
+        # 归属校验：图片所属会话必须以该令牌结尾（session_id = user:{uid}:{token}）
+        if row is None or not row.session_id.endswith(f":{session_token}"):
+            raise HTTPException(status_code=404, detail="图片不存在")
+        if row.object_key:
+            try:
+                data = get_image_store().get(row.object_key)
+            except (OSError, ValueError):
+                raise HTTPException(status_code=404, detail="图片不存在") from None
+        else:
+            # 兼容尚未迁移的旧数据（data_url 列已删除，仅防御性保留）
+            legacy = getattr(row, "data_url", None)
+            if not legacy:
+                raise HTTPException(status_code=404, detail="图片不存在")
+            try:
+                data, _ = data_url_to_bytes(legacy)
+            except ValueError:
+                raise HTTPException(status_code=404, detail="图片不存在") from None
+    mime_type = mimetypes.guess_type(row.object_key or "")[0] or "image/jpeg"
+    return Response(
+        content=data,
+        media_type=mime_type,
+        headers={"Cache-Control": "private, max-age=300"},
+    )
 
 
 @router.put("/space-image")

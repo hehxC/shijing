@@ -2,7 +2,6 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import DateTime, Integer, Numeric, String, Text, func
-from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -19,7 +18,7 @@ class Material(Base):
     unit: Mapped[str | None] = mapped_column(String(20))
     cat: Mapped[str] = mapped_column(String(30), nullable=False, default="石材")
     desc: Mapped[str | None] = mapped_column("description", Text)
-    img: Mapped[str] = mapped_column(LONGTEXT, nullable=False)
+    image_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
     )

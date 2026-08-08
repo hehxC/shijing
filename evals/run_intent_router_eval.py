@@ -61,9 +61,12 @@ def predict_rule(message: str, st: dict):
     return _fallback_route(message, **st)
 
 
-def predict_hybrid(message: str, st: dict, text_chat_model: str):
-    """混合模式：走真实 route_chat_intent（生成/分析类仍由规则直返，其余走 LLM）。"""
-    return route_chat_intent(message, **st, text_chat_model=text_chat_model)
+def predict_hybrid(message: str, st: dict):
+    """混合模式：走真实 route_chat_intent（生成/分析类仍由规则直返，其余走 LLM）。
+
+    路由模型已固定为 DeepSeek（ROUTER_MODEL），不再接收 text_chat_model 参数。
+    """
+    return route_chat_intent(message, **st)
 
 
 def compute_metrics(records: list[dict], predictions: list) -> dict:
@@ -243,7 +246,7 @@ def main() -> None:
 
                 eval_log_dir = Path(__file__).resolve().parent / "logs"
                 cir.ROUTER_DECISION_LOG_PATH = eval_log_dir / f"eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl"
-                predictions.append(predict_hybrid(message, st, os.getenv("TEXT_CHAT_MODEL", "deepseek-chat")))
+                predictions.append(predict_hybrid(message, st))
         elapsed = time.perf_counter() - started
 
         metrics = compute_metrics(records, predictions)

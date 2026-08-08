@@ -1,8 +1,16 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+
+from sqlalchemy import select
 
 from app.database import SessionLocal
 from app.models.chat_session_context import ChatSessionContext
-from app.service.design_session_service import mark_effect_generated, save_space_image
+from app.models.design_reference_image import DesignReferenceImage
+from app.service.design_session_service import (
+    SPACE_IMAGE,
+    mark_effect_generated,
+    save_space_image,
+)
+from app.service.image_store import bytes_to_data_url, get_image_store
 
 
 @dataclass(frozen=True)
@@ -23,7 +31,8 @@ class SessionContext:
 def _snapshot(row: ChatSessionContext) -> SessionContext:
     return SessionContext(
         session_id=row.session_id,
-        reference_image_data_url=row.reference_image_data_url,
+        # getattr 兼容旧库：迁移后 reference_image_data_url 列会被删除
+        reference_image_data_url=getattr(row, "reference_image_data_url", None),
         reference_image_request=row.reference_image_request,
         generated_image_url=row.generated_image_url,
         generation_request=row.generation_request,
@@ -40,7 +49,32 @@ def get_session_context(session_id: str) -> SessionContext | None:
     """按前端提供的基础 session_id 读取跨模型共享记忆。"""
     with SessionLocal() as db:
         row = db.get(ChatSessionContext, session_id)
-        return _snapshot(row) if row else None
+        if row is None:
+            return None
+        snapshot = _snapshot(row)
+        # 参考图以 design_reference_images 为唯一事实来源：从对象存储解析 data URL
+        reference_image = _resolve_reference_image(db, session_id)
+        if reference_image is not None:
+            snapshot = replace(snapshot, reference_image_data_url=reference_image)
+        return snapshot
+
+
+def _resolve_reference_image(db, session_id: str) -> str | None:
+    """从 design_reference_images 读取空间图：优先对象存储，旧数据回退 data_url 列。"""
+    space = db.scalar(
+        select(DesignReferenceImage).where(
+            DesignReferenceImage.session_id == session_id,
+            DesignReferenceImage.kind == SPACE_IMAGE,
+        )
+    )
+    if space is None:
+        return None
+    if space.object_key:
+        try:
+            return bytes_to_data_url(space.object_key, get_image_store().get(space.object_key))
+        except (OSError, ValueError):
+            pass
+    return getattr(space, "data_url", None)
 
 
 def remember_reference_image(session_id: str, image: str, request: str) -> None:

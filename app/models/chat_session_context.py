@@ -17,7 +17,6 @@ class ChatSessionContext(Base):
     __tablename__ = "chat_session_contexts"
 
     session_id: Mapped[str] = mapped_column(String(128), primary_key=True)
-    reference_image_data_url: Mapped[str | None] = mapped_column(LONGTEXT)
     reference_image_request: Mapped[str | None] = mapped_column(Text)
     generated_image_url: Mapped[str | None] = mapped_column(String(512))
     generation_request: Mapped[str | None] = mapped_column(Text)

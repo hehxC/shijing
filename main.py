@@ -1,6 +1,9 @@
+from pathlib import Path
+
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
-from sqlalchemy import inspect, text
 from starlette.staticfiles import StaticFiles
 
 from app.api.routes_auth import router as auth_router
@@ -8,13 +11,6 @@ from app.api.routes_chat import router as chat_router
 from app.api.routes_conversations import router as conversations_router
 from app.api.routes_design import router as design_router
 from app.api.routes_materials import router as materials_router
-from app.database import Base, engine
-from app.models import material as _material_model  # noqa: F401
-from app.models import chat_session_context as _chat_session_context_model  # noqa: F401
-from app.models import chat_conversation as _chat_conversation_model  # noqa: F401
-from app.models import chat_message as _chat_message_model  # noqa: F401
-from app.models import user as _user_model  # noqa: F401
-from app.models import design_reference_image as _design_reference_image_model  # noqa: F401
 from app.service.design_session_service import cleanup_expired_design_assets
 
 app = FastAPI()
@@ -35,46 +31,21 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.on_event("startup")
-def create_tables():
-    Base.metadata.create_all(bind=engine)
-    ensure_chat_session_context_columns()
+def startup():
+    """启动时把数据库迁移到最新版本，并清理过期设计素材。"""
+    run_database_migrations()
     cleanup_expired_design_assets()
 
 
-def ensure_chat_session_context_columns():
-    """兼容旧库表：create_all 不会给已存在的表自动增加新列。"""
-    table_name = "chat_session_contexts"
-    inspector = inspect(engine)
-    if table_name not in inspector.get_table_names():
-        return
+def run_database_migrations() -> None:
+    """执行 Alembic 迁移到最新版本。
 
-    existing_columns = {column["name"] for column in inspector.get_columns(table_name)}
-    statements = []
-    if "reference_image_data_url" not in existing_columns:
-        statements.append(
-            "ALTER TABLE chat_session_contexts ADD COLUMN reference_image_data_url LONGTEXT NULL"
-        )
-    if "reference_image_request" not in existing_columns:
-        statements.append(
-            "ALTER TABLE chat_session_contexts ADD COLUMN reference_image_request TEXT NULL"
-        )
-
-    column_definitions = {
-        "selected_style_id": "VARCHAR(64) NULL",
-        "context_revision": "INT NOT NULL DEFAULT 0",
-        "effect_revision": "INT NULL",
-        "assets_expired_at": "DATETIME NULL",
-    }
-    for column_name, definition in column_definitions.items():
-        if column_name not in existing_columns:
-            statements.append(
-                f"ALTER TABLE chat_session_contexts ADD COLUMN {column_name} {definition}"
-            )
-
-    if statements:
-        with engine.begin() as conn:
-            for statement in statements:
-                conn.execute(text(statement))
+    schema 统一由 Alembic 管理：新环境从零建表，旧环境增量迁移；
+    已在最新版本时是幂等的空操作。
+    """
+    project_root = Path(__file__).resolve().parent
+    alembic_cfg = Config(str(project_root / "alembic.ini"))
+    command.upgrade(alembic_cfg, "head")
 
 
 @app.get("/")

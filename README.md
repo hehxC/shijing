@@ -135,10 +135,12 @@ uv run uvicorn main:app --reload
 | `PATCH` | `/api/conversations/{session_id}` | 重命名指定会话 |
 | `DELETE` | `/api/conversations/{session_id}` | 永久删除会话、消息及关联效果图 |
 | `GET` | `/api/conversations/{session_id}/generated/{filename}` | 经用户和会话归属校验后读取效果图 |
+| `GET` | `/api/design/images/{image_id}` | 经设计会话归属校验后读取空间图/材料参考图 |
 | `POST` | `/api/auth/register` | 注册用户 |
 | `POST` | `/api/auth/login` | 用户登录 |
 | `GET` | `/api/auth/me` | 获取当前用户信息 |
 | `GET` | `/api/materials` | 获取自定义材料列表 |
+| `GET` | `/api/materials/{material_id}/image` | 读取材料图片（带缓存头） |
 | `POST` | `/api/materials` | 新增材料 |
 | `DELETE` | `/api/materials/{material_id}` | 删除材料 |
 
@@ -147,6 +149,21 @@ uv run uvicorn main:app --reload
 ```bash
 uv run python -m unittest discover -s tests -v
 ```
+
+## 数据库迁移
+
+数据库表结构由 Alembic 管理，应用启动时会自动执行 `alembic upgrade head`：新环境从零建表，旧环境增量迁移。
+
+常用命令：
+
+```bash
+uv run alembic upgrade head      # 迁移到最新版本
+uv run alembic downgrade -1      # 回滚一步
+uv run alembic revision --autogenerate -m "描述"   # 修改模型后生成迁移草稿（需人工检查）
+uv run alembic check             # 检查模型与数据库是否一致
+```
+
+约定：修改 `app/models/` 里的模型后，用 `--autogenerate` 生成迁移并检查内容，**不要手工 ALTER 表**；迁移文件存放在 `alembic/versions/`，数据库版本记录在 `alembic_version` 表。
 
 ## 评测体系
 
@@ -223,7 +240,7 @@ SQL 查询 + LLM-as-judge（50 条样本）：
 
 - 用户密码使用 PBKDF2-SHA256 加盐哈希存储，不保存明文密码。
 - 聊天记录只保存用户可见消息，不保存模型思考过程、工具草稿或流式片段。失败或被停止的 AI 回复不会写入历史记录。
-- 庭院空间图与石材参考图按用户和设计会话私有存入 MySQL，不提供公开静态地址。
-- 生成效果图不能通过 `/static/generated/` 公开访问，只能通过登录用户的受保护会话接口读取。
+- 庭院空间图与石材参考图存入本地图片存储（`data/images/`，接口按 S3 语义设计），数据库只存对象 key，不提供公开静态地址。
+- 生成效果图不能通过 `/static/generated/` 公开访问，只能通过登录用户的受保护会话接口读取（文件同样存于 `data/images/generated/`）。
 - 已创建历史记录的会话持续保留到用户主动永久删除；尚未发送消息的设计草稿可以在最后活动 30 天后自动清理。
 - 生产环境请使用独立数据库账号、强随机签名密钥，并妥善管理模型服务密钥。
