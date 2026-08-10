@@ -1,0 +1,72 @@
+name: Eval Regression Gate
+
+# 只要改动到路由/提示词/评测代码就触发，防止改动悄悄让指标退化
+on:
+  push:
+    paths:
+      - "app/**"
+      - "evals/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+  pull_request:
+    paths:
+      - "app/**"
+      - "evals/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+
+jobs:
+  unit-tests:
+    name: 单元测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - name: 安装依赖
+        run: uv sync --frozen
+      - name: 运行单元测试
+        run: uv run python -m unittest discover -s tests -v
+
+  router-rule-gate:
+    name: 路由评测门禁（纯规则，确定性）
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - name: 安装依赖
+        run: uv sync --frozen
+      - name: 生成路由评测数据集
+        run: uv run python evals/build_seed_dataset.py
+      - name: 跑纯规则基线并对比
+        run: >
+          uv run python evals/run_intent_router_eval.py --mode rule
+          --fail-below 0.80
+          --compare evals/baselines/rule_latest.json
+          --max-regression 0.02
+
+  sql-judge-gate:
+    name: SQL 回答质量门禁（LLM-as-judge）
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    # 需要真实 LLM 调用：只有配置了 DEEPSEEK_API_KEY 的仓库才跑
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    env:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - name: 安装依赖
+        run: uv sync --frozen
+      - name: 生成 SQL 测试材料表与数据集
+        run: |
+          uv run python evals/seed_sql_fixture.py
+          uv run python evals/build_sql_seed_dataset.py
+      - name: 跑 SQL 评测 + LLM-judge 并对比
+        run: >
+          uv run python evals/run_sql_eval.py --judge
+          --fail-below 0.85
+          --compare evals/baselines/sql_latest.json
+          --max-regression 0.05

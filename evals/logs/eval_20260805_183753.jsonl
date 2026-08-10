@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:37:54.718", "message": "院子里乔木怎么搭配", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.9, "reason": "用户询问乔木搭配建议，属于普通咨询，不涉及生成、分析、报价或材料属性查询。", "source": "llm", "latency_ms": 1187.3}

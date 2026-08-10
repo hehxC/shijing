@@ -1,0 +1,25 @@
+{
+  "domain": "rag_answer",
+  "created_at": "2026-08-10T14:07:24",
+  "total": 20,
+  "no_rag_pass_rate": 0.9,
+  "rag_pass_rate": 1.0,
+  "no_rag_avg": 0.77,
+  "rag_avg": 0.938,
+  "no_rag_dimensions": {
+    "correctness": 0.87,
+    "groundedness": 0.6,
+    "no_hallucination": 0.84,
+    "coverage": 0.9,
+    "conciseness": 0.64
+  },
+  "rag_dimensions": {
+    "correctness": 0.98,
+    "groundedness": 0.98,
+    "no_hallucination": 0.97,
+    "coverage": 0.98,
+    "conciseness": 0.78
+  },
+  "rag_groundedness": 0.98,
+  "rag_hallucination_rate": 0.0
+}

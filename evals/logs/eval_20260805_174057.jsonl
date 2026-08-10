@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:58.570", "message": "黄砂岩的材质特点是什么", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 1.0, "reason": "用户询问黄砂岩的材质特点，属于石材数据库信息查询。", "source": "llm", "latency_ms": 877.0}

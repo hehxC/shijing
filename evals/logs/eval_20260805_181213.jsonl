@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:12:14.987", "message": "小院子适合什么风格", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.9, "reason": "用户询问小院子的风格建议，属于普通咨询，不涉及图片、报价或材料属性", "source": "llm", "latency_ms": 1297.3}

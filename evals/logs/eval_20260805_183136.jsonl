@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:31:37.419", "message": "我想看看现代东方极简的院子效果", "state": {"has_uploaded_image": false, "has_reference_image": true, "has_generated_image": false}, "model": "deepseek-chat", "intent": "generate_effect_image", "use_image": "reference", "confidence": 0.95, "reason": "用户要求生成现代东方极简风格的院子效果图，属于生成效果图场景，且有参考图可用。", "source": "llm", "latency_ms": 1171.7}

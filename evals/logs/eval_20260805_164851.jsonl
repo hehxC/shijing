@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T16:48:52.223", "message": "嗯", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.9, "reason": "用户只回复了'嗯'，没有明确意图，属于普通聊天。", "source": "llm", "latency_ms": 942.5}

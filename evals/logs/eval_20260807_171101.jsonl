@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-07T17:11:02.868", "message": "我想看看英式乡村的院子效果", "state": {"has_uploaded_image": false, "has_reference_image": true, "has_generated_image": false}, "model": "deepseek-chat", "intent": "generate_effect_image", "use_image": "reference", "confidence": 0.95, "reason": "用户想生成英式乡村风格的效果图，无上传图但有参考图，因此使用参考图。", "source": "llm", "latency_ms": 913.4}

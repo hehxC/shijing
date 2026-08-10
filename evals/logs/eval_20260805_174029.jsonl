@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:31.064", "message": "报价大概多少", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "estimate_price", "use_image": "none", "confidence": 0.95, "reason": "用户询问报价，属于价格估算需求。", "source": "llm", "latency_ms": 1122.4}

@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:08.171", "message": "把台阶改高一点", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": true, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "generate_effect_image", "use_image": "generated", "confidence": 1.0, "reason": "用户要求修改已有效果图中的台阶，属于画面元素调整。", "source": "llm", "latency_ms": 1272.2}

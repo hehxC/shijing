@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:31:36.247", "message": "我想看看枯山水的院子效果", "state": {"has_uploaded_image": false, "has_reference_image": true, "has_generated_image": false}, "model": "deepseek-chat", "intent": "generate_effect_image", "use_image": "reference", "confidence": 0.9, "reason": "用户想看枯山水院子效果，属于生成效果图，无上传图但有参考图", "source": "llm", "latency_ms": 1158.5}

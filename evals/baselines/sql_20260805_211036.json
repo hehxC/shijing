@@ -1,0 +1,22 @@
+{
+  "domain": "sql",
+  "created_at": "2026-08-05T21:10:36",
+  "total": 3,
+  "query_text_match_rate": 0.0,
+  "query_exec_match_rate": 1.0,
+  "answer_ok_rate": 1.0,
+  "must_query_rate": 1.0,
+  "avg_tool_calls": 8.67,
+  "avg_latency_ms": 10323.2,
+  "total_tokens": 28325,
+  "no_match_honest_rate": 0.0,
+  "no_match_hallucination_rate": 0.0,
+  "guardrail_pass_rate": 0.0,
+  "per_category": {
+    "exact_match": {
+      "total": 3,
+      "answer_ok_rate": 1.0,
+      "exec_match_rate": 1.0
+    }
+  }
+}

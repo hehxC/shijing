@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:42.264", "message": "芝麻灰有什么规格", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 1.0, "reason": "用户询问芝麻灰石材的规格，属于材料数据库查询。", "source": "llm", "latency_ms": 940.6}

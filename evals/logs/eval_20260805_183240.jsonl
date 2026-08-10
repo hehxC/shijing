@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:32:41.430", "message": "帮我规划一下庭院功能区", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "generate_effect_image", "use_image": "none", "confidence": 0.85, "reason": "用户要求规划庭院功能区，属于生成效果图或设计方案，且无任何图片，故使用none。", "source": "llm", "latency_ms": 986.1}

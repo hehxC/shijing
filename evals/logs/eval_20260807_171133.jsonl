@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-07T17:11:34.283", "message": "水洗石铺装多少钱一平", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 1.0, "reason": "用户询问水洗石铺装的单价，属于石材属性信息查询。", "source": "llm", "latency_ms": 1058.2}

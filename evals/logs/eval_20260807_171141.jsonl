@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-07T17:11:42.452", "message": "花岗岩铺装多少钱一平", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 1.0, "reason": "用户询问花岗岩铺装的单价，属于石材属性信息查询。", "source": "llm", "latency_ms": 1224.5}

@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:41:03.621", "message": "嗯", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 1.0, "reason": "用户消息为无明确意图的普通回应，无法归类到其他流程。", "source": "llm", "latency_ms": 938.6}

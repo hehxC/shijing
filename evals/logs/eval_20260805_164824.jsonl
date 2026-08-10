@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T16:48:25.956", "message": "青石板岩铺装多少钱一平", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.95, "reason": "用户询问青石板岩铺装的单价，属于石材价格信息查询。", "source": "llm", "latency_ms": 1073.5}

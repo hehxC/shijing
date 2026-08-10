@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:45.131", "message": "花岗岩和莱姆石哪个更适合户外", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.95, "reason": "用户询问两种石材的适用性，属于材质数据库查询", "source": "llm", "latency_ms": 923.0}

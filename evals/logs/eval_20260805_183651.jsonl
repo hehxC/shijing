@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:36:52.968", "message": "给我看看我家的院子改成日式会是什么样", "state": {"has_uploaded_image": false, "has_reference_image": true, "has_generated_image": false}, "model": "deepseek-chat", "intent": "generate_effect_image", "use_image": "reference", "confidence": 0.95, "reason": "用户要求将院子改成日式风格，属于生成效果图请求，无上传图但有参考图，因此使用参考图。", "source": "llm", "latency_ms": 1255.8}

@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:32:48.677", "message": "院子里灌木怎么搭配", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.9, "reason": "用户询问院子里灌木的搭配方法，不涉及生成效果图、分析图片、价格估算或具体石材属性，属于普通咨询/闲聊类。无任何图片相关状态。", "source": "llm", "latency_ms": 1233.6}

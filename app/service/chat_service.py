@@ -40,6 +40,7 @@ from app.service.conversation_service import (
     protected_generated_url,
 )
 from app.service.sql_tool_guard import guard_sql_tools
+from app.service.rag_service import retrieve
 
 load_dotenv()
 
@@ -49,6 +50,15 @@ IMAGE_CHAT_MODEL = os.getenv("IMAGE_CHAT_MODEL", "qwen-vl-max-latest")
 DEFAULT_SESSION_ID = "default"
 VISION_THREAD_SUFFIX = "vision"
 TEXT_THREAD_SUFFIX = "text"
+# RAG 检索参数：top-k 与相关度阈值（任务 6 数据驱动调优）
+RETRIEVE_TOP_K = int(os.getenv("RETRIEVE_TOP_K", "3"))
+RETRIEVE_MAX_DISTANCE = float(os.getenv("RETRIEVE_MAX_DISTANCE", "1.30"))
+# 知识咨询关键词：命中才检索，避免每句都查
+_RETRIEVE_KEYWORDS = (
+    "风格", "庭院", "花园", "院子", "材料", "石材", "石头", "植物", "树木",
+    "施工", "排水", "铺装", "布局", "搭配", "养护", "防水", "防滑", "照明",
+    "隐私", "设计", "水景", "园路", "草坪", "菜园", "种植",
+)
 SQL_DB = SQLDatabase(
     engine,
     include_tables=["materials"],
@@ -160,6 +170,8 @@ class ChatAgentState(TypedDict):
     generated_context: object | None
     intent: object | None
     history: list[dict]
+    # RAG 检索节点写入的领域知识片段（带编号引用），供文本 Agent 组装 prompt
+    retrieved_context: list | None
     # 各节点追加输出的流式片段：挂 add reducer，保证多节点接力时追加而不是覆盖
     response_chunks: Annotated[list[str], add]
 
@@ -231,6 +243,7 @@ def _build_agent_state(
         "generated_context": generated_context,
         "intent": None,
         "history": history,
+        "retrieved_context": None,
         "response_chunks": [],
     }
 
@@ -403,10 +416,54 @@ def _vision_analysis_agent(state: ChatAgentState) -> Iterator[str]:
 def _text_agent(state: ChatAgentState) -> Iterator[str]:
     """文本/查库/估价 Agent：只接收文本上下文，不接收图片消息。"""
     message = state["message"]
+    retrieved = state.get("retrieved_context")
+    if retrieved:
+        # 把检索到的领域知识片段按编号注入，要求回答引用 [n]
+        context_lines = "\n".join(
+            f"{item['ref']} [{item['source']}] {item['content']}" for item in retrieved
+        )
+        message = (
+            "以下是检索到的领域知识片段，回答时优先参考；引用时标注编号如 [1]。\n"
+            f"{context_lines}\n\n用户问题：{message}"
+        )
 
     yield from _stream_model_agent(
         TEXT_CHAT_MODEL, message, None, state["session_id"], state["history"]
     )
+
+
+def _needs_retrieval(message: str) -> bool:
+    """知识咨询关键词启发式：命中才检索，避免每句都查（任务 9 会用评测细化）。"""
+    return any(keyword in message for keyword in _RETRIEVE_KEYWORDS)
+
+
+def _retrieve_node(state: ChatAgentState) -> dict:
+    """知识检索节点：只对 general_chat 且命中关键词的问题检索并组装带编号上下文。"""
+    intent = state.get("intent")
+    if intent is None or getattr(intent, "intent", None) != "general_chat":
+        return {}
+    if not _needs_retrieval(state["message"]):
+        return {}
+    try:
+        items = retrieve(
+            state["message"],
+            k=RETRIEVE_TOP_K,
+            retriever="vector",
+            max_distance=RETRIEVE_MAX_DISTANCE,
+        )
+    except Exception:
+        # 检索失败不阻塞对话：静默降级为无知识上下文
+        return {}
+    context = [
+        {
+            "ref": f"[{index}]",
+            "doc_id": item["doc_id"],
+            "source": item["source"],
+            "content": item["content"],
+        }
+        for index, item in enumerate(items, 1)
+    ]
+    return {"retrieved_context": context}
 
 
 def _stream_multi_agent_chat(
@@ -437,8 +494,8 @@ def _route_after_router(state: ChatAgentState) -> str:
         return "effect_image_agent"
     if state["intent"].intent == "analyze_image":
         return "vision_analysis_agent"
-    # query_material / estimate_price / general_chat 都交给文本 Agent
-    return "text_agent"
+    # query_material / estimate_price / general_chat 先过检索节点，再进文本 Agent
+    return "retrieve_node"
 
 
 @lru_cache(maxsize=1)
@@ -448,6 +505,7 @@ def get_chat_orchestrator_graph():
     graph.add_node("router_agent", _router_agent)
     graph.add_node("effect_image_agent", _effect_image_node)
     graph.add_node("vision_analysis_agent", _vision_analysis_node)
+    graph.add_node("retrieve_node", _retrieve_node)
     graph.add_node("text_agent", _text_node)
     graph.set_entry_point("router_agent")
     # router_agent给state赋值，_route_after_router做转发
@@ -457,11 +515,12 @@ def get_chat_orchestrator_graph():
         {
             "effect_image_agent": "effect_image_agent",
             "vision_analysis_agent": "vision_analysis_agent",
-            "text_agent": "text_agent",
+            "retrieve_node": "retrieve_node",
         },
     )
     graph.add_edge("effect_image_agent", END)
     graph.add_edge("vision_analysis_agent", END)
+    graph.add_edge("retrieve_node", "text_agent")
     graph.add_edge("text_agent", END)
     return graph.compile()
 

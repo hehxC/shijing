@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:32:36.333", "message": "台阶多高合适", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 1.0, "reason": "用户询问台阶高度，属于一般性问题，不涉及图片、报价或材料属性", "source": "llm", "latency_ms": 1272.7}

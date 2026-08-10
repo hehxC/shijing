@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:16.450", "message": "120平方米院子铺芝麻灰大概多少钱", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "estimate_price", "use_image": "none", "confidence": 0.95, "reason": "用户询问120平方米院子铺设芝麻灰的价格，属于费用估算需求", "source": "llm", "latency_ms": 1102.0}
