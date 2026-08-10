@@ -3,7 +3,7 @@ from pathlib import Path
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from starlette.staticfiles import StaticFiles
 
 from app.api.routes_auth import router as auth_router
@@ -25,6 +25,14 @@ app.include_router(materials_router)
 @app.get("/static/generated/{asset_path:path}", include_in_schema=False)
 def deny_public_generated_image(asset_path: str):
     raise HTTPException(status_code=404, detail="图片不存在")
+
+
+@app.get("/static/index.html", include_in_schema=False)
+@app.get("/static/step2.html", include_in_schema=False)
+@app.get("/static/step3.html", include_in_schema=False)
+async def redirect_legacy_design_flow():
+    """旧的多页面设计流程统一回到当前单页工作台。"""
+    return RedirectResponse(url="/", status_code=307)
 
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
