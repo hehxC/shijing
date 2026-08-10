@@ -10,6 +10,7 @@
 - **多图庭院效果图**：同时使用一张庭院空间图和最多二十张石材参考图生成 16:9、2K 效果图；没有空间图时按风格自行设计布局。
 - **效果图连续修改**：设计素材未变化时基于当前效果图继续调整；空间图、石材方案或风格变化后自动重新生成完整方案。
 - **材料查询与估价**：通过 LangChain SQL 工具查询 MySQL 材料库，回答规格、颜色、价格及用量问题。
+- **领域知识检索（RAG）**：知识咨询类问题先检索领域知识库（18 种风格、材料、植物、施工要点），回答带来源引用，减少凭空编造。
 - **多意图路由**：区分普通对话、材料查询、图片分析、预算估算与效果图生成，并提供规则降级策略。
 - **持久化历史设计**：保存完整聊天记录、设计素材、庭院风格与效果图，支持跨设备恢复、重命名和永久删除。
 - **可靠的流式记录**：只保存完整 AI 回复；回复失败或用户停止时保留“未完成”的用户消息，并支持原内容重试。
@@ -21,6 +22,7 @@
 - Python 3.12+
 - FastAPI、Uvicorn
 - LangChain、LangGraph
+- Chroma、DashScope text-embedding（RAG 知识检索）
 - DeepSeek、通义千问视觉模型、Google Gemini 图像模型
 - SQLAlchemy、PyMySQL、MySQL
 - 原生 HTML、CSS、JavaScript
@@ -40,7 +42,7 @@
 │   └── garden_styles.py        # 内置庭院风格目录
 ├── static/                     # 聊天页、设计页、管理后台及静态资源
 ├── tests/                      # 单元测试
-├── evals/                      # 评测体系：路由/SQL 数据集、runner、基线、CI 门禁
+├── evals/                      # 评测体系：路由/SQL/RAG 数据集、runner、知识库、基线、CI 门禁
 ├── data/                       # 运行期数据（路由决策日志等，已被 gitignore）
 ├── main.py                     # FastAPI 应用入口
 ├── pyproject.toml              # 项目与依赖配置
@@ -167,7 +169,7 @@ uv run alembic check             # 检查模型与数据库是否一致
 
 ## 评测体系
 
-项目内置一套轻量评测体系，把"路由判得准不准、SQL 查得对不对、回答质量好不好"变成可量化指标，并接进 CI 做回归门禁。
+项目内置一套轻量评测体系，把"路由判得准不准、SQL 查得对不对、RAG 检索准不准、回答质量好不好"变成可量化指标，并接进 CI 做回归门禁。
 
 ### 组成
 
@@ -179,6 +181,10 @@ uv run alembic check             # 检查模型与数据库是否一致
 | SQL 测试库 | 23 条固定材料（SQLite，与线上 MySQL 隔离，img 哨兵防泄露） | `evals/seed_sql_fixture.py` |
 | SQL 数据集 | 50 条六类样本（精确/模糊/多条件/估价/无匹配/防护） | `evals/datasets/sql_query_seed.jsonl` |
 | SQL 评测 runner | 三层匹配（文本/执行/答案事实）+ 行为断言 + LLM-as-judge | `evals/run_sql_eval.py` |
+| RAG 知识库 | 22 篇领域长文档（18 风格 + 4 指南），可配置切分入库；另有长文本实验集 | `evals/fixtures/knowledge_documents.py`、`evals/fixtures/long_documents/` |
+| RAG 检索数据集 | 58 条「问题 → 相关文档」标注（标注在 doc 层，换切分参数依然可比） | `evals/datasets/rag_retrieval_seed.jsonl` |
+| RAG 检索评测 runner | recall@k / precision@k / MRR / nDCG@k / 负样本误命中 | `evals/run_rag_eval.py` |
+| RAG 回答评测 runner | 无 RAG vs 有 RAG 对比（LLM-judge：正确性/有据率/幻觉率/覆盖度/简洁性） | `evals/run_rag_answer_eval.py` |
 | 基线 | 每次评测的指标快照，供 CI 对比 | `evals/baselines/*.json` |
 
 ### 使用方式
@@ -192,6 +198,12 @@ uv run python evals/run_intent_router_eval.py --mode hybrid
 # SQL：重建测试库 → 全量评测 + LLM-as-judge
 uv run python evals/seed_sql_fixture.py
 uv run python evals/run_sql_eval.py --judge --show-misses
+
+# RAG：切分入库 → 检索评测 → 回答评测
+uv run python evals/build_rag_seed_dataset.py
+uv run python evals/build_knowledge_store.py            # --chunk-size/--chunk-overlap 可配
+uv run python evals/run_rag_eval.py --retriever vector --max-distance 1.30 --show-misses
+uv run python evals/run_rag_answer_eval.py --limit 20
 ```
 
 `--limit N` 冒烟运行不会覆盖 `latest` 参考基线；评测期间的决策日志重定向到 `evals/logs/`，真实流量日志（`data/router_decisions.jsonl`）后续会并入数据集。
@@ -217,11 +229,30 @@ SQL 查询 + LLM-as-judge（50 条样本）：
 | LLM-judge 通过率 / 平均分 | 98% / 0.981 |
 | judge conciseness | 0.95（平均回答 79 字符） |
 
+RAG 检索（22 篇文档 / 27 chunk，vector + 距离阈值 1.30，55 条样本）：
+
+| 指标 | 结果 |
+| --- | --- |
+| recall@1 / @3 / @5 | 74.9% / 94.8% / 96.7% |
+| precision@1 / @3 / @5 | 92.7% / 43.0% / 26.6% |
+| MRR / nDCG@5 | 0.961 / 0.940 |
+| 负样本 top-1 误命中率 | 0%（无关问题被阈值门控拒绝） |
+
+RAG 回答（LLM-judge，20 条，无 RAG vs 有 RAG）：
+
+| 维度 | 无 RAG | 有 RAG |
+| --- | --- | --- |
+| 正确性 | 0.87 | 0.98 |
+| 有据率 | 0.60 | 0.98 |
+| 无幻觉 | 0.84 | 0.97 |
+| 覆盖度 | 0.90 | 0.98 |
+| 简洁性 | 0.64 | 0.78 |
+
 ### CI 回归门禁
 
 `.github/workflows/eval.yml` 在改动 `app/`、`evals/`、`tests/` 时自动运行：单元测试 → 路由纯规则门禁（免密钥，每次提交跑）→ SQL + judge 门禁（需 `DEEPSEEK_API_KEY` secret，PR/主干跑）。门禁通过 `--fail-below`（绝对阈值）和 `--compare`/`--max-regression`（基线对比）实现，指标退化即拦截。详见 `evals/README.md`。
 
-评测驱动修复了：路由提示词的 `analyze_image` bug、正则价格/材料判定顺序、`has_material_analysis` 干扰、路由模型 `temperature` 未设置；SQL 链路的英文列名猜测（表结构预置进提示词）、无匹配编价、img 泄露（工具层防护）。剩余弱点集中在生成类自然语言变体和边界句。每次改动路由提示词或正则后，都应重跑评测，并与 `evals/baselines/*_latest.json` 对比。
+评测驱动修复了：路由提示词的 `analyze_image` bug、正则价格/材料判定顺序、`has_material_analysis` 干扰、路由模型 `temperature` 未设置；SQL 链路的英文列名猜测（表结构预置进提示词）、无匹配编价、img 泄露（工具层防护）；RAG 的负样本误命中（距离阈值门控，100% → 0%）。结论：RAG 检索在当前语料下"纯向量 + 阈值"已是最优（BM25 混合无益），且显著提升回答质量（有据率 +38 个百分点）。剩余弱点：生成类自然语言变体、语料扩大后需重调阈值并考虑 rerank。每次改动路由提示词、正则或知识库后，都应重跑对应评测，并与 `evals/baselines/*_latest.json` 对比。
 
 ## 使用提示
 
