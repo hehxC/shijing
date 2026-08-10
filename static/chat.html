@@ -3717,9 +3717,9 @@ header {
       <div class="sidebar-kicker">庭院设计输入</div>
       <div class="sidebar-title-row">
         <h2>方案配置</h2>
-        <span class="config-progress" id="configProgress">0 / 2</span>
+        <span class="config-progress" id="configProgress">风格必选</span>
       </div>
-      <p>收集空间、石材与风格，让庭院构想在对话中自然展开。</p>
+      <p>空间图与石材均可选；生成效果图前只需选择一种庭院风格。</p>
     </div>
 
     <nav class="config-tabs" aria-label="方案配置步骤" role="tablist">
@@ -3760,7 +3760,7 @@ header {
         </div>
         <div class="asset-section">
           <div class="asset-section-head">
-            <div class="asset-section-title">石材方案 · 1-20 张</div>
+            <div class="asset-section-title">石材方案 · 可选，最多 20 张</div>
             <div>
               <button class="asset-clear-btn" type="button" id="clearMaterialsButton" data-design-control>清空</button>
               <button class="asset-btn" type="button" id="materialUploadButton" data-design-control>添加石材图</button>
@@ -3823,11 +3823,11 @@ header {
           <div class="empty-copy">
             <div class="empty-kicker">从石材出发，慢慢构成庭院</div>
             <div class="empty-title">石与庭院<br>自然相遇</div>
-            <div class="empty-sub">上传空间图和石材，选择风格后生成方案；每一次调整，都可以在右侧对话中继续完成。</div>
+            <div class="empty-sub">素材可以跳过；选择风格并明确点击“效果图”后生成方案，之后可在对话中继续修改。</div>
             <div class="empty-flow" aria-label="生成效果图所需内容">
               <span>空间图可选</span>
               <i aria-hidden="true"></i>
-              <span>石材 1-20 张</span>
+              <span>石材可选 · 最多 20 张</span>
               <i aria-hidden="true"></i>
               <span>选择风格</span>
             </div>
@@ -3845,7 +3845,7 @@ header {
           <button class="tool-action-btn" type="button" id="quoteButton">报价</button>
           <div class="mobile-effect-slot" id="mobileEffectSlot"></div>
         </div>
-        <textarea id="messageInput" rows="1" placeholder="选风格后点发送生成效果图；生成后可直接输入修改要求"></textarea>
+        <textarea id="messageInput" rows="1" placeholder="可直接聊天；生成效果图请先选风格，再明确点击“效果图”"></textarea>
       </div>
       <div class="actions">
         <button class="icon-btn stop-btn" type="button" id="stopButton" title="停止生成" hidden>
@@ -3997,7 +3997,6 @@ const mobileStepHeadings = {
 let abortController = null;
 let selectedStyle = null;
 let styleGridExpanded = true;
-let pendingStyleGeneration = false;
 let authMode = "login";
 let gardenStyles = [];
 let designState = { space_image: null, materials: [], selected_style_id: null, expired: false };
@@ -4536,7 +4535,6 @@ function resetDesignView() {
   designState = { space_image: null, materials: [], selected_style_id: null, expired: false };
   selectedStyle = null;
   expandedMaterialId = null;
-  pendingStyleGeneration = false;
   styleGridExpanded = true;
   styleSelection.textContent = "选择一种风格后可直接生成效果图";
   styleGrid.querySelectorAll(".style-card").forEach(card => {
@@ -4642,8 +4640,7 @@ function showConfigPanel(panelName) {
 function updateConfigProgress() {
   const materialCount = designState.materials.length;
   const hasSpaceImage = Boolean(designState.space_image);
-  const completedSteps = Number(materialCount > 0) + Number(Boolean(selectedStyle));
-  configProgress.textContent = `${completedSteps} / 2`;
+  configProgress.textContent = selectedStyle ? "可以生成" : "风格必选";
 
   const assetParts = [];
   if (hasSpaceImage) assetParts.push("空间图");
@@ -4801,7 +4798,6 @@ async function loadDesignSession() {
     const restoredStyle = gardenStyles.find(style => style.id === designState.selected_style_id);
     if (restoredStyle) {
       selectStyle(restoredStyle, false);
-      pendingStyleGeneration = !designState.generated_image_url;
     }
     if (designState.generated_image_url && !currentConversationExists) {
       const existing = messagesEl.querySelector(`[data-generated-url="${CSS.escape(designState.generated_image_url)}"]`);
@@ -5002,7 +4998,6 @@ function renderStyleCards(styles) {
 function selectStyle(style, persist = true) {
   selectedStyle = style;
   styleGridExpanded = false;
-  pendingStyleGeneration = true;
   styleSelection.textContent = `已选择：${style.name} · ${style.category}`;
   styleGrid.querySelectorAll(".style-card").forEach((card) => {
     const selected = card.dataset.styleId === style.id;
@@ -5336,7 +5331,7 @@ function buildActionRequest(mode, text) {
     return null;
   }
 
-  const shouldGenerateEffectImage = mode === "effect" || Boolean(mode === "chat" && pendingStyleGeneration && selectedStyle);
+  const shouldGenerateEffectImage = mode === "effect";
   if (mode === "recognize") {
     return {
       requestText: text
@@ -5349,8 +5344,8 @@ function buildActionRequest(mode, text) {
   if (mode === "quote") {
     return {
       requestText: text
-        ? `请根据这张图或上一张效果图识别主要材料、施工项目和面积占比，输出分项报价、预算区间和总价。用户补充要求：${text}`
-        : "请根据这张图或上一张效果图识别主要材料、施工项目和面积占比，输出分项报价、预算区间和总价。",
+        ? `请根据这张图或上一张效果图识别可能涉及的材料和施工项目，并仅使用材料库中的真实规格、单位与价格提供参考估算。材料库没有记录时必须明确说明未收录，不得补充市场价或编造价格。用户补充要求：${text}`
+        : "请根据这张图或上一张效果图识别可能涉及的材料和施工项目，并仅使用材料库中的真实规格、单位与价格提供参考估算。材料库没有记录时必须明确说明未收录，不得补充市场价或编造价格。",
       displayText: text ? `报价：${text}` : "报价",
       shouldGenerateEffectImage: false,
     };
@@ -5446,9 +5441,6 @@ async function sendMessage(mode = "chat", retryMessage = null) {
     if (!assistantMarkdown.trim()) throw new Error("模型没有返回内容");
     await hydrateProtectedImages(assistantBubble);
 
-    if (actionRequest.shouldGenerateEffectImage && assistantMarkdown.includes("/api/conversations/")) {
-      pendingStyleGeneration = false;
-    }
   } catch (error) {
     assistantBubble.closest(".message-row")?.remove();
     markUserMessageIncomplete(userBubble, {

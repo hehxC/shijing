@@ -6,6 +6,8 @@
 from app.models.chat_conversation import ChatConversation  # noqa: F401
 from app.models.chat_message import ChatMessage  # noqa: F401
 from app.models.chat_session_context import ChatSessionContext  # noqa: F401
+from app.models.ai_call_record import AiCallRecord  # noqa: F401
 from app.models.design_reference_image import DesignReferenceImage  # noqa: F401
+from app.models.design_run import DesignRun  # noqa: F401
 from app.models.material import Material  # noqa: F401
 from app.models.user import User  # noqa: F401
