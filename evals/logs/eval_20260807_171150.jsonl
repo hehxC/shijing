@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-07T17:11:51.398", "message": "黄砂岩有什么规格", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.95, "reason": "用户询问黄砂岩的规格，属于石材属性信息查询。", "source": "llm", "latency_ms": 997.4}

@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:31:58.349", "message": "80平院子铺花岗岩大概多少钱", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "estimate_price", "use_image": "none", "confidence": 1.0, "reason": "用户询问80平院子铺花岗岩的费用，属于按面积×单价的预算估算", "source": "llm", "latency_ms": 968.3}

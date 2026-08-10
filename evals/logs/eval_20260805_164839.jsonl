@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T16:48:40.752", "message": "花岗岩有哪些颜色", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.98, "reason": "用户询问花岗岩的颜色，属于石材信息查询。", "source": "llm", "latency_ms": 1219.7}

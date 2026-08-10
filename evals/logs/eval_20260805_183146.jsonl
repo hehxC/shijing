@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:31:48.021", "message": "120平方米院子铺水洗石大概多少钱", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "estimate_price", "use_image": "none", "confidence": 0.95, "reason": "用户提供面积并询问铺水洗石的费用，属于估算报价。", "source": "llm", "latency_ms": 1173.6}

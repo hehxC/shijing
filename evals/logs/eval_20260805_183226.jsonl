@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:32:27.483", "message": "青石板岩有什么规格", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 1.0, "reason": "用户询问青石板岩的规格信息，属于材料属性查询。", "source": "llm", "latency_ms": 948.9}

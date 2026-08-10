@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:32:07.687", "message": "材料库里有没有莱姆石", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 1.0, "reason": "用户询问材料库中是否有某种石材，属于材料属性信息查询。", "source": "llm", "latency_ms": 1021.1}

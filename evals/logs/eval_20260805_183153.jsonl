@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:31:54.311", "message": "50平米院子铺花岗岩大概多少钱", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "estimate_price", "use_image": "none", "confidence": 0.95, "reason": "用户询问面积和单价计算总价，属于预算报价", "source": "llm", "latency_ms": 941.2}

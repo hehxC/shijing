@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:25.564", "message": "80平院子铺水洗石大概多少钱", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "estimate_price", "use_image": "none", "confidence": 1.0, "reason": "用户询问面积和价格，属于费用估算", "source": "llm", "latency_ms": 1266.2}

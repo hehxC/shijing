@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-07T17:12:03.467", "message": "庭院设计要注意什么", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.95, "reason": "用户询问庭院设计注意事项，属于普通咨询，不涉及图片、生成、分析、估价或材料查询。", "source": "llm", "latency_ms": 1089.2}

@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:46.351", "message": "花岗岩有什么规格", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.95, "reason": "用户询问花岗岩的规格，属于石材信息查询。", "source": "llm", "latency_ms": 1218.7}

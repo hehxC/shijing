@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:32:40.442", "message": "帮我看看这个方案", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.8, "reason": "用户请求不明确，且当前无任何图片可参考，应转为普通对话以澄清需求。", "source": "llm", "latency_ms": 1100.9}

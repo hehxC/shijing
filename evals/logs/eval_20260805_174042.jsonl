@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:43.301", "message": "芝麻灰有哪些颜色", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 1.0, "reason": "用户询问石材颜色，属于材料信息查询", "source": "llm", "latency_ms": 1035.4}

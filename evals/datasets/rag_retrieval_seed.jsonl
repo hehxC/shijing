@@ -1,0 +1,58 @@
+{"id": 1, "question": "新中式庭院有什么特点", "relevant_docs": ["new-chinese"], "category": "style", "note": ""}
+{"id": 2, "question": "想做一个枯山水小庭院，怎么设计", "relevant_docs": ["zen-dry-garden"], "category": "style", "note": ""}
+{"id": 3, "question": "宋式文人园适合什么院子", "relevant_docs": ["song-scholar-garden"], "category": "style", "note": ""}
+{"id": 4, "question": "法式规则园怎么布局", "relevant_docs": ["french-formal-garden"], "category": "style", "note": ""}
+{"id": 5, "question": "英式乡村花园用什么材料铺路", "relevant_docs": ["english-cottage-garden", "guide-material-selection"], "category": "style", "note": ""}
+{"id": 6, "question": "苔庭适合什么气候", "relevant_docs": ["moss-rain-garden"], "category": "style", "note": ""}
+{"id": 7, "question": "工业风庭院怎么选材", "relevant_docs": ["industrial-modern", "guide-material-selection"], "category": "style", "note": ""}
+{"id": 8, "question": "茶禅一味庭院怎么设计", "relevant_docs": ["tea-garden-zen"], "category": "style", "note": ""}
+{"id": 9, "question": "极简白盒子风格的核心是什么", "relevant_docs": ["minimalist-white-box"], "category": "style", "note": ""}
+{"id": 10, "question": "地中海庭院用什么植物", "relevant_docs": ["mediterranean-courtyard", "guide-planting"], "category": "style", "note": ""}
+{"id": 11, "question": "自然野趣风怎么种花", "relevant_docs": ["naturalistic-garden", "guide-planting"], "category": "style", "note": ""}
+{"id": 12, "question": "日式池泉庭需要什么系统", "relevant_docs": ["japanese-pond-garden"], "category": "style", "note": ""}
+{"id": 13, "question": "侘寂风用什么材料", "relevant_docs": ["wabi-sabi-natural", "guide-material-selection"], "category": "style", "note": ""}
+{"id": 14, "question": "现代东方极简用什么铺装", "relevant_docs": ["modern-east-asian-minimal", "guide-material-selection"], "category": "style", "note": ""}
+{"id": 15, "question": "美式农场风适合什么家庭", "relevant_docs": ["american-farmhouse"], "category": "style", "note": ""}
+{"id": 16, "question": "明清合院布局讲究什么", "relevant_docs": ["ming-qing-courtyard"], "category": "style", "note": ""}
+{"id": 17, "question": "南洋热带园有什么特点", "relevant_docs": ["tropical-nanyang"], "category": "style", "note": ""}
+{"id": 18, "question": "热带雨林风适合什么气候", "relevant_docs": ["tropical-jungle"], "category": "style", "note": ""}
+{"id": 19, "question": "中式庭院常用什么植物", "relevant_docs": ["new-chinese", "guide-planting"], "category": "style", "note": ""}
+{"id": 20, "question": "想做个禅意小庭院，选枯山水还是茶庭", "relevant_docs": ["zen-dry-garden", "tea-garden-zen"], "category": "style", "note": "对比类"}
+{"id": 21, "question": "庭院地面铺装什么材料防滑耐磨", "relevant_docs": ["guide-material-selection"], "category": "material", "note": ""}
+{"id": 22, "question": "莱姆石适合铺在哪里", "relevant_docs": ["guide-material-selection"], "category": "material", "note": ""}
+{"id": 23, "question": "花岗岩和青石板哪个更适合户外", "relevant_docs": ["guide-material-selection"], "category": "material", "note": ""}
+{"id": 24, "question": "鹅卵石能铺主园路吗", "relevant_docs": ["guide-material-selection"], "category": "material", "note": ""}
+{"id": 25, "question": "水景底部用什么材料", "relevant_docs": ["guide-material-selection"], "category": "material", "note": ""}
+{"id": 26, "question": "石英砖适合什么风格", "relevant_docs": ["guide-material-selection"], "category": "material", "note": ""}
+{"id": 27, "question": "透水砖铺停车位要注意什么", "relevant_docs": ["guide-material-selection", "guide-construction"], "category": "material", "note": ""}
+{"id": 28, "question": "墙面石材怎么选", "relevant_docs": ["guide-material-selection"], "category": "material", "note": ""}
+{"id": 29, "question": "黄砂岩能用于重载地面吗", "relevant_docs": ["guide-material-selection"], "category": "material", "note": ""}
+{"id": 30, "question": "铺装收边用什么材料", "relevant_docs": ["guide-material-selection", "guide-construction"], "category": "material", "note": ""}
+{"id": 31, "question": "中式庭院种什么树", "relevant_docs": ["guide-planting", "new-chinese"], "category": "plant", "note": ""}
+{"id": 32, "question": "苔藓养护要注意什么", "relevant_docs": ["guide-planting", "moss-rain-garden"], "category": "plant", "note": ""}
+{"id": 33, "question": "庭院植物怎么分层搭配", "relevant_docs": ["guide-planting"], "category": "plant", "note": ""}
+{"id": 34, "question": "水景边种什么植物", "relevant_docs": ["guide-planting"], "category": "plant", "note": ""}
+{"id": 35, "question": "紫藤适合种在哪里", "relevant_docs": ["guide-planting"], "category": "plant", "note": ""}
+{"id": 36, "question": "观赏草适合什么风格", "relevant_docs": ["guide-planting", "naturalistic-garden", "modern-east-asian-minimal"], "category": "plant", "note": ""}
+{"id": 37, "question": "庭院种桂花要注意什么", "relevant_docs": ["guide-planting"], "category": "plant", "note": ""}
+{"id": 38, "question": "自然风格花园用什么花", "relevant_docs": ["guide-planting", "naturalistic-garden"], "category": "plant", "note": ""}
+{"id": 39, "question": "庭院排水怎么做", "relevant_docs": ["guide-construction"], "category": "construction", "note": ""}
+{"id": 40, "question": "铺装前基层要做什么", "relevant_docs": ["guide-construction"], "category": "construction", "note": ""}
+{"id": 41, "question": "水景施工的防水怎么做", "relevant_docs": ["guide-construction"], "category": "construction", "note": ""}
+{"id": 42, "question": "户外铺装怎么防滑", "relevant_docs": ["guide-construction"], "category": "construction", "note": ""}
+{"id": 43, "question": "墙面石材干挂要注意什么", "relevant_docs": ["guide-construction", "guide-material-selection"], "category": "construction", "note": ""}
+{"id": 44, "question": "庭院照明怎么布置", "relevant_docs": ["guide-construction"], "category": "construction", "note": ""}
+{"id": 45, "question": "隐私遮挡怎么做", "relevant_docs": ["guide-construction"], "category": "construction", "note": ""}
+{"id": 46, "question": "小庭院怎么设计显大", "relevant_docs": ["guide-layout"], "category": "layout", "note": ""}
+{"id": 47, "question": "别墅庭院怎么分区设计", "relevant_docs": ["guide-layout"], "category": "layout", "note": ""}
+{"id": 48, "question": "庭院园路宽度多少合适", "relevant_docs": ["guide-layout"], "category": "layout", "note": ""}
+{"id": 49, "question": "儿童活动区地面用什么", "relevant_docs": ["guide-layout"], "category": "layout", "note": ""}
+{"id": 50, "question": "菜园放在庭院哪里好", "relevant_docs": ["guide-layout"], "category": "layout", "note": ""}
+{"id": 51, "question": "新中式庭院地面和植物怎么配", "relevant_docs": ["new-chinese", "guide-material-selection", "guide-planting"], "category": "mixed", "note": ""}
+{"id": 52, "question": "想做一个有水景的日式庭院", "relevant_docs": ["japanese-pond-garden", "guide-construction"], "category": "mixed", "note": ""}
+{"id": 53, "question": "现代风格庭院怎么选材和种树", "relevant_docs": ["modern-east-asian-minimal", "guide-material-selection", "guide-planting"], "category": "mixed", "note": ""}
+{"id": 54, "question": "枯山水维护要注意什么", "relevant_docs": ["zen-dry-garden", "guide-construction"], "category": "mixed", "note": ""}
+{"id": 55, "question": "英式花园需要多少养护", "relevant_docs": ["english-cottage-garden", "guide-planting"], "category": "mixed", "note": ""}
+{"id": 56, "question": "帮我查一下周末天气", "relevant_docs": [], "category": "negative", "note": ""}
+{"id": 57, "question": "推荐一部好看的电影", "relevant_docs": [], "category": "negative", "note": ""}
+{"id": 58, "question": "今天股票行情怎么样", "relevant_docs": [], "category": "negative", "note": ""}

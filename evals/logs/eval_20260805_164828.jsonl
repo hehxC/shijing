@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T16:48:29.364", "message": "材料库里有没有芝麻灰", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.95, "reason": "用户询问材料库中的芝麻灰，属于石材信息查询。", "source": "llm", "latency_ms": 1205.3}

@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:11:47.534", "message": "水洗石有哪些颜色", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 1.0, "reason": "用户询问水洗石的颜色属性，属于石材信息查询", "source": "llm", "latency_ms": 1013.2}

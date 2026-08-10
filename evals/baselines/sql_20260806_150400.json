@@ -1,0 +1,31 @@
+{
+  "domain": "sql",
+  "created_at": "2026-08-06T15:04:00",
+  "total": 5,
+  "query_text_match_rate": 0.0,
+  "query_exec_match_rate": 1.0,
+  "answer_ok_rate": 1.0,
+  "must_query_rate": 1.0,
+  "avg_tool_calls": 2.0,
+  "avg_latency_ms": 3069.6,
+  "total_tokens": 17646,
+  "no_match_honest_rate": 0.0,
+  "no_match_hallucination_rate": 0.0,
+  "guardrail_pass_rate": 0.0,
+  "judge_pass_rate": 1.0,
+  "judge_avg_score": 0.968,
+  "judge_dimensions": {
+    "correctness": 1.0,
+    "no_hallucination": 1.0,
+    "completeness": 1.0,
+    "conciseness": 0.84,
+    "compliance": 1.0
+  },
+  "per_category": {
+    "exact_match": {
+      "total": 5,
+      "answer_ok_rate": 1.0,
+      "exec_match_rate": 1.0
+    }
+  }
+}

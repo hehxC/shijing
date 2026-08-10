@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:31:32.599", "message": "我想看看地中海风格的庭院效果", "state": {"has_uploaded_image": false, "has_reference_image": true, "has_generated_image": false}, "model": "deepseek-chat", "intent": "generate_effect_image", "use_image": "reference", "confidence": 0.95, "reason": "用户要求生成地中海风格的庭院效果图，且存在参考图，故使用参考图生成全新效果图。", "source": "llm", "latency_ms": 1224.6}

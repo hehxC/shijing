@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:12:11.427", "message": "出图要多久", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.95, "reason": "用户询问出图时间，属于普通闲聊，不涉及任何图片处理或材料查询。", "source": "llm", "latency_ms": 1032.5}

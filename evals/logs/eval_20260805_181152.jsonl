@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:11:53.134", "message": "芝麻灰铺装多少钱一平", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.98, "reason": "用户询问芝麻灰材料单价，属于材料属性信息查询，且无图片。", "source": "llm", "latency_ms": 1072.4}

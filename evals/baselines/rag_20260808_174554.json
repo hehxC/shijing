@@ -1,0 +1,41 @@
+{
+  "domain": "rag",
+  "created_at": "2026-08-08T17:45:54",
+  "total": 55,
+  "negative_total": 3,
+  "recall_at_1": 0.7303,
+  "recall_at_3": 0.9182,
+  "recall_at_5": 0.9485,
+  "precision_at_1": 0.9091,
+  "precision_at_3": 0.4061,
+  "precision_at_5": 0.2582,
+  "mrr": 0.95,
+  "ndcg_at_5": 0.9176,
+  "negative_top1_hit_rate": 0.0,
+  "per_category": {
+    "style": {
+      "total": 20,
+      "recall_at_5": 1.0
+    },
+    "material": {
+      "total": 10,
+      "recall_at_5": 1.0
+    },
+    "plant": {
+      "total": 8,
+      "recall_at_5": 1.0
+    },
+    "construction": {
+      "total": 7,
+      "recall_at_5": 1.0
+    },
+    "layout": {
+      "total": 5,
+      "recall_at_5": 1.0
+    },
+    "mixed": {
+      "total": 5,
+      "recall_at_5": 1.0
+    }
+  }
+}

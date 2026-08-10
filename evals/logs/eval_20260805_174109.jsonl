@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:41:10.564", "message": "我觉得这个方案不错", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": true, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "generated", "confidence": 0.7, "reason": "用户表达对方案的认可，未提出具体操作或查询需求，属于普通反馈。", "source": "llm", "latency_ms": 1142.0}

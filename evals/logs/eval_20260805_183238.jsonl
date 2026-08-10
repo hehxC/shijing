@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:32:39.341", "message": "帮我推荐一下适合小院子的植物", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.9, "reason": "用户询问植物推荐，不属于任何特定处理流程", "source": "llm", "latency_ms": 987.2}

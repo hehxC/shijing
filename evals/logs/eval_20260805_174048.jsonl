@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:49.501", "message": "莱姆石有什么规格", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.95, "reason": "用户询问石材规格，属于材料数据库查询", "source": "llm", "latency_ms": 983.2}

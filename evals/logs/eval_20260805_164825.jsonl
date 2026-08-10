@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T16:48:27.097", "message": "黄砂岩铺装多少钱一平", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "estimate_price", "use_image": "none", "confidence": 0.95, "reason": "用户询问黄砂岩铺装的价格，属于费用估算需求。", "source": "llm", "latency_ms": 1139.7}

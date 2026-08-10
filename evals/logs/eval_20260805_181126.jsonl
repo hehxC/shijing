@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:11:27.835", "message": "120平方米院子铺花岗岩大概多少钱", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "estimate_price", "use_image": "none", "confidence": 1.0, "reason": "用户提供面积并询问花岗岩铺装费用，属于面积×单价的报价估算", "source": "llm", "latency_ms": 1157.5}

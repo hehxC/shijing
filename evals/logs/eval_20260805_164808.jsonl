@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T16:48:09.861", "message": "50平米院子铺莱姆石大概多少钱", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "estimate_price", "use_image": "none", "confidence": 0.95, "reason": "用户询问50平米院子铺莱姆石的价格，属于面积和费用估算。", "source": "llm", "latency_ms": 1086.6}

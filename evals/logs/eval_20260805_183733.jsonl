@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:37:34.196", "message": "铺地面的石材选什么好", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.9, "reason": "用户询问铺地石材的选择建议，属于材料属性咨询，无图片上下文。", "source": "llm", "latency_ms": 1184.9}

@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T16:48:46.197", "message": "鹅卵石和砾石的区别", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 1.0, "reason": "用户询问两种石材的区别，属于材料信息查询。", "source": "llm", "latency_ms": 898.4}

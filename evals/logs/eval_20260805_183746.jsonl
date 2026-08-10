@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:37:47.567", "message": "帮我看看这个方案", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.6, "reason": "用户说'帮我看看这个方案'，但没有上传图片、参考图或已生成图，无法明确是分析、生成还是估价，属于模糊请求，归为普通对话。", "source": "llm", "latency_ms": 1282.7}

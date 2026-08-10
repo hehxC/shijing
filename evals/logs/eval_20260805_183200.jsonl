@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:32:02.040", "message": "报价大概多少", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.6, "reason": "用户只说“报价大概多少”，但未提供面积或具体材料，无法明确为estimate_price，属于模糊询问。", "source": "llm", "latency_ms": 1324.2}

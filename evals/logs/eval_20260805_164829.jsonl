@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T16:48:30.425", "message": "材料库里有没有花岗岩", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.98, "reason": "用户询问材料库中是否有花岗岩，属于材料数据库查询。", "source": "llm", "latency_ms": 1060.2}

@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:32:03.461", "message": "这个方案大概要花多少钱", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "general_chat", "use_image": "none", "confidence": 0.6, "reason": "用户提及‘这个方案’但当前没有已生成的图片或上传图片，且没有面积或具体项目范围信息，无法明确归为费用估算或图片相关流程，暂按普通对话处理。", "source": "llm", "latency_ms": 1420.2}

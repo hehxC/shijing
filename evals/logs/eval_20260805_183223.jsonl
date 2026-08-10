@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T18:32:25.233", "message": "这石头多少钱一块", "state": {"has_uploaded_image": true, "has_reference_image": false, "has_generated_image": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "uploaded", "confidence": 0.8, "reason": "用户询问石头价格，属于材料属性查询，有上传图片但未要求分析，故use_image=uploaded作为上下文参考。", "source": "llm", "latency_ms": 1322.8}

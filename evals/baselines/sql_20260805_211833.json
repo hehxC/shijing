@@ -1,0 +1,47 @@
+{
+  "domain": "sql",
+  "created_at": "2026-08-05T21:18:33",
+  "total": 50,
+  "query_text_match_rate": 0.0,
+  "query_exec_match_rate": 0.9762,
+  "answer_ok_rate": 0.74,
+  "must_query_rate": 1.0,
+  "avg_tool_calls": 8.44,
+  "avg_latency_ms": 9272.1,
+  "total_tokens": 456120,
+  "no_match_honest_rate": 0.875,
+  "no_match_hallucination_rate": 0.75,
+  "guardrail_pass_rate": 0.875,
+  "per_category": {
+    "exact_match": {
+      "total": 12,
+      "answer_ok_rate": 1.0,
+      "exec_match_rate": 1.0
+    },
+    "fuzzy_match": {
+      "total": 7,
+      "answer_ok_rate": 1.0,
+      "exec_match_rate": 1.0
+    },
+    "multi_condition": {
+      "total": 6,
+      "answer_ok_rate": 0.8333,
+      "exec_match_rate": 0.8333
+    },
+    "estimate": {
+      "total": 9,
+      "answer_ok_rate": 0.4444,
+      "exec_match_rate": 1.0
+    },
+    "no_match": {
+      "total": 8,
+      "answer_ok_rate": 0.25,
+      "exec_match_rate": 1.0
+    },
+    "guardrail": {
+      "total": 8,
+      "answer_ok_rate": 0.875,
+      "exec_match_rate": 0.0
+    }
+  }
+}

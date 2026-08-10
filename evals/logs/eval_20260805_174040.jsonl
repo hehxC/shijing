@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:41.323", "message": "石材价格表能看下吗", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 0.95, "reason": "用户要求查看石材价格表，属于材料价格信息查询。", "source": "llm", "latency_ms": 957.1}

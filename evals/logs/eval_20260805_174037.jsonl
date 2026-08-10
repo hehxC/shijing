@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-05T17:40:38.534", "message": "水洗石有什么规格", "state": {"has_uploaded_image": false, "has_reference_image": false, "has_generated_image": false, "has_material_analysis": false}, "model": "deepseek-chat", "intent": "query_material", "use_image": "none", "confidence": 1.0, "reason": "用户询问水洗石的规格，属于材料数据库信息查询。", "source": "llm", "latency_ms": 1109.8}
