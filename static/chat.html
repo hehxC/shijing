@@ -4272,7 +4272,7 @@ async function submitAuth() {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(payload.detail || `HTTP ${response.status}`);
+      throw new Error(apiErrorMessage(payload, response));
     }
     setAuthSession(payload.access_token, payload.user);
     await initializeAuthenticatedWorkspace();
@@ -4343,6 +4343,18 @@ function designHeaders(json = false) {
   return headers;
 }
 
+function apiErrorMessage(payload, response) {
+  const detail = payload?.detail;
+  if (typeof detail === "string" && detail) return detail;
+  if (detail && typeof detail.reason === "string") {
+    const retryAfter = response.headers.get("Retry-After");
+    return retryAfter
+      ? `${detail.reason}（约 ${retryAfter} 秒后可重试）`
+      : detail.reason;
+  }
+  return `HTTP ${response.status}`;
+}
+
 async function designRequest(path, options = {}) {
   const response = await fetch(path, {
     ...options,
@@ -4350,7 +4362,7 @@ async function designRequest(path, options = {}) {
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.detail || `HTTP ${response.status}`);
+    throw new Error(apiErrorMessage(payload, response));
   }
   if (response.status === 204) return null;
   return response.json();
@@ -4373,7 +4385,7 @@ async function authenticatedRequest(path, options = {}) {
   }
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.detail || `HTTP ${response.status}`);
+    throw new Error(apiErrorMessage(payload, response));
   }
   if (response.status === 204) return null;
   return response.json();
@@ -5386,6 +5398,13 @@ async function sendMessage(mode = "chat", retryMessage = null) {
     : buildActionRequest(mode, text);
   if (!actionRequest) return;
   const persistedMode = actionRequest.shouldGenerateEffectImage ? "effect" : mode;
+  const idempotencyKey = actionRequest.shouldGenerateEffectImage
+    ? (retryMessage?.idempotency_key || (
+        crypto.randomUUID
+          ? crypto.randomUUID()
+          : `effect_${Date.now()}_${Math.random().toString(16).slice(2)}`
+      ))
+    : null;
 
   const token = getAuthToken();
   const userBubble = addUserMessage(actionRequest.displayText);
@@ -5402,6 +5421,9 @@ async function sendMessage(mode = "chat", retryMessage = null) {
     const headers = { "Content-Type": "application/json" };
     if (token) {
       headers.Authorization = `Bearer ${token}`;
+    }
+    if (idempotencyKey) {
+      headers["Idempotency-Key"] = idempotencyKey;
     }
 
     const response = await fetch("/chat", {
@@ -5422,7 +5444,8 @@ async function sendMessage(mode = "chat", retryMessage = null) {
       if (response.status === 401) {
         clearAuthSession();
       }
-      throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(apiErrorMessage(payload, response));
     }
     currentConversationExists = true;
     userBubble.dataset.messageId = response.headers.get("X-User-Message-Id") || "";
@@ -5448,6 +5471,7 @@ async function sendMessage(mode = "chat", retryMessage = null) {
       request_text: actionRequest.requestText,
       message_type: persistedMode,
       style_id: selectedStyle?.id || null,
+      idempotency_key: idempotencyKey,
     });
     if (error.name !== "AbortError") {
       setDesignStatus(`请求失败：${error.message || String(error)}`, true);

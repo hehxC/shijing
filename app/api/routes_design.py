@@ -30,6 +30,12 @@ from app.service.design_session_service import (
     update_material_reference,
 )
 from app.service.image_store import data_url_to_bytes, get_image_store
+from app.api.rate_limit import enforce_rate_limit
+from app.service.rate_limit_service import (
+    RateLimitService,
+    RateLimitSettings,
+    get_rate_limit_service,
+)
 
 
 router = APIRouter(prefix="/api/design", tags=["design"])
@@ -51,6 +57,19 @@ def design_session_id(
 
 def _raise_bad_request(exc: DesignSessionError):
     raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+def _enforce_upload_limit(user_id: int, limiter: RateLimitService) -> None:
+    """在图片解码、存储和数据库写入之前消费用户上传频率。"""
+    settings = RateLimitSettings.from_environment()
+    enforce_rate_limit(
+        limiter.allow(
+            f"image-upload:user:{user_id}",
+            limit=settings.upload_per_minute,
+            window_seconds=60,
+            reason="图片上传过于频繁，请稍后再试",
+        )
+    )
 
 
 @router.get("/session")
@@ -122,7 +141,10 @@ def read_design_image(
 def put_space_image(
     payload: DesignImageCreate,
     session_id: str = Depends(design_session_id),
+    current_user: User = Depends(get_current_user),
+    limiter: RateLimitService = Depends(get_rate_limit_service),
 ):
+    _enforce_upload_limit(current_user.id, limiter)
     try:
         return save_space_image(
             session_id,
@@ -144,7 +166,10 @@ def remove_space_image(session_id: str = Depends(design_session_id)):
 def post_material_image(
     payload: MaterialReferenceCreate,
     session_id: str = Depends(design_session_id),
+    current_user: User = Depends(get_current_user),
+    limiter: RateLimitService = Depends(get_rate_limit_service),
 ):
+    _enforce_upload_limit(current_user.id, limiter)
     try:
         return add_material_reference(
             session_id,
