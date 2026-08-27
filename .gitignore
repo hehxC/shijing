@@ -56,3 +56,5 @@ static/generated/
 .DS_Store
 Thumbs.db
 Desktop.ini
+/tests/test_observation_models.py
+/tests/test_mvp_flow.py

@@ -8,7 +8,11 @@ Embedding 用于 RAG 检索：知识片段入库时向量化，查询时把问�
 import os
 
 from dotenv import load_dotenv
+from dashscope import TextEmbedding
 from langchain_community.embeddings import DashScopeEmbeddings
+
+from app.models.ai_call_record import AiOperation
+from app.service.ai_resilience import policy_for
 
 load_dotenv()
 
@@ -19,14 +23,32 @@ _BATCH_SIZE = 10
 _EMBEDDINGS_CLIENT: DashScopeEmbeddings | None = None
 
 
+class _TimedTextEmbedding:
+    """为 LangChain 的 DashScope 适配器补上统一的请求超时。"""
+
+    @classmethod
+    def call(cls, **kwargs):
+        kwargs.setdefault(
+            "request_timeout",
+            policy_for(AiOperation.RAG_EMBEDDING).timeout_seconds,
+        )
+        return TextEmbedding.call(**kwargs)
+
+
 def _get_embeddings() -> DashScopeEmbeddings:
     """创建（或复用）DashScope embedding 客户端。"""
     global _EMBEDDINGS_CLIENT
     if _EMBEDDINGS_CLIENT is None:
-        _EMBEDDINGS_CLIENT = DashScopeEmbeddings(
+        client = DashScopeEmbeddings(
             model=EMBEDDING_MODEL,
             dashscope_api_key=os.getenv("DASHSCOPE_API_KEY"),
+            # 外层统一策略决定是否重试；这里的 1 表示只尝试一次。
+            max_retries=1,
         )
+        # DashScopeEmbeddings 的 Pydantic validator 会无条件覆盖构造参数里的
+        # client，因此实例创建后再换成带超时的兼容适配器。
+        client.client = _TimedTextEmbedding
+        _EMBEDDINGS_CLIENT = client
     return _EMBEDDINGS_CLIENT
 
 

@@ -3,6 +3,7 @@ from collections import deque
 from functools import lru_cache
 from operator import add
 import os
+import logging
 from pathlib import Path
 from typing import Annotated, TypedDict
 
@@ -19,8 +20,10 @@ from langgraph.graph import END, StateGraph
 
 from app.database import engine
 from app.garden_styles import GardenStyle, build_style_generation_request
+from app.models.ai_call_record import AiOperation
 from app.service.chat_intent_router import route_chat_intent
 from app.service.image_generation_service import (
+    GEMINI_IMAGE_MODEL,
     ImageGenerationError,
     build_design_generation_prompt,
     generated_image_as_data_url,
@@ -41,8 +44,17 @@ from app.service.conversation_service import (
 )
 from app.service.sql_tool_guard import guard_sql_tools
 from app.service.rag_service import retrieve
+from app.service.embedding_service import EMBEDDING_MODEL
+from app.service.observation_service import observe_ai_call
+from app.observability import log_event
+from app.service.ai_resilience import (
+    iterate_with_resilience,
+    policy_for,
+    run_with_resilience,
+)
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 PROMPT_PATH = Path(__file__).resolve().parents[1] / "prompts" / "chat_agent.md"
 TEXT_CHAT_MODEL = os.getenv("TEXT_CHAT_MODEL", "deepseek-chat")
@@ -72,12 +84,19 @@ def load_chat_agent_prompt() -> str:
     return PROMPT_PATH.read_text(encoding="utf-8").strip()
 
 
-@lru_cache(maxsize=2)
-def get_chat_agent(model_name: str):
+@lru_cache(maxsize=6)
+def get_chat_agent(
+    model_name: str,
+    operation: AiOperation = AiOperation.TEXT_CHAT,
+):
+    """按模型和 operation 创建客户端，使超时策略与具体业务调用一致。"""
+    policy = policy_for(operation)
     if model_name.startswith("gemini"):
         model = ChatGoogleGenerativeAI(
             model=model_name,
             api_key=os.getenv("GEMINI_KEY") or os.getenv("GOOGLE_API_KEY"),
+            request_timeout=policy.timeout_seconds,
+            retries=0,
         )
     elif model_name == "qwen3.7-max-2026-06-08":
         base_url = os.getenv("DASHSCOPE_BASE_URL")
@@ -86,12 +105,17 @@ def get_chat_agent(model_name: str):
             model=model_name,
             model_provider="openai",
             base_url=base_url,
-            api_key=api_key
+            api_key=api_key,
+            timeout=policy.timeout_seconds,
+            max_retries=0,
         )
     else:
         model = ChatDeepSeek(
             model=model_name,
             api_key=os.getenv("DEEPSEEK_API_KEY"),
+            timeout=policy.timeout_seconds,
+            max_retries=0,
+            stream_usage=True,
         )
 
     # 把查询数据库作为工具
@@ -151,6 +175,15 @@ def _checkpoint_thread_id(session_id: str, model_name: str) -> str:
     return f"{session_id}:{suffix}"
 
 
+def _model_provider(model_name: str) -> str:
+    """把已支持的模型名称映射为稳定供应商名称，供成本与错误聚合使用。"""
+    if model_name.startswith("gemini"):
+        return "google"
+    if model_name.startswith("qwen"):
+        return "dashscope"
+    return "deepseek"
+
+
 def _clear_session_checkpoints(session_id: str) -> None:
     """Compatibility hook retained after moving model memory to MySQL."""
     return None
@@ -182,9 +215,11 @@ def _stream_model_agent(
         image: str | None,
         session_id: str,
         history: list[dict] | None = None,
+        *,
+        operation: AiOperation = AiOperation.TEXT_CHAT,
 ) -> Iterator[str]:
     """调用具体模型 Agent，并注入最近 10 轮持久化成功历史。"""
-    agent = get_chat_agent(model)
+    agent = get_chat_agent(model, operation)
     messages = list(history or [])
     messages.append({"role": "user", "content": _build_user_content(message, image)})
 
@@ -193,28 +228,41 @@ def _stream_model_agent(
     # 否则窗口填满后边收边发。窗口大小是取舍：越大越能吞掉思考，越小流式越即时。
     HELD_WINDOW = 12
     held: deque[str] = deque()
-    for chunk, _metadata in agent.stream(
-        {"messages": messages},
-        stream_mode="messages",
-    ):
-        if isinstance(chunk, AIMessageChunk):
-            if chunk.tool_call_chunks:
-                # 该轮在构造工具调用：窗口内缓冲的文本是思考过程，整段丢弃
+    with observe_ai_call(
+        operation,
+        provider=_model_provider(model),
+        model=model,
+    ) as observation:
+        def stream_factory():
+            return agent.stream(
+                {"messages": messages},
+                stream_mode="messages",
+            )
+
+        for chunk, _metadata in iterate_with_resilience(
+            operation,
+            stream_factory,
+            on_retry=observation.record_retry,
+        ):
+            observation.capture_usage(chunk)
+            if isinstance(chunk, AIMessageChunk):
+                if chunk.tool_call_chunks:
+                    # 该轮在构造工具调用：窗口内缓冲的文本是思考过程，整段丢弃
+                    held.clear()
+                    continue
+                text = _extract_text_content(chunk.content)
+                if text:
+                    held.append(text)
+                    if len(held) > HELD_WINDOW:
+                        yield held.popleft()
+            elif isinstance(chunk, AIMessage):
+                # 兼容：个别实现可能一次性给出完整消息
+                text = _extract_text_content(chunk.content)
+                if text and not chunk.tool_calls:
+                    held.append(text)
+            elif isinstance(chunk, ToolMessage):
+                # 工具结果到来：窗口内缓冲的是思考文本，丢弃
                 held.clear()
-                continue
-            text = _extract_text_content(chunk.content)
-            if text:
-                held.append(text)
-                if len(held) > HELD_WINDOW:
-                    yield held.popleft()
-        elif isinstance(chunk, AIMessage):
-            # 兼容：个别实现可能一次性给出完整消息
-            text = _extract_text_content(chunk.content)
-            if text and not chunk.tool_calls:
-                held.append(text)
-        elif isinstance(chunk, ToolMessage):
-            # 工具结果到来：窗口内缓冲的是思考文本，丢弃
-            held.clear()
     while held:
         yield held.popleft()
 
@@ -360,11 +408,21 @@ def _effect_image_agent(state: ChatAgentState) -> Iterator[str]:
             materials=materials,
             editing_previous_effect=editing_previous_effect,
         )
-        image_url = generate_effect_image(
-            generation_request,
-            image,
-            additional_images=additional_images,
-        )
+        # 图像生成是本轮最昂贵且直接决定用户结果的关键调用。
+        with observe_ai_call(
+            AiOperation.IMAGE_GENERATION,
+            provider="google",
+            model=GEMINI_IMAGE_MODEL,
+        ) as observation:
+            image_url = run_with_resilience(
+                AiOperation.IMAGE_GENERATION,
+                lambda: generate_effect_image(
+                    generation_request,
+                    image,
+                    additional_images=additional_images,
+                ),
+                on_retry=observation.record_retry,
+            )
         _clear_session_checkpoints(current_session_id)
         remember_generated_image(current_session_id, image_url, generation_request)
         summary = material_scheme_summary(materials)
@@ -407,7 +465,12 @@ def _vision_analysis_agent(state: ChatAgentState) -> Iterator[str]:
 
     final_response_parts: list[str] = []
     for text in _stream_model_agent(
-        IMAGE_CHAT_MODEL, message, image, current_session_id, state["history"]
+        IMAGE_CHAT_MODEL,
+        message,
+        image,
+        current_session_id,
+        state["history"],
+        operation=AiOperation.VISION_ANALYSIS,
     ):
         final_response_parts.append(text)
         yield text
@@ -427,8 +490,19 @@ def _text_agent(state: ChatAgentState) -> Iterator[str]:
             f"{context_lines}\n\n用户问题：{message}"
         )
 
+    intent = state.get("intent")
+    operation = (
+        AiOperation.SQL_QUERY
+        if intent and getattr(intent, "intent", None) in {"query_material", "estimate_price"}
+        else AiOperation.TEXT_CHAT
+    )
     yield from _stream_model_agent(
-        TEXT_CHAT_MODEL, message, None, state["session_id"], state["history"]
+        TEXT_CHAT_MODEL,
+        message,
+        None,
+        state["session_id"],
+        state["history"],
+        operation=operation,
     )
 
 
@@ -445,13 +519,32 @@ def _retrieve_node(state: ChatAgentState) -> dict:
     if not _needs_retrieval(state["message"]):
         return {}
     try:
-        items = retrieve(
-            state["message"],
-            k=RETRIEVE_TOP_K,
-            retriever="vector",
-            max_distance=RETRIEVE_MAX_DISTANCE,
+        # 检索失败可以无知识库降级，因此记录失败但不把整个设计任务判失败。
+        with observe_ai_call(
+            AiOperation.RAG_RETRIEVAL,
+            provider="dashscope",
+            model=EMBEDDING_MODEL,
+            critical=False,
+        ) as observation:
+            items = run_with_resilience(
+                AiOperation.RAG_RETRIEVAL,
+                lambda: retrieve(
+                    state["message"],
+                    k=RETRIEVE_TOP_K,
+                    retriever="vector",
+                    max_distance=RETRIEVE_MAX_DISTANCE,
+                ),
+                on_retry=observation.record_retry,
+            )
+    except Exception as exc:
+        log_event(
+            logger,
+            "ai_call_degraded",
+            operation=AiOperation.RAG_RETRIEVAL,
+            fallback="answer_without_rag",
+            error_type=exc.__class__.__name__,
+            error_message=str(exc),
         )
-    except Exception:
         # 检索失败不阻塞对话：静默降级为无知识上下文
         return {}
     context = [

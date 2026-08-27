@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException  # FastAPI 的路由器，
 from starlette.responses import StreamingResponse  # 流式响应：数据边生成边返回，不需要等全部处理完
 
 from app.models.schemas import ChatRequest  # 请求体的 Pydantic 模型，定义了接口接收什么字段、什么类型
+from app.models.design_run import DesignRunOperation
 from app.models.user import User
+from app.observability import current_request_id
 from app.service.auth_service import get_current_user
 from app.service.conversation_service import (
     begin_user_turn,
@@ -14,16 +16,29 @@ from app.service.conversation_service import (
 from app.service.chat_service import stream_chat  # 业务逻辑：向大模型发消息并获取流式回复
 from app.garden_styles import get_garden_style, list_garden_styles
 from app.service.design_session_service import save_selected_style
+from app.service.observation_service import observe_design_run
 
 router = APIRouter()  # 创建一个路由器实例，main.py 会通过 include_router 把它挂载到主应用上
 
 
 def scoped_session_id(user_id: int, session_id: str | None) -> str:
+    """把浏览器会话标识收敛为用户隔离的服务端设计会话标识。"""
     raw = session_id or "default"
     value = f"user:{user_id}:{raw}"
     if len(value) <= 128:
         return value
     return f"user:{user_id}:{hashlib.sha256(raw.encode('utf-8')).hexdigest()}"
+
+
+def design_run_operation(req: ChatRequest) -> DesignRunOperation:
+    """把前端消息类型映射为用户可感知的顶层设计任务类型。"""
+    if req.generate_effect_image or req.message_type == "effect":
+        return DesignRunOperation.EFFECT_GENERATION
+    if req.message_type == "recognize":
+        return DesignRunOperation.VISION_ANALYSIS
+    if req.message_type == "quote":
+        return DesignRunOperation.MATERIAL_QUOTE
+    return DesignRunOperation.CHAT
 
 
 @router.get("/api/styles", tags=["styles"])
@@ -65,25 +80,33 @@ async def chat(req: ChatRequest, current_user: User = Depends(get_current_user))
         message_type=req.message_type,
         style_id=selected_style.id if selected_style else None,
     )
+    # 中间件生成或接收的 request_id 会贯穿响应头、结构化日志和两张观测表。
+    request_id = current_request_id()
 
     def persistent_stream():
         chunks: list[str] = []
         completed = False
-        try:
-            for chunk in stream_chat(
-                req.message,
-                None,
-                session_id,
-                selected_style=selected_style,
-                force_generate_effect_image=req.generate_effect_image,
-            ):
-                chunks.append(chunk)
-                yield chunk
-            complete_turn(user_message.id, "".join(chunks))
-            completed = True
-        finally:
-            if not completed:
-                fail_turn(user_message.id)
+        with observe_design_run(
+            request_id=request_id,
+            user_id=current_user.id,
+            session_id=session_id,
+            operation=design_run_operation(req),
+        ):
+            try:
+                for chunk in stream_chat(
+                    req.message,
+                    None,
+                    session_id,
+                    selected_style=selected_style,
+                    force_generate_effect_image=req.generate_effect_image,
+                ):
+                    chunks.append(chunk)
+                    yield chunk
+                complete_turn(user_message.id, "".join(chunks))
+                completed = True
+            finally:
+                if not completed:
+                    fail_turn(user_message.id)
 
     return StreamingResponse(
         persistent_stream(),

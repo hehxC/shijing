@@ -27,9 +27,10 @@ config = context.config
 config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL"))
 
 # Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# 应用启动时会在同一进程内执行迁移。必须保留已经配置好的 app.* 和 Uvicorn
+# logger，否则 Alembic 默认的 disable_existing_loggers=True 会让结构化日志失效。
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
