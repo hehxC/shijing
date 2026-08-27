@@ -12,6 +12,7 @@
 - **材料查询与估价**：通过 LangChain SQL 工具查询 MySQL 材料库，回答规格、颜色、价格及用量问题。
 - **领域知识检索（RAG）**：知识咨询类问题先检索领域知识库（18 种风格、材料、植物、施工要点），回答带来源引用，减少凭空编造。
 - **多意图路由**：区分普通对话、材料查询、图片分析、预算估算与效果图生成，并提供规则降级策略。
+- **统一生产观测**：按用户任务关联路由、RAG、文本、视觉和图片生成调用，记录耗时、Token、估算成本与脱敏后的失败原因。
 - **持久化历史设计**：保存完整聊天记录、设计素材、庭院风格与效果图，支持跨设备恢复、重命名和永久删除。
 - **可靠的流式记录**：只保存完整 AI 回复；回复失败或用户停止时保留“未完成”的用户消息，并支持原内容重试。
 - **账号与访问控制**：必须注册或登录后才能聊天、上传设计素材和生成效果图；历史记录及效果图按用户隔离。
@@ -102,11 +103,56 @@ DASHSCOPE_API_KEY=你的_DashScope_API_Key
 # 效果图生成：Gemini
 GEMINI_IMAGE_MODEL=gemini-3.1-flash-image
 GEMINI_KEY=你的_Gemini_API_Key
+
+# 可选：模型价格集中配置；未配置时仍记录调用，只将估算成本留空
+# 文本模型按每百万 Token 计价，图片模型也可使用 {"per_call":"0.03"}
+MODEL_PRICING_JSON={"deepseek-chat":{"input_per_million":"1","output_per_million":"2"},"gemini-3.1-flash-image":{"per_call":"0.03"}}
+
+# AI 超时与有限重试；未填写时使用以下默认值
+AI_INTENT_ROUTING_TIMEOUT_SECONDS=10
+AI_INTENT_ROUTING_MAX_RETRIES=1
+AI_TEXT_CHAT_TIMEOUT_SECONDS=60
+AI_TEXT_CHAT_MAX_RETRIES=1
+AI_SQL_QUERY_TIMEOUT_SECONDS=15
+AI_SQL_QUERY_MAX_RETRIES=1
+AI_RAG_RETRIEVAL_TIMEOUT_SECONDS=5
+AI_RAG_RETRIEVAL_MAX_RETRIES=0
+AI_RAG_EMBEDDING_TIMEOUT_SECONDS=5
+AI_VISION_ANALYSIS_TIMEOUT_SECONDS=90
+AI_VISION_ANALYSIS_MAX_RETRIES=1
+AI_IMAGE_GENERATION_TIMEOUT_SECONDS=240
+AI_IMAGE_GENERATION_MAX_RETRIES=1
+AI_RETRY_BACKOFF_SECONDS=0.5
 ```
 
 也可以把文本或视觉模型切换为项目已支持的其他模型。只需设置相应的模型名称和服务商密钥即可。
 
 > 请勿将 `.env` 或任何真实 API Key 提交到 GitHub。
+
+每个 `/chat` 响应都会返回 `X-Request-ID`。同一请求产生的任务汇总保存在
+`design_runs`，具体 AI 调用保存在 `ai_call_records`；观测写入失败只记录服务端日志，
+不会中断用户正在进行的设计流程。
+
+所有 HTTP 接口现在都会返回 `X-Request-ID`。客户端可以传入由字母、数字、点、
+下划线、冒号或连字符组成且不超过 64 个字符的 ID；缺失或不合法时由服务端重新
+生成。应用日志使用单行 JSON，至少包含 `timestamp`、`level`、`event` 和
+`request_id`。可以通过 `LOG_LEVEL=INFO` 调整应用日志级别。
+
+典型的任务日志事件包括：
+
+- `http_request_completed` / `http_request_failed`；
+- `design_run_started` / `design_run_completed`；
+- `ai_call_completed`；
+- `observation_database_write_failed`。
+
+日志模块会脱敏 Authorization、API Key、访问令牌、密码和完整图片 Data URL；
+业务代码也不应主动把用户消息正文或请求头整体写入日志。
+
+AI 调用由统一策略控制超时和有限重试。只有超时、网络错误、HTTP 429、502、
+503 和 504 可以重试；鉴权失败、参数错误、内容安全拒绝和用户取消不会重试。
+流式模型收到第一个模型块后禁止从头重试，避免用户看到重复内容。意图路由失败时
+回退规则路由，RAG 失败时降级为无知识库回答；重试和降级分别记录
+`ai_call_retrying` 与 `ai_call_degraded` 事件。
 
 ### 5. 启动服务
 

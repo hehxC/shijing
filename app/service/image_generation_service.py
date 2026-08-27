@@ -15,6 +15,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.database import SessionLocal
 from app.models.material import Material
 from app.service.image_store import get_image_store
+from app.models.ai_call_record import AiOperation
+from app.service.ai_resilience import policy_for
 
 
 load_dotenv()
@@ -257,7 +259,10 @@ def _call_gemini_image(
     )
 
     try:
-        with urlopen(request, timeout=240) as response:
+        with urlopen(
+            request,
+            timeout=policy_for(AiOperation.IMAGE_GENERATION).timeout_seconds,
+        ) as response:
             result = json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")

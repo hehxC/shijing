@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, RedirectResponse
 from starlette.staticfiles import StaticFiles
 
+from app.observability import RequestContextMiddleware, configure_structured_logging
 from app.api.routes_auth import router as auth_router
 from app.api.routes_chat import router as chat_router
 from app.api.routes_conversations import router as conversations_router
@@ -13,7 +14,10 @@ from app.api.routes_design import router as design_router
 from app.api.routes_materials import router as materials_router
 from app.service.design_session_service import cleanup_expired_design_assets
 
+
+configure_structured_logging()
 app = FastAPI()
+app.add_middleware(RequestContextMiddleware)
 
 app.include_router(auth_router)
 app.include_router(chat_router)

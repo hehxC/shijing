@@ -11,6 +11,9 @@ import re
 
 from langchain_core.tools import StructuredTool
 
+from app.models.ai_call_record import AiOperation
+from app.service.ai_resilience import policy_for
+
 # 需要包装的 SQL 工具名（query_checker 会原样返回待执行 SQL，也要拦截）
 _GUARDED_TOOL_NAMES = {"sql_db_query", "sql_db_query_checker"}
 
@@ -36,6 +39,18 @@ def _block_reason(query: str) -> str | None:
     return None
 
 
+def _with_mysql_timeout_hint(query: str) -> str:
+    """给真实查询增加 MySQL 执行时间上限；其他数据库会把它当普通注释。"""
+    timeout_ms = round(policy_for(AiOperation.SQL_QUERY).timeout_seconds * 1_000)
+    return re.sub(
+        r"^\s*select\b",
+        f"SELECT /*+ MAX_EXECUTION_TIME({timeout_ms}) */",
+        query,
+        count=1,
+        flags=re.IGNORECASE,
+    )
+
+
 def _guarded_query_tool(tool: StructuredTool) -> StructuredTool:
     """把单个 SQL 查询工具包装成带防护的版本，接口与原工具一致。"""
     original_invoke = tool.invoke
@@ -48,7 +63,12 @@ def _guarded_query_tool(tool: StructuredTool) -> StructuredTool:
                 f"查询被拒绝：{reason}。"
                 "请只查询 material、color、spec、price、unit、cat、description 等文本字段。"
             )
-        return original_invoke({"query": query})
+        executable_query = (
+            _with_mysql_timeout_hint(query)
+            if tool.name == "sql_db_query"
+            else query
+        )
+        return original_invoke({"query": executable_query})
 
     return StructuredTool.from_function(
         name=tool.name,

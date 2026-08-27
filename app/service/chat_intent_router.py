@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
 import json
+import logging
 import os
 from pathlib import Path
 import re
@@ -16,9 +17,14 @@ from app.service.image_generation_service import (
     needs_effect_image,
     references_generated_image,
 )
+from app.models.ai_call_record import AiOperation
+from app.service.observation_service import observe_ai_call
+from app.service.ai_resilience import policy_for, run_with_resilience
+from app.observability import log_event
 
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 # 路由模型固定使用 DeepSeek，与聊天主模型（TEXT_CHAT_MODEL）解耦；
 # 可通过 ROUTER_MODEL 环境变量单独指定，默认 deepseek-chat
@@ -81,11 +87,14 @@ class ChatIntent:
 @lru_cache(maxsize=1)
 def _get_router_model() -> ChatDeepSeek:
     """路由只做文本分类，固定走 DeepSeek，不绑定工具，也不写入 checkpoint。"""
+    policy = policy_for(AiOperation.INTENT_ROUTING)
     # 路由是分类任务，temperature=0 让输出尽量稳定可复现，避免同一句话两次判出不同结果
     return ChatDeepSeek(
         model=ROUTER_MODEL,
         api_key=os.getenv("DEEPSEEK_API_KEY"),
         temperature=0,
+        timeout=policy.timeout_seconds,
+        max_retries=0,
     )
 
 
@@ -252,18 +261,40 @@ def route_chat_intent(
         started = time.perf_counter()
         try:
             model = _get_router_model()
-            response = model.invoke(
-                [
-                    SystemMessage(content=system_prompt),
-                    HumanMessage(content=json.dumps(user_payload, ensure_ascii=False)),
-                ]
-            )
+            # 路由失败有规则回退，因此该调用不是整个设计任务的关键失败。
+            with observe_ai_call(
+                AiOperation.INTENT_ROUTING,
+                provider="deepseek",
+                model=ROUTER_MODEL,
+                critical=False,
+            ) as observation:
+                response = run_with_resilience(
+                    AiOperation.INTENT_ROUTING,
+                    lambda: model.invoke(
+                        [
+                            SystemMessage(content=system_prompt),
+                            HumanMessage(
+                                content=json.dumps(user_payload, ensure_ascii=False)
+                            ),
+                        ]
+                    ),
+                    on_retry=observation.record_retry,
+                )
+                observation.capture_usage(response)
             content = response.content if isinstance(response.content, str) else json.dumps(response.content, ensure_ascii=False)
             parsed = _normalize_intent(_extract_json(content), fallback)
             result = parsed
             # 模型返回了结果但解析/校验失败时，回退规则结果并标记来源
             source = "llm" if parsed is not fallback else "llm_normalize_fallback"
-        except Exception:
+        except Exception as exc:
+            log_event(
+                logger,
+                "ai_call_degraded",
+                operation=AiOperation.INTENT_ROUTING,
+                fallback="rule_router",
+                error_type=exc.__class__.__name__,
+                error_message=str(exc),
+            )
             result = fallback
         latency_ms = round((time.perf_counter() - started) * 1000, 1)
 
