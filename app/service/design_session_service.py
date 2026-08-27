@@ -1,5 +1,6 @@
 import base64
 import binascii
+import io
 import mimetypes
 import re
 from dataclasses import dataclass
@@ -7,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
+from PIL import Image, UnidentifiedImageError
 from sqlalchemy import delete, func, select
 
 from app.database import SessionLocal
@@ -15,7 +17,6 @@ from app.models.chat_conversation import ChatConversation
 from app.models.design_reference_image import DesignReferenceImage
 from app.service.image_store import (
     bytes_to_data_url,
-    data_url_to_bytes,
     get_image_store,
 )
 
@@ -25,8 +26,10 @@ MATERIAL_IMAGE = "material"
 MAX_MATERIAL_IMAGES = 20
 MAX_MATERIAL_USAGES = 7
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
+MAX_IMAGE_PIXELS = 25_000_000
 RETENTION_DAYS = 30
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 ALLOWED_MATERIAL_USAGES = {
     "地面铺装",
     "墙面",
@@ -74,7 +77,37 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def validate_image_data_url(image: str) -> str:
+def _validate_decoded_image(data: bytes) -> str:
+    """解码后校验真实图片格式、像素上限，并防御解压炸弹。
+
+    只相信 PIL 从文件头解析出的真实格式，不信任客户端声明的 MIME；
+    超过像素上限的图片直接拒绝（不自动压缩），保持行为确定。
+    返回 PIL 检测出的真实 MIME 类型，供存储时确定扩展名。
+    """
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            real_format = (img.format or "").upper()
+            if real_format not in ALLOWED_IMAGE_FORMATS:
+                raise DesignSessionError("仅支持 JPEG、PNG 或 WebP 图片")
+            width, height = img.size
+            if width <= 0 or height <= 0:
+                raise DesignSessionError("图片尺寸无效")
+            if width * height > MAX_IMAGE_PIXELS:
+                raise DesignSessionError("图片像素不能超过 2500 万像素")
+            img.verify()
+            return f"image/{real_format.lower()}"
+    except DesignSessionError:
+        raise
+    except Image.DecompressionBombError as exc:
+        raise DesignSessionError("图片像素过大或疑似解压炸弹") from exc
+    except UnidentifiedImageError as exc:
+        raise DesignSessionError("无法识别图片格式或图片已损坏") from exc
+    except (OSError, ValueError, SyntaxError) as exc:
+        raise DesignSessionError("图片数据损坏或格式无法识别") from exc
+
+
+def decode_validated_image(image: str) -> tuple[bytes, str]:
+    """校验并解码图片 data URL，返回 (原始字节, 真实 MIME)。"""
     cleaned = image.strip()
     match = _DATA_URL_PATTERN.fullmatch(cleaned)
     if not match or match.group(1).lower() not in ALLOWED_MIME_TYPES:
@@ -87,7 +120,14 @@ def validate_image_data_url(image: str) -> str:
         raise DesignSessionError("图片不能为空")
     if len(decoded) > MAX_IMAGE_BYTES:
         raise DesignSessionError("图片不能超过 10MB")
-    return cleaned
+    real_mime = _validate_decoded_image(decoded)
+    return decoded, real_mime
+
+
+def validate_image_data_url(image: str) -> str:
+    """校验图片 data URL：格式白名单、体积、真实图片格式和像素上限。"""
+    decode_validated_image(image)
+    return image.strip()
 
 
 def normalize_material_metadata(
@@ -130,9 +170,8 @@ def _delete_generated_file(image_url: str | None) -> None:
     get_image_store().delete(f"generated/{filename}")
 
 
-def _save_image_to_store(kind: str, data_url: str) -> str:
-    """把 data URL 解码后写入图片存储，返回对象 key（按 类型/日期/uuid 组织）。"""
-    data, mime_type = data_url_to_bytes(data_url)
+def _save_image_to_store(kind: str, data: bytes, mime_type: str) -> str:
+    """把已验证的图片字节写入存储，返回对象 key（按 类型/日期/uuid 组织）。"""
     extension = mimetypes.guess_extension(mime_type) or ".jpg"
     if extension in {".jpe", ".jpeg"}:
         extension = ".jpg"
@@ -217,8 +256,8 @@ def get_design_generation_context(session_id: str) -> DesignGenerationContext:
 def save_space_image(
     session_id: str, image: str, original_name: str | None = None, request: str = ""
 ) -> dict:
-    cleaned = validate_image_data_url(image)
-    object_key = _save_image_to_store(SPACE_IMAGE, cleaned)
+    data, mime_type = decode_validated_image(image)
+    object_key = _save_image_to_store(SPACE_IMAGE, data, mime_type)
     with SessionLocal.begin() as db:
         context = _get_or_create_context(db, session_id)
         previous = db.scalar(
@@ -281,38 +320,45 @@ def add_material_reference(
     name: str | None = None,
     usages: list[str] | None = None,
 ) -> dict:
-    cleaned = validate_image_data_url(image)
-    object_key = _save_image_to_store(MATERIAL_IMAGE, cleaned)
+    data, mime_type = decode_validated_image(image)
     material_name, material_usages = normalize_material_metadata(name, usages)
-    with SessionLocal.begin() as db:
-        context = _get_or_create_context(db, session_id)
-        count = db.scalar(
-            select(func.count(DesignReferenceImage.id)).where(
-                DesignReferenceImage.session_id == session_id,
-                DesignReferenceImage.kind == MATERIAL_IMAGE,
+    object_key: str | None = None
+    try:
+        with SessionLocal.begin() as db:
+            context = _get_or_create_context(db, session_id)
+            count = db.scalar(
+                select(func.count(DesignReferenceImage.id)).where(
+                    DesignReferenceImage.session_id == session_id,
+                    DesignReferenceImage.kind == MATERIAL_IMAGE,
+                )
             )
-        )
-        if int(count or 0) >= MAX_MATERIAL_IMAGES:
-            raise DesignSessionError(f"石材参考图最多上传 {MAX_MATERIAL_IMAGES} 张")
-        max_position = db.scalar(
-            select(func.max(DesignReferenceImage.position)).where(
-                DesignReferenceImage.session_id == session_id,
-                DesignReferenceImage.kind == MATERIAL_IMAGE,
+            if int(count or 0) >= MAX_MATERIAL_IMAGES:
+                raise DesignSessionError(f"石材参考图最多上传 {MAX_MATERIAL_IMAGES} 张")
+            object_key = _save_image_to_store(MATERIAL_IMAGE, data, mime_type)
+            max_position = db.scalar(
+                select(func.max(DesignReferenceImage.position)).where(
+                    DesignReferenceImage.session_id == session_id,
+                    DesignReferenceImage.kind == MATERIAL_IMAGE,
+                )
             )
-        )
-        row = DesignReferenceImage(
-            session_id=session_id,
-            kind=MATERIAL_IMAGE,
-            object_key=object_key,
-            original_name=original_name.strip() if original_name else None,
-            material_name=material_name,
-            usages=material_usages,
-            position=int(max_position or 0) + 1,
-        )
-        db.add(row)
-        _mark_changed(context)
-        db.flush()
-        return _serialize_image(row)
+            row = DesignReferenceImage(
+                session_id=session_id,
+                kind=MATERIAL_IMAGE,
+                object_key=object_key,
+                original_name=original_name.strip() if original_name else None,
+                material_name=material_name,
+                usages=material_usages,
+                position=int(max_position or 0) + 1,
+            )
+            db.add(row)
+            _mark_changed(context)
+            db.flush()
+            return _serialize_image(row)
+    except BaseException:
+        # 数据库校验失败（如超过 20 张）时清理已写入存储的文件，避免孤立文件
+        if object_key is not None:
+            get_image_store().delete(object_key)
+        raise
 
 
 def update_material_reference(
