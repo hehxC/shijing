@@ -123,6 +123,16 @@ AI_VISION_ANALYSIS_MAX_RETRIES=1
 AI_IMAGE_GENERATION_TIMEOUT_SECONDS=240
 AI_IMAGE_GENERATION_MAX_RETRIES=1
 AI_RETRY_BACKOFF_SECONDS=0.5
+
+# 用户级限流、生成额度和幂等记录有效期；未填写时使用以下默认值
+LOGIN_RATE_LIMIT_PER_MINUTE=10
+REGISTER_RATE_LIMIT_PER_HOUR=5
+CHAT_RATE_LIMIT_PER_MINUTE=10
+VISION_RATE_LIMIT_PER_MINUTE=3
+EFFECT_GENERATION_CONCURRENCY=1
+EFFECT_GENERATION_DAILY_LIMIT=10
+IMAGE_UPLOAD_RATE_LIMIT_PER_MINUTE=10
+IDEMPOTENCY_TTL_SECONDS=86400
 ```
 
 也可以把文本或视觉模型切换为项目已支持的其他模型。只需设置相应的模型名称和服务商密钥即可。
@@ -153,6 +163,13 @@ AI 调用由统一策略控制超时和有限重试。只有超时、网络错�
 流式模型收到第一个模型块后禁止从头重试，避免用户看到重复内容。意图路由失败时
 回退规则路由，RAG 失败时降级为无知识库回答；重试和降级分别记录
 `ai_call_retrying` 与 `ai_call_degraded` 事件。
+
+登录和注册按客户端 IP 限流，聊天、视觉分析和图片上传按用户隔离。效果图生成每个
+用户同时只允许一个任务，并有独立的每日额度。超限响应使用 HTTP `429`，返回
+`Retry-After` 及 `allowed`、`remaining`、`retry_after`、`reason` 明细。效果图请求
+可携带不超过 128 个字符的 `Idempotency-Key`：正在执行的重复请求不会再次生成，
+已完成请求会直接重放结果，模型内部重试也不会再次扣除每日额度。当前后端为单实例
+进程内存储；多实例部署前应通过 `get_rate_limit_service` 依赖替换为共享 Redis 实现。
 
 ### 5. 启动服务
 
