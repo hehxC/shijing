@@ -1,13 +1,19 @@
 import base64
 import json
 import os
+import struct
 import unittest
+import zlib
+from io import BytesIO
 from unittest.mock import MagicMock, patch
+
+from PIL import Image
 
 from app.service.design_session_service import (
     DesignSessionError,
     MAX_MATERIAL_IMAGES,
     MaterialReference,
+    decode_validated_image,
     material_scheme_summary,
     normalize_material_metadata,
     validate_image_data_url,
@@ -23,6 +29,34 @@ def image_data_url(mime_type="image/jpeg", content=b"image"):
     return f"data:{mime_type};base64,{encoded}"
 
 
+def real_png_data_url(size=(8, 8), color="white"):
+    buf = BytesIO()
+    Image.new("RGB", size, color).save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def png_data_url_with_dimensions(width, height):
+    """构造仅声明尺寸的最小 PNG，用于测试像素上限与解压炸弹。"""
+
+    def chunk(chunk_type, data):
+        return (
+            struct.pack(">I", len(data))
+            + chunk_type
+            + data
+            + struct.pack(">I", zlib.crc32(chunk_type + data) & 0xFFFFFFFF)
+        )
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    idat = zlib.compress(b"\x00" + b"\x00\x00\x00" * width)
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", idat)
+        + chunk(b"IEND", b"")
+    )
+    return "data:image/png;base64," + base64.b64encode(png).decode("ascii")
+
+
 class DesignGenerationTests(unittest.TestCase):
     def setUp(self):
         self.materials = (
@@ -31,11 +65,42 @@ class DesignGenerationTests(unittest.TestCase):
         )
 
     def test_image_validation_accepts_only_supported_data_urls(self):
-        self.assertEqual(image_data_url(), validate_image_data_url(image_data_url()))
+        png = real_png_data_url()
+        self.assertEqual(png, validate_image_data_url(png))
         with self.assertRaises(DesignSessionError):
             validate_image_data_url(image_data_url("image/gif"))
         with self.assertRaises(DesignSessionError):
             validate_image_data_url("data:image/jpeg;base64,not-base64!")
+
+    def test_image_validation_rejects_text_masquerading_as_image(self):
+        with self.assertRaises(DesignSessionError):
+            validate_image_data_url(
+                image_data_url("image/png", b"definitely not an image")
+            )
+
+    def test_image_validation_rejects_empty_image(self):
+        with self.assertRaises(DesignSessionError):
+            validate_image_data_url(image_data_url("image/png", b""))
+
+    def test_image_validation_rejects_oversized_pixel_count(self):
+        # 5001 x 5001 = 25,010,001 像素，超过 2500 万上限
+        with self.assertRaisesRegex(DesignSessionError, "像素"):
+            validate_image_data_url(png_data_url_with_dimensions(5001, 5001))
+
+    def test_image_validation_rejects_decompression_bomb(self):
+        # 2 万 x 2 万 = 4 亿像素，触发 PIL 的解压炸弹错误
+        with self.assertRaises(DesignSessionError):
+            validate_image_data_url(png_data_url_with_dimensions(20000, 20000))
+
+    def test_decode_returns_real_mime_not_claimed_mime(self):
+        buf = BytesIO()
+        Image.new("RGB", (4, 4), "white").save(buf, format="PNG")
+        data_url = "data:image/jpeg;base64," + base64.b64encode(
+            buf.getvalue()
+        ).decode("ascii")
+        data, mime = decode_validated_image(data_url)
+        self.assertEqual("image/png", mime)
+        self.assertTrue(data)
 
     def test_material_image_limit_is_twenty(self):
         self.assertEqual(20, MAX_MATERIAL_IMAGES)
