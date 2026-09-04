@@ -20,15 +20,28 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # 整表删除会自动带走索引，无需单独 drop_index；
-    # 实际表只有 PRIMARY 与 ix_chat_user_messages_user_id，另两个索引 autogenerate 误报
-    op.drop_table('chat_user_messages')
-    op.drop_column('chat_session_contexts', 'model3d_url')
-    op.drop_column('chat_session_contexts', 'model3d_walls')
-    op.drop_column('chat_session_contexts', 'model3d_revision')
-    op.drop_column('chat_session_contexts', 'model3d_error')
-    op.drop_column('chat_session_contexts', 'material_analysis')
-    op.drop_column('chat_session_contexts', 'model3d_status')
+    # 这些遗留对象只存在于旧版 create_all 建出的数据库里；全新安装的基线
+    # schema 不会创建它们，因此按存在性幂等删除，避免在空库上失败。
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+
+    if inspector.has_table('chat_user_messages'):
+        op.drop_table('chat_user_messages')
+
+    existing_columns = {
+        column['name']
+        for column in inspector.get_columns('chat_session_contexts')
+    }
+    for column_name in (
+        'model3d_url',
+        'model3d_walls',
+        'model3d_revision',
+        'model3d_error',
+        'material_analysis',
+        'model3d_status',
+    ):
+        if column_name in existing_columns:
+            op.drop_column('chat_session_contexts', column_name)
     # ### end Alembic commands ###
 
 

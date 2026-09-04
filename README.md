@@ -81,7 +81,13 @@ CREATE DATABASE shijing
 
 ### 4. 配置环境变量
 
-在项目根目录新建 `.env` 文件，并按所使用的模型服务填写配置：
+可直接复制模板为 `.env` 再填写真实值：
+
+```bash
+cp .env.example .env
+```
+
+`.env.example` 是环境变量的权威清单（含默认值与必填/可选说明）。下面列出核心配置，完整清单见 `.env.example`：
 
 ```dotenv
 # MySQL
@@ -100,7 +106,11 @@ IMAGE_CHAT_MODEL=qwen-vl-max-latest
 DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 DASHSCOPE_API_KEY=你的_DashScope_API_Key
 
-# 效果图生成：Gemini
+# 效果图生成提供商：qwen-image（千问图像生成与编辑，国内，默认）或 gemini（图生图，国外）
+IMAGE_GENERATION_PROVIDER=qwen-image
+QWEN_IMAGE_MODEL=qwen-image-3.0-pro
+QWEN_IMAGE_SIZE=1920*1080
+# gemini 配置（IMAGE_GENERATION_PROVIDER=gemini 时生效）
 GEMINI_IMAGE_MODEL=gemini-3.1-flash-image
 GEMINI_KEY=你的_Gemini_API_Key
 
@@ -133,6 +143,20 @@ EFFECT_GENERATION_CONCURRENCY=1
 EFFECT_GENERATION_DAILY_LIMIT=10
 IMAGE_UPLOAD_RATE_LIMIT_PER_MINUTE=10
 IDEMPOTENCY_TTL_SECONDS=86400
+
+# 运行环境与部署
+APP_ENV=development
+AUTO_MIGRATE=true
+
+# 图片存储：local（本地）或 s3（S3 兼容/MinIO/OSS）
+IMAGE_STORE=local
+# IMAGE_STORE=s3 时必填：
+# S3_ENDPOINT_URL=http://127.0.0.1:9000
+# S3_BUCKET=shijing-images
+# S3_ACCESS_KEY=minioadmin
+# S3_SECRET_KEY=minioadmin
+# S3_REGION=us-east-1
+# S3_PREFIX=prod
 ```
 
 也可以把文本或视觉模型切换为项目已支持的其他模型。只需设置相应的模型名称和服务商密钥即可。
@@ -182,6 +206,19 @@ uv run uvicorn main:app --reload
 - AI 对话首页：<http://127.0.0.1:8000/>
 - 材料管理后台：<http://127.0.0.1:8000/static/admin.html>
 - FastAPI 接口文档：<http://127.0.0.1:8000/docs>
+
+### Docker 单实例运行
+
+项目提供多阶段 `Dockerfile`，按 `uv.lock` 构建并以非 root 用户启动：
+
+```powershell
+docker build --pull --tag shijing:local .
+docker volume create shijing-data
+docker run --detach --name shijing-app --env-file .env --publish 8000:8000 --volume shijing-data:/app/data shijing:local
+```
+
+当前镜像固定单 worker；Redis 接入前不要横向扩容。数据库地址、数据卷、构建验证及
+已知限制详见 [`docs/deployment/docker.md`](docs/deployment/docker.md)。
 
 ## 主要接口
 

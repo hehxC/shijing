@@ -7,10 +7,12 @@ from fastapi.responses import FileResponse, RedirectResponse
 from starlette.staticfiles import StaticFiles
 
 from app.observability import RequestContextMiddleware, configure_structured_logging
+from app.config import auto_migrate
 from app.api.routes_auth import router as auth_router
 from app.api.routes_chat import router as chat_router
 from app.api.routes_conversations import router as conversations_router
 from app.api.routes_design import router as design_router
+from app.api.routes_health import router as health_router
 from app.api.routes_materials import router as materials_router
 from app.service.design_session_service import cleanup_expired_design_assets
 
@@ -23,6 +25,7 @@ app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(conversations_router)
 app.include_router(design_router)
+app.include_router(health_router)
 app.include_router(materials_router)
 
 
@@ -44,8 +47,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.on_event("startup")
 def startup():
-    """启动时把数据库迁移到最新版本，并清理过期设计素材。"""
-    run_database_migrations()
+    """按配置执行数据库迁移（生产环境默认关闭），并清理过期设计素材。"""
+    if auto_migrate():
+        run_database_migrations()
     cleanup_expired_design_assets()
 
 

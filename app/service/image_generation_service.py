@@ -31,6 +31,11 @@ GEMINI_IMAGE_ENDPOINT = (
     or os.getenv("GEMINI_IMAGE_ENDPOINT_TEMPLATE")
     or "https://generativelanguage.googleapis.com/v1beta/interactions"
 )
+# 效果图生成提供商：qwen-image（千问图像生成与编辑，国内，文生图+图生图，默认）
+# 或 gemini（图生图，国外）。通过 IMAGE_GENERATION_PROVIDER 切换。
+IMAGE_GENERATION_PROVIDER = os.getenv("IMAGE_GENERATION_PROVIDER", "qwen-image").strip().lower()
+QWEN_IMAGE_MODEL = os.getenv("QWEN_IMAGE_MODEL", "qwen-image-3.0-pro")
+QWEN_IMAGE_SIZE = os.getenv("QWEN_IMAGE_SIZE", "1920*1080")
 GENERATED_DIR = Path(__file__).resolve().parents[2] / "static" / "generated"
 MAX_PROMPT_MATERIALS = int(
     os.getenv("IMAGE_PROMPT_MATERIAL_LIMIT")
@@ -199,14 +204,9 @@ def _image_data_url_to_interaction_input(image: str) -> dict:
     }
 
 
-def _save_generated_image_data(mime_type: str, data: str) -> str:
+def _save_generated_image_bytes(mime_type: str, image_bytes: bytes) -> str:
     if not mime_type.startswith("image/"):
         raise ImageGenerationError("图片生成服务返回的内容不是图片")
-
-    try:
-        image_bytes = base64.b64decode(data, validate=True)
-    except ValueError as exc:
-        raise ImageGenerationError("图片生成服务返回了无效图片数据") from exc
 
     extension = mimetypes.guess_extension(mime_type) or ".png"
     if extension in {".jpe", ".jpeg"}:
@@ -221,6 +221,14 @@ def _save_generated_image_data(mime_type: str, data: str) -> str:
         raise ImageGenerationError(f"生成图片保存失败：{exc}") from exc
 
     return f"/static/generated/{filename}"
+
+
+def _save_generated_image_data(mime_type: str, data: str) -> str:
+    try:
+        image_bytes = base64.b64decode(data, validate=True)
+    except ValueError as exc:
+        raise ImageGenerationError("图片生成服务返回了无效图片数据") from exc
+    return _save_generated_image_bytes(mime_type, image_bytes)
 
 
 def _call_gemini_image(
@@ -285,6 +293,58 @@ def _call_gemini_image(
     raise ImageGenerationError("效果图生成失败：未返回图片数据")
 
 
+def _call_qwen_image(
+    prompt: str,
+    image: str | None,
+    additional_images: list[str] | tuple[str, ...] | None = None,
+) -> str:
+    """调用千问图像生成与编辑（DashScope）：文生图/图生图合一，下载并保存。"""
+    api_key = os.getenv("DASHSCOPE_API_KEY")
+    if not api_key:
+        raise ImageGenerationError("未配置 DASHSCOPE_API_KEY")
+
+    from dashscope import MultiModalConversation
+
+    # 图生图最多 3 张输入图：空间图/上一张效果图 + 至多 2 张石材参考图
+    content: list[dict] = []
+    input_images: list[str] = []
+    if image:
+        input_images.append(image)
+    for extra in additional_images or []:
+        if len(input_images) >= 3:
+            break
+        input_images.append(extra)
+    for img in input_images:
+        content.append({"image": img})
+    content.append({"text": prompt})
+
+    rsp = MultiModalConversation.call(
+        api_key=api_key,
+        model=QWEN_IMAGE_MODEL,
+        messages=[{"role": "user", "content": content}],
+        n=1,
+        size=QWEN_IMAGE_SIZE,
+        prompt_extend=True,
+        enable_thinking=False
+    )
+    if rsp.status_code != 200:
+        message = getattr(rsp, "message", "") or getattr(rsp, "code", "")
+        raise ImageGenerationError(f"效果图生成失败：{message}")
+
+    try:
+        image_url = rsp.output.choices[0].message.content[0]["image"]
+    except (AttributeError, KeyError, IndexError, TypeError) as exc:
+        raise ImageGenerationError("效果图生成失败：未返回图片数据") from exc
+
+    try:
+        with urlopen(image_url, timeout=60) as response:
+            image_bytes = response.read()
+    except (HTTPError, URLError, TimeoutError) as exc:
+        raise ImageGenerationError(f"下载生成图片失败：{exc}") from exc
+
+    return _save_generated_image_bytes("image/png", image_bytes)
+
+
 def generate_effect_image(
     message: str,
     image: str | None = None,
@@ -292,4 +352,8 @@ def generate_effect_image(
     additional_images: list[str] | tuple[str, ...] | None = None,
 ) -> str:
     prompt = _build_prompt(message, has_reference_image=bool(image))
-    return _call_gemini_image(prompt, image, additional_images)
+    if IMAGE_GENERATION_PROVIDER == "gemini":
+        return _call_gemini_image(prompt, image, additional_images)
+    if IMAGE_GENERATION_PROVIDER == "qwen-image":
+        return _call_qwen_image(prompt, image, additional_images)
+    raise ImageGenerationError(f"不支持的图片生成提供商：{IMAGE_GENERATION_PROVIDER}")

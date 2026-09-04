@@ -1,0 +1,15 @@
+# 石境反向代理（Caddy 2）
+#
+# 生产：在 docker-compose 的 caddy 服务里设置 DOMAIN=你的域名，
+#       Caddy 会自动申请并续期 Let's Encrypt 证书、强制 HTTPS。
+# 本地：DOMAIN 留空（默认 localhost）时只提供 HTTP，方便本机联调。
+#
+# Caddy 的 reverse_proxy 默认：
+#   - 流式转发响应（/chat 的 SSE 不需要额外关闭缓冲）；
+#   - 自动设置 X-Forwarded-For / X-Forwarded-Proto / X-Forwarded-Host；
+# 因此这里只需一行反向代理即可满足本应用的需求。
+
+{$DOMAIN:http://localhost} {
+	encode gzip
+	reverse_proxy app:8000
+}
