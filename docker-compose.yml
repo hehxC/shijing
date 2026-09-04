@@ -1,0 +1,110 @@
+# 石境生产编排：应用 + MySQL + MinIO（对象存储）+ Caddy（HTTPS 反向代理）。
+#
+# 使用前：复制 .env.example 为 .env 并填写 AUTH_SECRET_KEY、DEEPSEEK_API_KEY、
+# DASHSCOPE_API_KEY、GEMINI_KEY；设置 DOMAIN=你的域名（留空则 Caddy 只跑 HTTP）。
+#
+# 启动：docker compose up -d --build
+
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: shijing
+      MYSQL_USER: shijing
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-shijing}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+
+  # 一次性任务：等 MinIO 就绪后创建图片桶
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}; do
+        echo waiting-for-minio; sleep 2;
+      done;
+      mc mb --ignore-existing local/shijing-images;
+      echo minio-ready
+      "
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+
+  # 一次性任务：独立数据库迁移（生产环境应用启动不再自动迁移）
+  migrate:
+    build: .
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: mysql+pymysql://shijing:${MYSQL_PASSWORD:-shijing}@db:3306/shijing?charset=utf8mb4
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    command: >
+      uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1 --no-access-log
+      --proxy-headers --forwarded-allow-ips=*
+    environment:
+      APP_ENV: production
+      AUTO_MIGRATE: "false"
+      DATABASE_URL: mysql+pymysql://shijing:${MYSQL_PASSWORD:-shijing}@db:3306/shijing?charset=utf8mb4
+      AUTH_SECRET_KEY: ${AUTH_SECRET_KEY:?请在 .env 设置 AUTH_SECRET_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      GEMINI_KEY: ${GEMINI_KEY:-}
+      IMAGE_STORE: s3
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_BUCKET: shijing-images
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_REGION: us-east-1
+    volumes:
+      # Chroma 数据与路由决策日志仍需本地持久化；图片已走 MinIO
+      - app_data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-http://localhost}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  db_data:
+  minio_data:
+  app_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,46 @@
+# Version control and local tooling
+.git/
+.github/
+.idea/
+.vscode/
+.codex/
+.claude/
+.firecrawl/
+
+# Secrets and local Python environments
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Python and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+
+# Local runtime state must be mounted or provided by external services
+data/
+static/generated/
+*.log
+tmp/
+temp/
+output/
+
+# Development-only material
+tests/
+evals/
+docs/
+scripts/
+test_main.http
+README.md
+AGENTS.md
+CONTEXT.md
+
+# Docker source files are build inputs but do not belong in the runtime image
+Dockerfile
+.dockerignore

@@ -24,7 +24,9 @@ from app.models.ai_call_record import AiOperation
 from app.service.chat_intent_router import route_chat_intent
 from app.service.image_generation_service import (
     GEMINI_IMAGE_MODEL,
+    IMAGE_GENERATION_PROVIDER,
     ImageGenerationError,
+    QWEN_IMAGE_MODEL,
     build_design_generation_prompt,
     generated_image_as_data_url,
     generate_effect_image,
@@ -409,10 +411,12 @@ def _effect_image_agent(state: ChatAgentState) -> Iterator[str]:
             editing_previous_effect=editing_previous_effect,
         )
         # 图像生成是本轮最昂贵且直接决定用户结果的关键调用。
+        image_provider = "google" if IMAGE_GENERATION_PROVIDER == "gemini" else "dashscope"
+        image_model = GEMINI_IMAGE_MODEL if IMAGE_GENERATION_PROVIDER == "gemini" else QWEN_IMAGE_MODEL
         with observe_ai_call(
             AiOperation.IMAGE_GENERATION,
-            provider="google",
-            model=GEMINI_IMAGE_MODEL,
+            provider=image_provider,
+            model=image_model,
         ) as observation:
             image_url = run_with_resilience(
                 AiOperation.IMAGE_GENERATION,
