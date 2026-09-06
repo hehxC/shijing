@@ -289,8 +289,27 @@ class RateLimitService:
 
 # 应用进程共享同一后端，保证同实例内所有路由看到一致的额度与并发状态。
 _RATE_LIMIT_SERVICE = RateLimitService()
+_REDIS_SERVICE: "RedisRateLimitService | None" = None  # 惰性创建，复用连接池
 
 
-def get_rate_limit_service() -> RateLimitService:
-    """FastAPI 依赖入口；正式环境可覆盖为使用 Redis 后端的实现。"""
+def get_rate_limit_service():
+    """按 ``RATE_LIMIT_BACKEND`` 返回限流服务（memory / redis）。
+
+    ``memory``：单实例进程内实现；``redis``：多实例共享状态。
+    Redis 客户端与限流服务均惰性创建、进程内单例，避免每请求新建连接。
+    """
+    backend = os.getenv("RATE_LIMIT_BACKEND", "memory").lower()
+    if backend == "redis":
+        global _REDIS_SERVICE
+        if _REDIS_SERVICE is None:
+            import redis
+
+            from app.service.redis_rate_limit_service import RedisRateLimitService
+
+            client = redis.Redis.from_url(
+                os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+                decode_responses=True,
+            )
+            _REDIS_SERVICE = RedisRateLimitService(client)
+        return _REDIS_SERVICE
     return _RATE_LIMIT_SERVICE

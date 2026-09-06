@@ -184,6 +184,7 @@ class AiErrorScenarioTests(unittest.TestCase):
         model = _StreamingModel("无知识库上下文的回答")
 
         with (
+            patch.dict(os.environ, {"ENABLE_RAG": "true"}),
             self._router("general_chat"),
             patch("app.service.chat_service.get_chat_agent", return_value=model),
             patch(

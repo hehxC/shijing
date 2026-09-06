@@ -24,6 +24,13 @@ dependencies = [
     "jieba>=0.42.1",
     "pillow>=12.0.0",
     "boto3>=1.40.0",
+    "redis>=5.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "fakeredis>=2.20.0",
+    "lupa>=2.0",
 ]
 
 [[tool.uv.index]]
