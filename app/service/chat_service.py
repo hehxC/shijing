@@ -516,7 +516,13 @@ def _needs_retrieval(message: str) -> bool:
 
 
 def _retrieve_node(state: ChatAgentState) -> dict:
-    """知识检索节点：只对 general_chat 且命中关键词的问题检索并组装带编号上下文。"""
+    """知识检索节点：RAG 本项目未实际使用（仅测试），默认关闭。
+
+    设 ``ENABLE_RAG=true`` 才会真正检索；关闭时 ``retrieve_node`` 为空操作，
+    ``text_agent`` 不注入领域知识，直接回答。这样避免引入 Chroma/向量库依赖。
+    """
+    if os.getenv("ENABLE_RAG", "false") != "true":
+        return {}
     intent = state.get("intent")
     if intent is None or getattr(intent, "intent", None) != "general_chat":
         return {}

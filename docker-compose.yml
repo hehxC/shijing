@@ -47,6 +47,13 @@ services:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
   # 一次性任务：独立数据库迁移（生产环境应用启动不再自动迁移）
   migrate:
     build: .
@@ -76,12 +83,17 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
       S3_REGION: us-east-1
+      # 限流/额度/幂等使用 Redis，支持多实例共享状态
+      RATE_LIMIT_BACKEND: redis
+      REDIS_URL: redis://redis:6379/0
     volumes:
       # Chroma 数据与路由决策日志仍需本地持久化；图片已走 MinIO
       - app_data:/app/data
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
       migrate:
         condition: service_completed_successfully
       minio-init:
@@ -108,3 +120,4 @@ volumes:
   app_data:
   caddy_data:
   caddy_config:
+  redis_data:
