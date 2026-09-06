@@ -45,8 +45,6 @@ from app.service.conversation_service import (
     protected_generated_url,
 )
 from app.service.sql_tool_guard import guard_sql_tools
-from app.service.rag_service import retrieve
-from app.service.embedding_service import EMBEDDING_MODEL
 from app.service.observation_service import observe_ai_call
 from app.observability import log_event
 from app.service.ai_resilience import (
@@ -64,15 +62,6 @@ IMAGE_CHAT_MODEL = os.getenv("IMAGE_CHAT_MODEL", "qwen-vl-max-latest")
 DEFAULT_SESSION_ID = "default"
 VISION_THREAD_SUFFIX = "vision"
 TEXT_THREAD_SUFFIX = "text"
-# RAG 检索参数：top-k 与相关度阈值（任务 6 数据驱动调优）
-RETRIEVE_TOP_K = int(os.getenv("RETRIEVE_TOP_K", "3"))
-RETRIEVE_MAX_DISTANCE = float(os.getenv("RETRIEVE_MAX_DISTANCE", "1.30"))
-# 知识咨询关键词：命中才检索，避免每句都查
-_RETRIEVE_KEYWORDS = (
-    "风格", "庭院", "花园", "院子", "材料", "石材", "石头", "植物", "树木",
-    "施工", "排水", "铺装", "布局", "搭配", "养护", "防水", "防滑", "照明",
-    "隐私", "设计", "水景", "园路", "草坪", "菜园", "种植",
-)
 SQL_DB = SQLDatabase(
     engine,
     include_tables=["materials"],
@@ -205,8 +194,6 @@ class ChatAgentState(TypedDict):
     generated_context: object | None
     intent: object | None
     history: list[dict]
-    # RAG 检索节点写入的领域知识片段（带编号引用），供文本 Agent 组装 prompt
-    retrieved_context: list | None
     # 各节点追加输出的流式片段：挂 add reducer，保证多节点接力时追加而不是覆盖
     response_chunks: Annotated[list[str], add]
 
@@ -293,7 +280,6 @@ def _build_agent_state(
         "generated_context": generated_context,
         "intent": None,
         "history": history,
-        "retrieved_context": None,
         "response_chunks": [],
     }
 
@@ -483,17 +469,6 @@ def _vision_analysis_agent(state: ChatAgentState) -> Iterator[str]:
 def _text_agent(state: ChatAgentState) -> Iterator[str]:
     """文本/查库/估价 Agent：只接收文本上下文，不接收图片消息。"""
     message = state["message"]
-    retrieved = state.get("retrieved_context")
-    if retrieved:
-        # 把检索到的领域知识片段按编号注入，要求回答引用 [n]
-        context_lines = "\n".join(
-            f"{item['ref']} [{item['source']}] {item['content']}" for item in retrieved
-        )
-        message = (
-            "以下是检索到的领域知识片段，回答时优先参考；引用时标注编号如 [1]。\n"
-            f"{context_lines}\n\n用户问题：{message}"
-        )
-
     intent = state.get("intent")
     operation = (
         AiOperation.SQL_QUERY
@@ -510,63 +485,7 @@ def _text_agent(state: ChatAgentState) -> Iterator[str]:
     )
 
 
-def _needs_retrieval(message: str) -> bool:
-    """知识咨询关键词启发式：命中才检索，避免每句都查（任务 9 会用评测细化）。"""
-    return any(keyword in message for keyword in _RETRIEVE_KEYWORDS)
-
-
-def _retrieve_node(state: ChatAgentState) -> dict:
-    """知识检索节点：RAG 本项目未实际使用（仅测试），默认关闭。
-
-    设 ``ENABLE_RAG=true`` 才会真正检索；关闭时 ``retrieve_node`` 为空操作，
-    ``text_agent`` 不注入领域知识，直接回答。这样避免引入 Chroma/向量库依赖。
-    """
-    if os.getenv("ENABLE_RAG", "false") != "true":
-        return {}
-    intent = state.get("intent")
-    if intent is None or getattr(intent, "intent", None) != "general_chat":
-        return {}
-    if not _needs_retrieval(state["message"]):
-        return {}
-    try:
-        # 检索失败可以无知识库降级，因此记录失败但不把整个设计任务判失败。
-        with observe_ai_call(
-            AiOperation.RAG_RETRIEVAL,
-            provider="dashscope",
-            model=EMBEDDING_MODEL,
-            critical=False,
-        ) as observation:
-            items = run_with_resilience(
-                AiOperation.RAG_RETRIEVAL,
-                lambda: retrieve(
-                    state["message"],
-                    k=RETRIEVE_TOP_K,
-                    retriever="vector",
-                    max_distance=RETRIEVE_MAX_DISTANCE,
-                ),
-                on_retry=observation.record_retry,
-            )
-    except Exception as exc:
-        log_event(
-            logger,
-            "ai_call_degraded",
-            operation=AiOperation.RAG_RETRIEVAL,
-            fallback="answer_without_rag",
-            error_type=exc.__class__.__name__,
-            error_message=str(exc),
-        )
-        # 检索失败不阻塞对话：静默降级为无知识上下文
-        return {}
-    context = [
-        {
-            "ref": f"[{index}]",
-            "doc_id": item["doc_id"],
-            "source": item["source"],
-            "content": item["content"],
-        }
-        for index, item in enumerate(items, 1)
-    ]
-    return {"retrieved_context": context}
+# RAG 已停用并移除：本项目未实际使用，Chroma/向量库相关依赖与代码一并去掉。
 
 
 def _stream_multi_agent_chat(
@@ -597,8 +516,8 @@ def _route_after_router(state: ChatAgentState) -> str:
         return "effect_image_agent"
     if state["intent"].intent == "analyze_image":
         return "vision_analysis_agent"
-    # query_material / estimate_price / general_chat 先过检索节点，再进文本 Agent
-    return "retrieve_node"
+    # query_material / estimate_price / general_chat 直接进文本 Agent
+    return "text_agent"
 
 
 @lru_cache(maxsize=1)
@@ -608,7 +527,6 @@ def get_chat_orchestrator_graph():
     graph.add_node("router_agent", _router_agent)
     graph.add_node("effect_image_agent", _effect_image_node)
     graph.add_node("vision_analysis_agent", _vision_analysis_node)
-    graph.add_node("retrieve_node", _retrieve_node)
     graph.add_node("text_agent", _text_node)
     graph.set_entry_point("router_agent")
     # router_agent给state赋值，_route_after_router做转发
@@ -618,12 +536,11 @@ def get_chat_orchestrator_graph():
         {
             "effect_image_agent": "effect_image_agent",
             "vision_analysis_agent": "vision_analysis_agent",
-            "retrieve_node": "retrieve_node",
+            "text_agent": "text_agent",
         },
     )
     graph.add_edge("effect_image_agent", END)
     graph.add_edge("vision_analysis_agent", END)
-    graph.add_edge("retrieve_node", "text_agent")
     graph.add_edge("text_agent", END)
     return graph.compile()
 
