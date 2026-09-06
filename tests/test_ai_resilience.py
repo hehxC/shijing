@@ -39,8 +39,6 @@ class AiResilienceTests(unittest.TestCase):
             AiOperation.INTENT_ROUTING: (10, 1),
             AiOperation.TEXT_CHAT: (60, 1),
             AiOperation.SQL_QUERY: (15, 1),
-            AiOperation.RAG_RETRIEVAL: (5, 0),
-            AiOperation.RAG_EMBEDDING: (5, 0),
             AiOperation.VISION_ANALYSIS: (90, 1),
             AiOperation.IMAGE_GENERATION: (240, 1),
         }
@@ -132,18 +130,6 @@ class AiResilienceTests(unittest.TestCase):
 
         self.assertEqual("success", result)
         self.assertEqual(2, len(attempts))
-
-    def test_rag_retrieval_does_not_retry(self):
-        attempts = []
-
-        def retrieval_call():
-            attempts.append("called")
-            raise TimeoutError("vector store timed out")
-
-        with self.assertRaises(TimeoutError):
-            run_with_resilience(AiOperation.RAG_RETRIEVAL, retrieval_call)
-
-        self.assertEqual(1, len(attempts))
 
     def test_stream_retries_when_failure_happens_before_first_chunk(self):
         attempts = []

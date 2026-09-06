@@ -16,8 +16,6 @@ class AiOperation(StrEnum):
     INTENT_ROUTING = "intent_routing"
     TEXT_CHAT = "text_chat"
     SQL_QUERY = "sql_query"
-    RAG_RETRIEVAL = "rag_retrieval"
-    RAG_EMBEDDING = "rag_embedding"
     VISION_ANALYSIS = "vision_analysis"
     IMAGE_GENERATION = "image_generation"
 

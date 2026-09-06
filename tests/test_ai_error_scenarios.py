@@ -13,7 +13,6 @@ from unittest.mock import patch
 from langchain_core.messages import AIMessage, AIMessageChunk
 
 from app.garden_styles import GARDEN_STYLES
-from app.service import embedding_service
 from app.service.chat_service import stream_chat
 from app.service.image_generation_service import ImageGenerationError
 
@@ -179,37 +178,6 @@ class AiErrorScenarioTests(unittest.TestCase):
                 )
 
         self.assertEqual(2, model.call_count)
-
-    def test_rag_failure_degrades_to_text_answer_without_retry(self):
-        model = _StreamingModel("无知识库上下文的回答")
-
-        with (
-            patch.dict(os.environ, {"ENABLE_RAG": "true"}),
-            self._router("general_chat"),
-            patch("app.service.chat_service.get_chat_agent", return_value=model),
-            patch(
-                "app.service.chat_service.retrieve",
-                side_effect=TimeoutError("vector store timeout"),
-            ) as retrieval,
-        ):
-            response = "".join(
-                stream_chat("庭院排水怎么设计", session_id="rag-fallback")
-            )
-
-        self.assertEqual("无知识库上下文的回答", response)
-        self.assertEqual(1, retrieval.call_count)
-
-    def test_embedding_failure_is_returned_without_hidden_retry(self):
-        embeddings = _FailingEmbeddings(TimeoutError("embedding timeout"))
-
-        with patch(
-            "app.service.embedding_service._get_embeddings",
-            return_value=embeddings,
-        ):
-            with self.assertRaises(TimeoutError):
-                embedding_service.embed_query("庭院排水")
-
-        self.assertEqual(1, embeddings.call_count)
 
     def test_effect_image_retries_wrapped_timeout_then_succeeds(self):
         outcomes = iter(

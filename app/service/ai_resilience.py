@@ -33,8 +33,6 @@ _DEFAULTS: dict[AiOperation, tuple[float, int]] = {
     AiOperation.INTENT_ROUTING: (10, 1),
     AiOperation.TEXT_CHAT: (60, 1),
     AiOperation.SQL_QUERY: (15, 1),
-    AiOperation.RAG_RETRIEVAL: (5, 0),
-    AiOperation.RAG_EMBEDDING: (5, 0),
     AiOperation.VISION_ANALYSIS: (90, 1),
     AiOperation.IMAGE_GENERATION: (240, 1),
 }
